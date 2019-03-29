@@ -15,7 +15,7 @@
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' n_obs(m)
 #'
-#' @importFrom stats model.frame
+#' @importFrom stats model.frame nobs
 #' @export
 n_obs <- function(x, ...) {
   UseMethod("n_obs")
@@ -48,6 +48,18 @@ n_obs.gamm <- function(x, ...) {
 
 
 #' @export
+n_obs.lmRob <- function(x, ...) {
+  length(x$fitted.values)
+}
+
+
+#' @export
+n_obs.glmRob <- function(x, ...) {
+  length(x$fitted.values)
+}
+
+
+#' @export
 n_obs.gmnl <- function(x, ...) {
   x$logLik$nobs
 }
@@ -56,6 +68,18 @@ n_obs.gmnl <- function(x, ...) {
 #' @export
 n_obs.multinom <- function(x, ...) {
   nrow(x$fitted.values)
+}
+
+
+#' @export
+n_obs.rq <- function(x, ...) {
+  length(x$fitted.values)
+}
+
+
+#' @export
+n_obs.crq <- function(x, ...) {
+  nrow(x$residuals)
 }
 
 

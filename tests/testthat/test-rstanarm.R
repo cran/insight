@@ -8,6 +8,7 @@ if (.runThisTest && Sys.getenv("USER") != "travis") {
   )) {
     context("insight, rstanarm")
 
+    set.seed(123)
     m1 <- stan_glmer(
       cbind(incidence, size - incidence) ~ size + period + (1 | herd),
       data = lme4::cbpp, family = binomial, QR = TRUE,
@@ -85,7 +86,7 @@ if (.runThisTest && Sys.getenv("USER") != "travis") {
     })
 
     test_that("link_inverse", {
-      expect_equal(link_inverse(m1)(.2), plogis(.2), tolerance = 1e-5)
+      expect_equal(link_inverse(m1)(.2), plogis(.2), tolerance = 1e-4)
     })
 
     test_that("get_data", {
@@ -105,6 +106,33 @@ if (.runThisTest && Sys.getenv("USER") != "travis") {
           random = as.formula("~1 | herd")
         )
       )
+    })
+
+    test_that("get_variance", {
+      expect_equal(get_variance(m1), list(
+        var.fixed = 0.3710157,
+        var.random = 0.6113405,
+        var.residual = 3.289868,
+        var.distribution = 3.289868,
+        var.dispersion = 0,
+        var.intercept = c(herd = 0.6113405)
+      ),
+      tolerance = 1e-4)
+
+      expect_equal(get_variance_fixed(m1), c(var.fixed = 0.3710157), tolerance = 1e-4)
+      expect_equal(get_variance_random(m1), c(var.random = 0.6113405), tolerance = 1e-4)
+      expect_equal(get_variance_residual(m1), c(var.residual = 3.289868), tolerance = 1e-4)
+      expect_equal(get_variance_distribution(m1), c(var.distribution = 3.289868), tolerance = 1e-4)
+      expect_equal(get_variance_dispersion(m1), c(var.dispersion = 0), tolerance = 1e-4)
+    })
+
+    test_that("find_algorithm", {
+      expect_equal(find_algorithm(m1), list(
+        algorithm = "sampling",
+        chains = 2,
+        iterations = 500,
+        warmup = 250
+      ))
     })
   }
 }

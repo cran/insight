@@ -2,14 +2,26 @@
 % Please edit documentation in R/find_parameters.R
 \name{find_parameters}
 \alias{find_parameters}
+\alias{find_parameters.brmsfit}
+\alias{find_parameters.stanreg}
+\alias{find_parameters.stanmvreg}
 \title{Find names of model parameters}
 \usage{
 find_parameters(x, ...)
+
+\method{find_parameters}{brmsfit}(x, parameters = NULL, ...)
+
+\method{find_parameters}{stanreg}(x, parameters = NULL, ...)
+
+\method{find_parameters}{stanmvreg}(x, parameters = NULL, ...)
 }
 \arguments{
 \item{x}{A fitted model.}
 
 \item{...}{Currently not used.}
+
+\item{parameters}{Regular expression pattern that describes the parameters that
+should be returned.}
 }
 \value{
 A list of parameter names. For simple models, only one list-element,
@@ -20,7 +32,9 @@ A list of parameter names. For simple models, only one list-element,
      \item \code{random}, the "random effects" part from the model
      \item \code{zero_inflated}, the "fixed effects" part from the zero-inflation component of the model
      \item \code{zero_inflated_random}, the "random effects" part from the zero-inflation component of the model
-     \item \code{dispersion}, the dispersion formula
+     \item \code{dispersion}, the dispersion parameters
+     \item \code{simplex}, simplex parameters of monotonic effects (\pkg{brms} only)
+     \item \code{smooth_terms}, the smooth parameters
      \item \code{within}, the within-subject effects of Anovas (\code{aov()}) with error term
      \item \code{between}, the between-subjects effects of Anovas (\code{aov()}) with error term
    }

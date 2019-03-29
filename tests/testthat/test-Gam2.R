@@ -59,14 +59,20 @@ if (require("testthat") && require("insight") && require("gam")) {
     expect_equal(
       find_parameters(m1),
       list(
-        conditional = c("(Intercept)", "s(Age, 4)", "Number")
+        conditional = c("(Intercept)", "Number"),
+        smooth_terms = "s(Age, 4)"
       )
     )
     expect_equal(nrow(get_parameters(m1)), 3)
-    expect_equal(get_parameters(m1)$parameter, c("(Intercept)", "s(Age, 4)", "Number"))
+    expect_equal(get_parameters(m1)$parameter, c("(Intercept)", "Number", "s(Age, 4)"))
   })
 
   test_that("is_multivariate", {
     expect_false(is_multivariate(m1))
   })
+
+  test_that("find_algorithm", {
+    expect_equal(find_algorithm(m1), list(algorithm = "IWLS"))
+  })
+
 }

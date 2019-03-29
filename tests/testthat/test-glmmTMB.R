@@ -36,6 +36,14 @@ if (require("testthat") && require("insight") && require("glmmTMB")) {
     family = truncated_poisson()
   )
 
+  data(Salamanders)
+  m5 <- glmmTMB(
+    count ~ mined + (1 | site),
+    ziformula = ~mined,
+    family = poisson,
+    data = Salamanders
+  )
+
   test_that("model_info", {
     expect_true(model_info(m1)$is_zeroinf)
     expect_false(model_info(m2)$is_zeroinf)
@@ -211,9 +219,9 @@ if (require("testthat") && require("insight") && require("glmmTMB")) {
       )
     )
     expect_equal(nrow(get_parameters(m4)), 6)
-    expect_equal(colnames(get_parameters(m4)), c("parameter", "estimate", "group"))
+    expect_equal(colnames(get_parameters(m4)), c("parameter", "estimate", "component"))
     expect_equal(get_parameters(m4)$parameter, c("(Intercept)", "child", "camper1", "(Intercept)", "child", "livebait1"))
-    expect_equal(get_parameters(m4)$group, c("conditional", "conditional", "conditional", "zero_inflated", "zero_inflated", "zero_inflated"))
+    expect_equal(get_parameters(m4)$component, c("conditional", "conditional", "conditional", "zero_inflated", "zero_inflated", "zero_inflated"))
   })
 
   test_that("linkfun", {
@@ -229,4 +237,48 @@ if (require("testthat") && require("insight") && require("glmmTMB")) {
     expect_false(is_multivariate(m3))
     expect_false(is_multivariate(m4))
   })
+
+  # test_that("get_variance", {
+  #
+  #   expect_warning(expect_equal(get_variance(m5), list(
+  #     var.fixed = 0.32588694431268194762,
+  #     var.random = 0.07842738279575413307,
+  #     var.residual = 0.41218000030914692111,
+  #     var.distribution = 0.41218000030914692111,
+  #     var.dispersion = 0,
+  #     var.intercept = c(site = 0.07842738279575474369)
+  #   ),
+  #   tolerance = 1e-3))
+  #
+  #   expect_warning(expect_equal(get_variance_fixed(m1), c(var.fixed = 1.09712435712435052437), tolerance = 1e-3))
+  #   expect_warning(expect_equal(get_variance_random(m1), c(var.random = 0.86712737445492238386), tolerance = 1e-3))
+  #   expect_warning(expect_equal(get_variance_residual(m1), c(var.residual = 0.02634500773355940087 ), tolerance = 1e-3))
+  #   expect_warning(expect_equal(get_variance_distribution(m1), c(var.distribution = 0.02634500773355940087 ), tolerance = 1e-3))
+  #   expect_warning(expect_equal(get_variance_dispersion(m1), c(var.dispersion = 0), tolerance = 1e-3))
+  # })
+
+  test_that("find_algorithm", {
+    expect_equal(find_algorithm(m1), list(
+      algorithm = "ML", optimizer = "nlminb"
+    ))
+  })
+
+  test_that("find_random_slopes", {
+
+    skip_on_cran()
+
+    m <- glmmTMB(
+      count ~ child + camper + (1 + xb| persons),
+      ziformula = ~ child + livebait + (1 + zg + nofish| ID),
+      dispformula = ~xb,
+      data = fish,
+      family = truncated_poisson()
+    )
+
+    expect_equal(
+      find_random_slopes(m),
+      list(random = "xb", zero_inflated_random = c("zg", "nofish"))
+    )
+  })
+
 }

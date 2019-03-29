@@ -41,7 +41,7 @@ if (require("testthat") && require("insight") && require("gee")) {
 
   test_that("get_data", {
     expect_equal(nrow(get_data(m1)), 54)
-    expect_equal(colnames(get_data(m1)), c("breaks", "wool", "tension"))
+    expect_equal(colnames(get_data(m1)), c("breaks", "tension", "wool"))
   })
 
   test_that("find_formula", {
@@ -81,5 +81,9 @@ if (require("testthat") && require("insight") && require("gee")) {
 
   test_that("is_multivariate", {
     expect_false(is_multivariate(m1))
+  })
+
+  test_that("find_algorithm", {
+    expect_equal(find_algorithm(m1), list(algorithm = "ML"))
   })
 }
