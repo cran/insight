@@ -16,7 +16,7 @@
 #'    with zero-inflated and/or dispersion formula, or to models with instrumental
 #'    variable (so called fixed-effects regressions). May be abbreviated.
 #' @param flatten Logical, if \code{TRUE}, the values are returned
-#'    as character vector, not as list.
+#'    as character vector, not as list. Duplicated values are removed.
 #'
 #' @return A list of character vectors that represent the name(s) of the
 #'    predictor variables. Depending on the combination of the arguments
@@ -59,7 +59,7 @@ find_predictors <- function(x, effects = c("fixed", "random", "all"), component 
     l <- return_vars(f)
   }
 
-  if (is_empty_object(l)) {
+  if (is_empty_object(l) || is_empty_object(compact_list(l))) {
     return(NULL)
   }
 
@@ -92,7 +92,8 @@ return_vars <- function(f) {
   l <- compact_list(l)
 
   # remove constants
-  l <- lapply(l, setdiff, "pi")
+  l <- lapply(l, .remove_values, c("pi", "1", "0"))
+  l <- lapply(l, .remove_values, c(0, 1))
   names(l) <- names(f)[!empty_elements]
 
   l

@@ -4,6 +4,17 @@ trim <- function(x) gsub("^\\s+|\\s+$", "", x)
 # remove NULL elements from lists
 compact_list <- function(x) x[!sapply(x, function(i) length(i) == 0 || is.null(i) || any(i == "NULL"))]
 
+
+# remove values from vector
+.remove_values <- function(x, values) {
+  remove <- x %in% values
+  if (any(remove)) {
+    x <- x[-remove]
+  }
+  x
+}
+
+
 # is string empty?
 is_empty_string <- function(x) {
   x <- x[!is.na(x)]
@@ -56,21 +67,49 @@ merge_dataframes <- function(data, ..., replace = TRUE) {
       reihenfolge <- c(reihenfolge, xl)
     }
     # sort data frame
-    x <- x[, order(reihenfolge)]
+    x <- x[, order(reihenfolge), drop = FALSE]
   }
 
   x
 }
 
 
-# removes random effects from a formula that which is in lmer-notation
+# removes random effects from a formula that is in lmer-notation
+#' @importFrom stats terms drop.terms update
 get_fixed_effects <- function(f) {
-  trim(gsub("\\+(\\s)*\\((.*)\\)", "", deparse(f, width.cutoff = 500)))
+  f_string <- deparse(f, width.cutoff = 500)
+
+  # for some wird brms-models, we also have a "|" in the response.
+  # in order to check for "|" only in the random effects, we have
+  # to remove the response here...
+
+  f_response <- deparse(f[[2]], width.cutoff = 500)
+  f_predictors <- sub(f_response, "", f_string, fixed = TRUE)
+
+  if (grepl("|", f_predictors, fixed = TRUE)) {
+    # intercept only model, w/o "1" in formula notation?
+    # e.g. "Reaction ~ (1 + Days | Subject)"
+    if (length(f) > 2 && grepl("^\\(", deparse(f[[3]], width.cutoff = 500))) {
+      trim(paste0(as.character(f[[2]]), " ~ 1"))
+    } else if (!grepl("\\+(\\s)*\\((.*)\\)", f_string)) {
+      f_terms <- stats::terms(f)
+      pos_bar <- grep("|", labels(f_terms), fixed = TRUE)
+      no_bars <- stats::drop.terms(f_terms, pos_bar, keep.response = TRUE)
+      stats::update(f_terms, no_bars)
+    } else {
+      trim(gsub("\\+(\\s)*\\((.*)\\)", "", f_string))
+    }
+  } else {
+    trim(gsub("\\+(\\s)*\\((.*)\\)", "", f_string))
+  }
 }
 
 
 # extract random effects from formula
-get_model_random <- function(f, split_nested = FALSE, is_MCMCglmm = FALSE) {
+get_model_random <- function(f, split_nested = FALSE, model) {
+
+  is_special <- inherits(model, c("MCMCglmm", "gee", "LORgee", "felm", "feis", "BFBayesFactor"))
+
   if (!requireNamespace("lme4", quietly = TRUE)) {
     stop("To use this function, please install package 'lme4'.")
   }
@@ -82,14 +121,14 @@ get_model_random <- function(f, split_nested = FALSE, is_MCMCglmm = FALSE) {
 
   re <- sapply(lme4::findbars(f), deparse, width.cutoff = 500)
 
-  if (is_MCMCglmm && is_empty_object(re)) {
+  if (is_special && is_empty_object(re)) {
     re <- all.vars(f[[2L]])
     if (length(re) > 1) {
       re <- as.list(re)
       split_nested <- FALSE
     }
   } else {
-    re <- trim(substring(re, regexpr(pattern = "\\|", re) + 1))
+    re <- trim(substring(re, max(gregexpr(pattern = "\\|", re)[[1]]) + 1))
   }
 
   if (split_nested) {
@@ -107,10 +146,10 @@ get_model_random <- function(f, split_nested = FALSE, is_MCMCglmm = FALSE) {
 get_group_factor <- function(x, f) {
   if (is.list(f)) {
     f <- lapply(f, function(.x) {
-      get_model_random(.x, split_nested = TRUE, is_MCMCglmm = inherits(x, c("MCMCglmm", "gee", "felm")))
+      get_model_random(.x, split_nested = TRUE, x)
     })
   } else {
-    f <- get_model_random(f, split_nested = TRUE, is_MCMCglmm = inherits(x, c("MCMCglmm", "gee", "felm")))
+    f <- get_model_random(f, split_nested = TRUE, x)
   }
 
   if (is.null(f)) return(NULL)
@@ -129,26 +168,27 @@ get_group_factor <- function(x, f) {
 # times accross this package
 #' @keywords internal
 .get_elements <- function(effects, component) {
-  elements <- c("conditional", "random", "zero_inflated", "zero_inflated_random", "dispersion", "instruments", "simplex", "smooth_terms", "sigma", "nu", "tau", "correlation")
+  elements <- c("conditional", "random", "zero_inflated", "zero_inflated_random", "dispersion", "instruments", "simplex", "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes")
 
   elements <- switch(
     effects,
     all = elements,
-    fixed = elements[elements %in% c("conditional", "zero_inflated", "dispersion", "instruments", "simplex", "smooth_terms", "correlation")],
+    fixed = elements[elements %in% c("conditional", "zero_inflated", "dispersion", "instruments", "simplex", "smooth_terms", "correlation", "slopes")],
     random = elements[elements %in% c("random", "zero_inflated_random")]
   )
 
   elements <- switch(
     component,
     all = elements,
-    conditional = elements[elements %in% c("conditional", "random")],
+    conditional = elements[elements %in% c("conditional", "random", "slopes")],
     zi = ,
     zero_inflated = elements[elements %in% c("zero_inflated", "zero_inflated_random")],
     dispersion = elements[elements == "dispersion"],
     instruments = elements[elements == "instruments"],
     simplex = elements[elements == "simplex"],
     smooth_terms = elements[elements == "smooth_terms"],
-    correlation = elements[elements == "correlation"]
+    correlation = elements[elements == "correlation"],
+    slopes = elements[elements == "slopes"]
   )
 
   elements

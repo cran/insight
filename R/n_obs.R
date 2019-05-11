@@ -4,6 +4,7 @@
 #' @description This method returns the number of observation that were used
 #'   to fit the model, as numeric value.
 #'
+#' @param weighted For survey designs, returns the weighted sample size.
 #' @inheritParams find_predictors
 #' @inheritParams find_formula
 #'
@@ -39,6 +40,16 @@ n_obs.default <- function(x, ...) {
 }
 
 
+#' @rdname n_obs
+#' @export
+n_obs.svyolr <- function(x, weighted = FALSE, ...) {
+  if (weighted)
+    stats::nobs(x)
+  else
+    nrow(stats::model.frame(x))
+}
+
+
 #' @export
 n_obs.gamm <- function(x, ...) {
   x <- x$gam
@@ -50,6 +61,30 @@ n_obs.gamm <- function(x, ...) {
 #' @export
 n_obs.lmRob <- function(x, ...) {
   length(x$fitted.values)
+}
+
+
+#' @export
+n_obs.LORgee <- function(x, ...) {
+  x$nobs
+}
+
+
+#' @export
+n_obs.biglm <- function(x, ...) {
+  x$n
+}
+
+
+#' @export
+n_obs.bigglm <- function(x, ...) {
+  x$n
+}
+
+
+#' @export
+n_obs.gbm <- function(x, ...) {
+  length(x$fit)
 }
 
 
@@ -98,6 +133,12 @@ n_obs.coxme <- function(x, ...) {
 #' @export
 n_obs.felm <- function(x, ...) {
   x$N
+}
+
+
+#' @export
+n_obs.feis <- function(x, ...) {
+  length(x$fitted.values)
 }
 
 

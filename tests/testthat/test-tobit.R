@@ -1,8 +1,8 @@
 if (require("testthat") && require("insight") && require("AER")) {
-  context("insight, model_info")
+  context("insight, AER")
 
-  data("Affairs")
-  m1 <- tobit(affairs ~ age + yearsmarried + religiousness + occupation + rating, data = Affairs)
+  data("Affairs", package = "AER")
+  m1 <- AER::tobit(affairs ~ age + yearsmarried + religiousness + occupation + rating, data = Affairs)
 
   test_that("model_info", {
     expect_true(model_info(m1)$is_linear)

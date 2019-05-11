@@ -54,6 +54,18 @@ link_function.default <- function(x, ...) {
 
 
 #' @export
+link_function.speedglm <- function(x, ...) {
+  stats::family(x)$linkfun
+}
+
+
+#' @export
+link_function.bigglm <- function(x, ...) {
+  stats::family(x)$linkfun
+}
+
+
+#' @export
 link_function.multinom <- function(x, ...) {
   stats::make.link(link = "logit")$linkfun
 }
@@ -87,6 +99,24 @@ link_function.clm2 <- function(x, ...) {
 
 
 #' @export
+link_function.LORgee <- function(x, ...) {
+  if (grepl(pattern = "logit", x = x$link, fixed = TRUE)) {
+    link <- "logit"
+  } else if (grepl(pattern = "probit", x = x$link, fixed = TRUE)) {
+    link <- "probit"
+  } else if (grepl(pattern = "cauchit", x = x$link, fixed = TRUE)) {
+    link <- "cauchit"
+  } else if (grepl(pattern = "cloglog", x = x$link, fixed = TRUE)) {
+    link <- "cloglog"
+  } else {
+    link <- "logit"
+  }
+
+  stats::make.link(link)$linkfun
+}
+
+
+#' @export
 link_function.clmm <- function(x, ...) {
   stats::make.link(link = get_ordinal_link(x))$linkfun
 }
@@ -106,6 +136,19 @@ link_function.vglm <- function(x, ...) {
 
 #' @export
 link_function.polr <- function(x, ...) {
+  link <- switch(
+    x$method,
+    logistic = "logit",
+    probit = "probit",
+    "log"
+  )
+
+  stats::make.link(link)$linkfun
+}
+
+
+#' @export
+link_function.svyolr <- function(x, ...) {
   link <- switch(
     x$method,
     logistic = "logit",
@@ -178,6 +221,12 @@ link_function.truncreg <- function(x, ...) {
 
 
 #' @export
+link_function.censReg <- function(x, ...) {
+  stats::gaussian(link = "identity")$linkfun
+}
+
+
+#' @export
 link_function.gls <- function(x, ...) {
   stats::gaussian(link = "identity")$linkfun
 }
@@ -220,7 +269,25 @@ link_function.survreg <- function(x, ...) {
 
 
 #' @export
+link_function.psm <- function(x, ...) {
+  .make_tobit_family(x)$linkfun
+}
+
+
+#' @export
 link_function.lmRob <- function(x, ...) {
+  stats::gaussian(link = "identity")$linkfun
+}
+
+
+#' @export
+link_function.speedlm <- function(x, ...) {
+  stats::gaussian(link = "identity")$linkfun
+}
+
+
+#' @export
+link_function.biglm <- function(x, ...) {
   stats::gaussian(link = "identity")$linkfun
 }
 
@@ -256,6 +323,12 @@ link_function.felm <- function(x, ...) {
 
 
 #' @export
+link_function.feis <- function(x, ...) {
+  stats::gaussian(link = "identity")$linkfun
+}
+
+
+#' @export
 link_function.ivreg <- function(x, ...) {
   stats::gaussian(link = "identity")$linkfun
 }
@@ -276,6 +349,23 @@ link_function.coxph <- function(x, ...) {
 #' @export
 link_function.coxme <- function(x, ...) {
   stats::make.link("logit")$linkfun
+}
+
+
+#' @importFrom stats poisson
+#' @export
+link_function.gbm <- function(x, ...) {
+  switch(
+    x$distribution$name,
+    laplace = ,
+    tdist = ,
+    gaussian = stats::gaussian(link = "identity")$linkfun,
+    poisson = stats::poisson(link = "log")$linkfun,
+    huberized = ,
+    adaboost = ,
+    coxph = ,
+    bernoulli = stats::make.link("logit")$linkfun
+  )
 }
 
 

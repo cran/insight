@@ -19,6 +19,7 @@
 #'      \item \code{instruments}, for fixed-effects regressions like \code{ivreg}, \code{felm} or \code{plm}, the instrumental variables
 #'      \item \code{cluster}, for fixed-effects regressions like \code{felm}, the cluster specification
 #'      \item \code{correlation}, for models with correlation-component like \code{gls}, the formula that describes the correlation structure
+#'      \item \code{slopes}, for fixed-effects individual-slope models like \code{feis}, the formula for the slope parameters
 #'    }
 #'
 #' @note For models of class \code{lme} or \code{gls} the correlation-component
@@ -125,6 +126,27 @@ find_formula.gee <- function(x, ...) {
 
 
 #' @export
+find_formula.LORgee <- function(x, ...) {
+  tryCatch({
+    id <- parse(text = deparse(x$call, width.cutoff = 500))[[1]]$id
+
+    # alternative regex-patterns that also work:
+    # sub(".*id ?= ?(.*?),.*", "\\1", deparse(x$call, width.cutoff = 500), perl = TRUE)
+    # sub(".*\\bid\\s*=\\s*([^,]+).*", "\\1", deparse(x$call, width.cutoff = 500), perl = TRUE)
+
+    list(
+      conditional = stats::formula(x),
+      random = stats::as.formula(paste0("~", id))
+    )
+  },
+  error = function(x) {
+    NULL
+  }
+  )
+}
+
+
+#' @export
 find_formula.ivreg <- function(x, ...) {
   tryCatch({
     f <- deparse(stats::formula(x), width.cutoff = 500)
@@ -166,13 +188,24 @@ find_formula.iv_robust <- function(x, ...) {
 find_formula.plm <- function(x, ...) {
   tryCatch({
     f <- deparse(stats::formula(x), width.cutoff = 500)
-    cond <- trim(substr(f, start = 0, stop = regexpr(pattern = "\\|", f) - 1))
-    instr <- trim(substr(f, regexpr(pattern = "\\|", f) + 1, stop = 10000L))
+    bar_pos <- regexpr(pattern = "\\|", f)
 
-    list(
-      conditional = stats::as.formula(cond),
-      instruments = stats::as.formula(paste0("~", instr))
-    )
+    if (bar_pos == -1)
+      stop_pos <- nchar(f) + 1
+    else
+      stop_pos <- bar_pos
+
+    cond <- trim(substr(f, start = 0, stop =  stop_pos - 1))
+    instr <- trim(substr(f, stop_pos + 1, stop = 10000L))
+
+    if (is_empty_string(instr)) {
+      list(conditional = stats::as.formula(cond))
+    } else {
+      list(
+        conditional = stats::as.formula(cond),
+        instruments = stats::as.formula(paste0("~", instr))
+      )
+    }
   },
   error = function(x) {
     NULL
@@ -221,7 +254,7 @@ find_formula.felm <- function(x, ...) {
   }
 
   if (length(f_parts) > 2) {
-    f.instr <- trim(f_parts[3])
+    f.instr <- paste0("~", trim(f_parts[3]))
   } else {
     f.instr <- NULL
   }
@@ -233,10 +266,36 @@ find_formula.felm <- function(x, ...) {
   }
 
   compact_list(list(
-    conditional = as.formula(f.cond),
-    random = as.formula(f.rand),
-    instruments = as.formula(f.instr),
-    cluster = as.formula(f.clus)
+    conditional = stats::as.formula(f.cond),
+    random = stats::as.formula(f.rand),
+    instruments = stats::as.formula(f.instr),
+    cluster = stats::as.formula(f.clus)
+  ))
+}
+
+
+#' @export
+find_formula.feis <- function(x, ...) {
+  f <- deparse(stats::formula(x), width.cutoff = 500L)
+  f_parts <- unlist(strsplit(f, "(?<!\\()\\|(?![\\w\\s\\+\\(~]*[\\)])", perl = TRUE))
+
+  f.cond <- trim(f_parts[1])
+  id <- parse(text = deparse(x$call, width.cutoff = 500))[[1]]$id
+
+  # alternative regex-patterns that also work:
+  # sub(".*id ?= ?(.*?),.*", "\\1", deparse(x$call, width.cutoff = 500), perl = TRUE)
+  # sub(".*\\bid\\s*=\\s*([^,]+).*", "\\1", deparse(x$call, width.cutoff = 500), perl = TRUE)
+
+  if (length(f_parts) > 1) {
+    f.slopes <- paste0("~", trim(f_parts[2]))
+  } else {
+    f.slopes <- NULL
+  }
+
+  compact_list(list(
+    conditional = stats::as.formula(f.cond),
+    slopes = stats::as.formula(f.slopes),
+    random = stats::as.formula(paste0("~", id))
   ))
 }
 
@@ -599,6 +658,36 @@ get_stanmv_formula <- function(f) {
   }
 
   f.cond <- stats::as.formula(get_fixed_effects(f.cond))
+
+  compact_list(list(
+    conditional = f.cond,
+    random = f.random
+  ))
+}
+
+
+#' @importFrom utils tail
+#' @export
+find_formula.BFBayesFactor <- function(x, ...) {
+  if (.classify_BFBayesFactor(x) == "linear") {
+
+    fcond <- utils::tail(x@numerator, 1)[[1]]@identifier$formula
+    dt <- utils::tail(x@numerator, 1)[[1]]@dataTypes
+    frand <- names(dt)[which(dt == "random")]
+
+    if (!is_empty_object(frand)) {
+      f.random <- stats::as.formula(paste0("~", frand))
+      fcond <- sub(frand, "", fcond, fixed = TRUE)
+      fcond <- gsub("(.*)\\+$", "\\1", trim(fcond))
+      f.cond <- stats::as.formula(trim(fcond))
+    } else {
+      f.random <- NULL
+      f.cond <- stats::as.formula(fcond)
+    }
+
+  } else{
+    return(NULL)
+  }
 
   compact_list(list(
     conditional = f.cond,

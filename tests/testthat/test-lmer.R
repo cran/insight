@@ -172,18 +172,22 @@ if (require("testthat") && require("insight") && require("lme4")) {
   test_that("get_variance", {
 
     skip_on_cran()
+    skip_on_travis()
 
-    expect_equal(get_variance(m1), list(
-      var.fixed = 908.95336262316459396970,
-      var.random = 1698.23306388298283309268,
-      var.residual = 654.94079585243218843971,
-      var.distribution = 654.94079585243218843971,
-      var.dispersion = 0,
-      var.intercept = c(Subject = 611.89760710463770010392),
-      var.slope = c(Subject.Days = 35.08106944030500073950),
-      cor.slope_intercept = c(Subject = 0.06561803142425107205)
-    ),
-    tolerance = 1e-4)
+    expect_equal(
+      get_variance(m1),
+      list(
+        var.fixed = 908.953362623165,
+        var.random = 1698.23306388298,
+        var.residual = 654.940795852432,
+        var.distribution = 654.940795852432,
+        var.dispersion = 0,
+        var.intercept = c(Subject = 611.897607104638),
+        var.slope = c(Subject.Days = 35.081069440305),
+        cor.slope_intercept = c(Subject = 0.0656180314242511)
+      ),
+      tolerance = 1e-4
+    )
 
     expect_equal(get_variance_fixed(m1), c(var.fixed = 908.95336262316459396970), tolerance = 1e-4)
     expect_equal(get_variance_random(m1), c(var.random = 1698.23306388298283309268), tolerance = 1e-4)
@@ -195,19 +199,17 @@ if (require("testthat") && require("insight") && require("lme4")) {
     expect_equal(get_variance_slope(m1), c(var.slope.Subject.Days = 35.08106944030500073950), toleance = 1e-4)
     expect_equal(get_correlation_slope_intercept(m1), c(cor.slope_intercept.Subject = 0.06561803), toleance = 1e-4)
 
-    expect_equal(get_variance(m2), list(
-      var.fixed = 899.71188516552831515583,
-      var.random = 1412.32769480994716104760,
-      var.residual = 928.81331970697453925823,
-      var.distribution = 928.81331970697453925823,
-      var.dispersion = 0,
-      var.intercept = c(
-        `mysubgrp:mygrp` = 12.61789198780912713005,
-        Subject = 1376.88290392979729404033,
-        mygrp = 22.82689889233859048545
-      )
-    ),
-    tolerance = 1e-4)
+    expect_warning(expect_equal(
+      get_variance(m2),
+      list(
+        var.fixed = 889.329700216337,
+        var.residual = 941.817768377025,
+        var.distribution = 941.817768377025,
+        var.dispersion = 0,
+        var.intercept = c(`mysubgrp:mygrp` = 0, Subject = 1357.35782386825, mygrp = 24.4073139080596)
+      ),
+      tolerance = 1e-4,
+    ))
   })
 
   test_that("find_algorithm", {
@@ -219,5 +221,66 @@ if (require("testthat") && require("insight") && require("lme4")) {
   test_that("find_random_slopes", {
     expect_equal(find_random_slopes(m1), list(random = "Days"))
     expect_null(find_random_slopes(m2))
+  })
+
+
+  m3 <- lme4::lmer(
+    Reaction ~ (1 + Days | Subject),
+    data = sleepstudy
+  )
+
+  m4 <- lme4::lmer(
+    Reaction ~ (1 | mygrp / mysubgrp) + (1 | Subject),
+    data = sleepstudy
+  )
+
+  m5 <- lme4::lmer(
+    Reaction ~ 1 + (1 + Days | Subject),
+    data = sleepstudy
+  )
+
+  m6 <- lme4::lmer(
+    Reaction ~ 1 + (1 | mygrp / mysubgrp) + (1 | Subject),
+    data = sleepstudy
+  )
+
+  test_that("find_formula", {
+    expect_equal(
+      find_formula(m3),
+      list(
+        conditional = as.formula("Reaction ~ 1"),
+        random = as.formula("~1 + Days | Subject")
+      )
+    )
+
+    expect_equal(
+      find_formula(m5),
+      list(
+        conditional = as.formula("Reaction ~ 1"),
+        random = as.formula("~1 + Days | Subject")
+      )
+    )
+
+    expect_equal(
+      find_formula(m4),
+      list(
+        conditional = as.formula("Reaction ~ 1"),
+        random = list(
+          as.formula("~1 | mysubgrp:mygrp"),
+          as.formula("~1 | mygrp"),
+          as.formula("~1 | Subject")
+        )
+    ))
+
+    expect_equal(
+      find_formula(m6),
+      list(
+        conditional = as.formula("Reaction ~ 1"),
+        random = list(
+          as.formula("~1 | mysubgrp:mygrp"),
+          as.formula("~1 | mygrp"),
+          as.formula("~1 | Subject")
+        )
+      ))
   })
 }

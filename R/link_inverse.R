@@ -60,6 +60,18 @@ link_inverse.glm <- function(x, ...) {
 
 
 #' @export
+link_inverse.speedglm <- function(x, ...) {
+  stats::family(x)$linkinv
+}
+
+
+#' @export
+link_inverse.bigglm <- function(x, ...) {
+  stats::family(x)$linkinv
+}
+
+
+#' @export
 link_inverse.gamlss <- function(x, ...) {
   faminfo <- get(x$family[1], asNamespace("gamlss"))()
   faminfo$mu.linkinv
@@ -80,6 +92,12 @@ link_inverse.gam <- function(x, ...) {
 
 #' @export
 link_inverse.lm <- function(x, ...) {
+  stats::gaussian(link = "identity")$linkinv
+}
+
+
+#' @export
+link_inverse.biglm <- function(x, ...) {
   stats::gaussian(link = "identity")$linkinv
 }
 
@@ -193,7 +211,19 @@ link_inverse.survreg <- function(x, ...) {
 
 
 #' @export
+link_inverse.psm <- function(x, ...) {
+  .make_tobit_family(x)$linkinv
+}
+
+
+#' @export
 link_inverse.mixed <- function(x, ...) {
+  stats::gaussian(link = "identity")$linkinv
+}
+
+
+#' @export
+link_inverse.censReg <- function(x, ...) {
   stats::gaussian(link = "identity")$linkinv
 }
 
@@ -223,6 +253,12 @@ link_inverse.felm <- function(x, ...) {
 
 
 #' @export
+link_inverse.feis <- function(x, ...) {
+  stats::gaussian(link = "identity")$linkinv
+}
+
+
+#' @export
 link_inverse.gls <- function(x, ...) {
   stats::gaussian(link = "identity")$linkinv
 }
@@ -241,6 +277,12 @@ link_inverse.lmrob <- function(x, ...) {
 
 
 #' @export
+link_inverse.speedlm <- function(x, ...) {
+  stats::gaussian(link = "identity")$linkinv
+}
+
+
+#' @export
 link_inverse.betareg <- function(x, ...) {
   x$link$mean$linkinv
 }
@@ -250,6 +292,32 @@ link_inverse.betareg <- function(x, ...) {
 link_inverse.polr <- function(x, ...) {
   link <- x$method
   if (link == "logistic") link <- "logit"
+  stats::make.link(link)$linkinv
+}
+
+
+#' @export
+link_inverse.svyolr <- function(x, ...) {
+  link <- x$method
+  if (link == "logistic") link <- "logit"
+  stats::make.link(link)$linkinv
+}
+
+
+#' @export
+link_inverse.LORgee <- function(x, ...) {
+  if (grepl(pattern = "logit", x = x$link, fixed = TRUE)) {
+    link <- "logit"
+  } else if (grepl(pattern = "probit", x = x$link, fixed = TRUE)) {
+    link <- "probit"
+  } else if (grepl(pattern = "cauchit", x = x$link, fixed = TRUE)) {
+    link <- "cauchit"
+  } else if (grepl(pattern = "cloglog", x = x$link, fixed = TRUE)) {
+    link <- "cloglog"
+  } else {
+    link <- "logit"
+  }
+
   stats::make.link(link)$linkinv
 }
 
@@ -333,6 +401,22 @@ link_inverse.multinom <- function(x, ...) {
 link_inverse.stanmvreg <- function(x, ...) {
   fam <- stats::family(x)
   lapply(fam, function(.x) .x$linkinv)
+}
+
+
+#' @export
+link_inverse.gbm <- function(x, ...) {
+  switch(
+    x$distribution$name,
+    laplace = ,
+    tdist = ,
+    gaussian = stats::gaussian(link = "identity")$linkinv,
+    poisson = stats::poisson(link = "log")$linkinv,
+    huberized = ,
+    adaboost = ,
+    coxph = ,
+    bernoulli = stats::make.link("logit")$linkinv
+  )
 }
 
 

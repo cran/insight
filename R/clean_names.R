@@ -29,7 +29,8 @@ clean_names <- function(x) {
 
 #' @export
 clean_names.default <- function(x) {
-  unname(find_terms(x, flatten = TRUE))
+  cleaned <- unname(find_terms(x, flatten = TRUE))
+  .remove_values(cleaned, c("1", "0"))
 }
 
 
@@ -46,19 +47,24 @@ clean_names.character <- function(x) {
   # for gam-smoothers/loess, remove s()- and lo()-function in column name
   # for survival, remove strata(), and so on...
   pattern <- c(
-    "as.factor", "factor", "offset", "log-log", "log", "lag", "diff",
-    "pspline", "poly", "strata", "scale", "interaction", "sqrt",
+    "as.factor", "factor", "offset", "log1p", "log10", "log2", "log-log",
+    "log", "lag", "diff", "pspline", "poly", "catg", "asis", "matrx", "pol",
+    "strata", "strat", "scale", "scored", "interaction", "sqrt", "lsp", "rcs",
     "pb", "lo", "bs", "ns", "t2", "te", "ti", "tt", "mi", "mo", "gp", "s", "I"
   )
 
   # do we have a "log()" pattern here? if yes, get capture region
   # which matches the "cleaned" variable name
-  sapply(1:length(x), function(i) {
+  cleaned <- sapply(1:length(x), function(i) {
     for (j in 1:length(pattern)) {
+      # remove possible  namespace
+      x[i] <- sub("(.*)::(.*)", "\\2", x[i])
       if (pattern[j] == "offset") {
         x[i] <- trim(unique(sub("^offset\\(([^-+ )]*).*", "\\1", x[i])))
       } else if (pattern[j] == "I") {
         if (!ignore_asis) x[i] <- trim(unique(sub("I\\((\\w*).*", "\\1", x[i])))
+      } else if (pattern[j] == "asis") {
+        if (!ignore_asis) x[i] <- trim(unique(sub("asis\\((\\w*).*", "\\1", x[i])))
       } else if (pattern[j] == "log-log") {
         x[i] <- trim(unique(sub("^log\\(log\\(([^,)]*)).*", "\\1", x[i])))
       } else {
@@ -69,4 +75,7 @@ clean_names.character <- function(x) {
     # for coxme-models, remove random-effect things...
     trim(sub("^(.*)\\|(.*)", "\\2", x[i]))
   })
+
+  # remove for random intercept only models
+  .remove_values(cleaned, c("1", "0"))
 }

@@ -4,6 +4,8 @@
 #' @description Returns the point estimates (or posterior samples for Bayesian
 #'    models) from a model.
 #'
+#' @param iterations Number of posterior draws.
+#' @param progress Display progress.
 #' @param ... Currently not used.
 #' @inheritParams find_predictors
 #' @inheritParams find_parameters
@@ -61,6 +63,18 @@ get_parameters.default <- function(x, ...) {
   error = function(x) {
     NULL
   }
+  )
+}
+
+
+#' @export
+get_parameters.gbm <- function(x, ...) {
+  s <- summary(x, plotit = FALSE)
+  data.frame(
+    parameter = as.character(s$var),
+    estimate = s$rel.inf,
+    stringsAsFactors = FALSE,
+    row.names = NULL
   )
 }
 
@@ -426,14 +440,32 @@ get_parameters.MixMod <- function(x, effects = c("fixed", "random"), component =
   effects <- match.arg(effects)
   component <- match.arg(component)
 
+  has_zeroinf <- !is.null(find_formula(x)[["zero_inflated"]])
+
+  if (component %in% c("zi", "zero_inflated") && !has_zeroinf) {
+    stop("Model has no zero-inflation component.", call. = FALSE)
+  }
+
+
   re.names <- dimnames(lme4::ranef(x))[[2]]
   re <- lme4::ranef(x)
+
+
+  if (has_zeroinf) {
+    z_inflated <- lme4::fixef(x, sub_model = "zero_part")
+    z_inflated_random <- re[grepl("^zi_", re.names, perl = TRUE)]
+  } else {
+    z_inflated <- NULL
+    z_inflated_random <- NULL
+    component <- "conditional"
+  }
+
 
   l <- compact_list(list(
     conditional = lme4::fixef(x, sub_model = "main"),
     random = re[grepl("^(?!zi_)", re.names, perl = TRUE)],
-    zero_inflated = lme4::fixef(x, sub_model = "zero_part"),
-    zero_inflated_random = re[grepl("^zi_", re.names, perl = TRUE)]
+    zero_inflated = z_inflated,
+    zero_inflated_random = z_inflated_random
   ))
 
   fixed <- data.frame(
@@ -443,12 +475,16 @@ get_parameters.MixMod <- function(x, effects = c("fixed", "random"), component =
     stringsAsFactors = FALSE
   )
 
-  fixedzi <- data.frame(
-    parameter = names(l$zero_inflated),
-    estimate = unname(l$zero_inflated),
-    component = "zero_inflated",
-    stringsAsFactors = FALSE
-  )
+  if (has_zeroinf) {
+    fixedzi <- data.frame(
+      parameter = names(l$zero_inflated),
+      estimate = unname(l$zero_inflated),
+      component = "zero_inflated",
+      stringsAsFactors = FALSE
+    )
+  } else {
+    fixedzi <- NULL
+  }
 
   if (effects == "fixed") {
     switch(
@@ -529,7 +565,7 @@ get_parameters.brmsfit <- function(x, effects = c("fixed", "random", "all"), com
   component <- match.arg(component)
 
   if (is_multivariate(x)) {
-    parms <- find_parameters(x, parameters)
+    parms <- find_parameters(x, flatten = FALSE, parameters = parameters)
     elements <- .get_elements(effects, component)
     as.data.frame(x)[unlist(lapply(parms, function(i) i[elements]))]
   } else {
@@ -548,10 +584,41 @@ get_parameters.stanreg <- function(x, effects = c("fixed", "random", "all"), par
 
 #' @rdname get_parameters
 #' @export
+get_parameters.BFBayesFactor <- function(x, iterations = 4000, progress = FALSE, ...) {
+  if (!requireNamespace("BayesFactor", quietly = TRUE)) {
+    stop("This function needs `BayesFactor` to be installed.")
+  }
+
+  if (.classify_BFBayesFactor(x) == "correlation") {
+    posteriors <-
+      as.data.frame(suppressMessages(
+        BayesFactor::posterior(x, iterations = iterations, progress = progress, ...)
+      ))
+    data.frame("rho" = posteriors$rho)
+  } else if (.classify_BFBayesFactor(x) == "ttest") {
+    posteriors <-
+      as.data.frame(suppressMessages(
+        BayesFactor::posterior(x, iterations = iterations, progress = progress, ...)
+      ))
+    data.frame("Difference" = posteriors$mu)
+  } else if (.classify_BFBayesFactor(x) == "meta") {
+    posteriors <-
+      as.data.frame(suppressMessages(
+        BayesFactor::posterior(x, iterations = iterations, progress = progress, ...)
+      ))
+    data.frame("Effect" = posteriors$delta)
+  } else{
+    NULL
+  }
+}
+
+
+#' @rdname get_parameters
+#' @export
 get_parameters.stanmvreg <- function(x, effects = c("fixed", "random", "all"), parameters = NULL, ...) {
   effects <- match.arg(effects)
   elements <- .get_elements(effects, "all")
-  parms <- find_parameters(x, parameters)
+  parms <- find_parameters(x, flatten = FALSE, parameters = parameters)
 
   for (i in names(parms)) {
     parms[[i]]$conditional <- sprintf("%s|%s", i, parms[[i]]$conditional)
@@ -569,7 +636,7 @@ get_parameters.stanmvreg <- function(x, effects = c("fixed", "random", "all"), p
 
 get_parms_data <- function(x, effects, component, parameters = NULL) {
   elements <- .get_elements(effects, component)
-  unlist(find_parameters(x, parameters)[elements])
+  unlist(find_parameters(x, flatten = FALSE, parameters = parameters)[elements])
 }
 
 

@@ -34,20 +34,20 @@ get_priors.stanreg <- function(x, ...) {
     do.call(cbind, x)
   })
 
-  prior_info <- as.data.frame(do.call(rbind, l), stringsAsFactors = FALSE)
+  prior_info <- Reduce(function(x, y) merge(x, y, all = TRUE), l)
   prior_info$parameter <- find_parameters(x)$conditional
 
-  prior_info <- prior_info[, c("parameter", "dist", "location", "scale", "adjusted_scale")]
+  prior_info <- prior_info[, intersect(c("parameter", "dist", "location", "scale", "adjusted_scale"), colnames(prior_info))]
 
-  names(prior_info) <- gsub("dist", "distribution", names(prior_info))
-  names(prior_info) <- gsub("df", "DoF", names(prior_info))
+  colnames(prior_info) <- gsub("dist", "distribution", colnames(prior_info))
+  colnames(prior_info) <- gsub("df", "DoF", colnames(prior_info))
 
   as.data.frame(lapply(prior_info, function(x) {
     if (.is_numeric_character(x))
-      as.numeric(x)
+      as.numeric(as.character(x))
     else
-      x
-  }))
+      as.character(x)
+  }), stringsAsFactors = FALSE)
 }
 
 
@@ -56,6 +56,29 @@ get_priors.brmsfit <- function(x, ...) {
   ## TODO needs testing for edge cases - check if "coef"-column is
   # always empty for intercept-class
   x$prior$coef[x$prior$class == "Intercept"] <- "(Intercept)"
+
+
+  # get default prior for all parameters, if defined
+  def_prior_b <- which(x$prior$prior != "" & x$prior$class == "b" & x$prior$coef == "")
+
+  # check which parameters have a default prior
+  need_def_prior <- which(x$prior$prior == "" & x$prior$class == "b" & x$prior$coef != "")
+
+  if (!is_empty_object(def_prior_b) && !is_empty_object(need_def_prior)) {
+    x$prior$prior[need_def_prior] <- x$prior$prior[def_prior_b]
+  }
+
+
+  # get default prior for all parameters, if defined
+  def_prior_intercept <- which(x$prior$prior != "" & x$prior$class == "Intercept" & x$prior$coef == "")
+
+  # check which parameters have a default prior
+  need_def_prior <- which(x$prior$prior == "" & x$prior$class == "Intercept" & x$prior$coef != "")
+
+  if (!is_empty_object(def_prior_intercept) && !is_empty_object(need_def_prior)) {
+    x$prior$prior[need_def_prior] <- x$prior$prior[def_prior_intercept]
+  }
+
 
   prior_info <- x$prior[x$prior$coef != "" & x$prior$class %in% c("b", "(Intercept)"), ]
 
@@ -66,15 +89,39 @@ get_priors.brmsfit <- function(x, ...) {
 
   prior_info <- prior_info[, c("parameter", "distribution", "location", "scale")]
 
-  as.data.frame(lapply(prior_info, function(x) {
+  pinfo <- as.data.frame(lapply(prior_info, function(x) {
     if (.is_numeric_character(x))
-      as.numeric(x)
+      as.numeric(as.character(x))
     else
-      x
-  }))
+      as.character(x)
+  }), stringsAsFactors = FALSE)
+
+  if (is_empty_string(pinfo$distribution)) {
+    print_color("Model was fitted with uninformative (flat) priors!\n", "red")
+  }
+
+  pinfo
 }
 
 
+#' @importFrom utils tail
+#' @export
+get_priors.BFBayesFactor <- function(x, ...) {
+  prior <- compact_list(utils::tail(x@numerator, 1)[[1]]@prior[[1]])
+
+  data.frame(
+    parameters = names(prior),
+    distribution = "Cauchy",
+    location = 0,
+    scale = unlist(prior),
+    stringsAsFactors = FALSE
+  )
+}
+
+
+
+#' @importFrom stats na.omit
 .is_numeric_character <- function(x) {
-  is.character(x) && !anyNA(suppressWarnings(as.numeric(na.omit(x))))
+  (is.character(x) && !anyNA(suppressWarnings(as.numeric(stats::na.omit(x))))) ||
+    (is.factor(x) && !anyNA(suppressWarnings(as.numeric(levels(x)))))
 }

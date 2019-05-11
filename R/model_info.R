@@ -98,6 +98,20 @@ model_info.default <- function(x, ...) {
 }
 
 
+#' @importFrom stats family
+#' @export
+model_info.speedglm <- function(x, ...) {
+  faminfo <- stats::family(x)
+  make_family(
+    x = x,
+    fitfam = faminfo$family,
+    logit.link = faminfo$link == "logit",
+    link.fun = faminfo$link,
+    ...
+  )
+}
+
+
 #' @export
 model_info.glmmPQL <- function(x, ...) {
   faminfo <- x$family
@@ -147,6 +161,12 @@ model_info.tobit <- function(x, ...) {
 
 
 #' @export
+model_info.censReg <- function(x, ...) {
+  make_family(x, ...)
+}
+
+
+#' @export
 model_info.crch <- function(x, ...) {
   faminfo <- .make_tobit_family(x)
 
@@ -175,7 +195,39 @@ model_info.survreg <- function(x, ...) {
 
 
 #' @export
+model_info.LORgee <- function(x, ...) {
+  if (grepl(pattern = "logit", x = x$link, fixed = TRUE)) {
+    link <- "logit"
+  } else if (grepl(pattern = "probit", x = x$link, fixed = TRUE)) {
+    link <- "probit"
+  } else if (grepl(pattern = "cauchit", x = x$link, fixed = TRUE)) {
+    link <- "cauchit"
+  } else if (grepl(pattern = "cloglog", x = x$link, fixed = TRUE)) {
+    link <- "cloglog"
+  } else {
+    link <- "logit"
+  }
+
+  faminfo <- stats::binomial(link = link)
+
+  make_family(
+    x = x,
+    fitfam = faminfo$family,
+    logit.link = faminfo$link == "logit",
+    link.fun = faminfo$link,
+    ...
+  )
+}
+
+
+#' @export
 model_info.htest <- function(x, ...) {
+  make_family(x, ...)
+}
+
+
+#' @export
+model_info.BFBayesFactor <- function(x, ...) {
   make_family(x, ...)
 }
 
@@ -230,6 +282,12 @@ model_info.truncreg <- function(x, ...) {
 
 #' @export
 model_info.lmRob <- function(x, ...) {
+  make_family(x, ...)
+}
+
+
+#' @export
+model_info.speedlm <- function(x, ...) {
   make_family(x, ...)
 }
 
@@ -393,6 +451,12 @@ model_info.felm <- function(x, ...) {
 
 
 #' @export
+model_info.feis <- function(x, ...) {
+  make_family(x, ...)
+}
+
+
+#' @export
 model_info.ivreg <- function(x, ...) {
   make_family(x, ...)
 }
@@ -417,6 +481,30 @@ model_info.coxph <- function(x, ...) {
     fitfam = "survival",
     logit.link = TRUE,
     link.fun = NULL,
+    ...
+  )
+}
+
+
+#' @export
+model_info.gbm <- function(x, ...) {
+  faminfo <- switch(
+    x$distribution$name,
+    laplace = ,
+    tdist = ,
+    gaussian = list(name = "gaussian", logit = FALSE, link = NULL),
+    coxph = list(name = "survival", logit = TRUE, link = NULL),
+    poisson = list(name = "poisson", logit = FALSE, link = "log"),
+    huberized = ,
+    adaboost = ,
+    bernoulli = list(name = "binomial", logit = TRUE, link = "logit"),
+  )
+
+  make_family(
+    x = x,
+    fitfam = faminfo$name,
+    logit.link = faminfo$logit,
+    link.fun = faminfo$link,
     ...
   )
 }
@@ -461,7 +549,23 @@ model_info.lrm <- function(x, ...) {
 
 #' @export
 model_info.polr <- function(x, ...) {
-  faminfo <- stats::binomial(link = "logit")
+  link <- x$method
+  if (link == "logistic") link <- "logit"
+  faminfo <- stats::binomial(link = link)
+  make_family(
+    x = x,
+    fitfam = faminfo$family,
+    logit.link = faminfo$link == "logit",
+    link.fun = faminfo$link,
+    ...
+  )
+}
+
+
+#' @export
+model_info.svyolr <- function(x, ...) {
+  l <- switch(x$method, logistic = "logit", x$method)
+  faminfo <- stats::binomial(link = l)
   make_family(
     x = x,
     fitfam = faminfo$family,
@@ -633,6 +737,7 @@ model_info.mlm <- function(x, ...) {
 }
 
 
+#' @keywords internal
 make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, logit.link = FALSE, multi.var = FALSE, link.fun = "identity", ...) {
   # create logical for family
   binom_fam <-
@@ -669,7 +774,7 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, logit.link = F
     grepl("^truncated", fitfam, perl = TRUE)
 
   is.ordinal <-
-    inherits(x, c("polr", "clm", "clm2", "clmm", "gmnl", "mlogit", "multinom")) |
+    inherits(x, c("svyolr", "polr", "clm", "clm2", "clmm", "gmnl", "mlogit", "multinom", "LORgee")) |
       fitfam %in% c("cumulative", "cratio", "sratio", "acat", "ordinal", "multinomial")
 
   is.categorical <- fitfam == "categorical"
@@ -728,6 +833,23 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, logit.link = F
   }
 
 
+  is_meta <- FALSE
+
+  if (inherits(x, "BFBayesFactor")) {
+    is_ttest <- FALSE
+    is_correlation <- FALSE
+
+    obj_type <- .classify_BFBayesFactor(x)
+
+    if (obj_type == "correlation")
+      is_correlation <- TRUE
+    else if (obj_type == "ttest")
+      is_ttest <- TRUE
+    else if (obj_type == "meta")
+      is_meta <- TRUE
+  }
+
+
   list(
     is_binomial = binom_fam & !neg_bin_fam,
     is_count = poisson_fam | neg_bin_fam,
@@ -737,7 +859,7 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, logit.link = F
     is_exponential = exponential_fam,
     is_logit = logit.link,
     is_probit = link.fun == "probit",
-    is_censored = inherits(x, c("tobit", "crch")),
+    is_censored = inherits(x, c("tobit", "crch", "censReg")),
     is_linear = linear_model,
     is_tweedie = tweedie_model,
     is_zeroinf = zero.inf,
@@ -747,10 +869,11 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, logit.link = F
     is_mixed = !is.null(find_random(x)),
     is_multivariate = multi.var,
     is_trial = is.trial,
-    is_bayesian = inherits(x, c("brmsfit", "stanfit", "stanreg", "stanmvreg", "bmerMod")),
+    is_bayesian = inherits(x, c("brmsfit", "stanfit", "stanreg", "stanmvreg", "bmerMod", "BFBayesFactor")),
     is_anova = inherits(x, c("aov", "aovlist")),
     is_ttest = is_ttest,
     is_correlation = is_correlation,
+    is_meta = is_meta,
     link_function = link.fun,
     family = fitfam,
     n_obs = n_obs(x),
@@ -783,4 +906,24 @@ get_ordinal_link <- function(x) {
 
   if (x$dist == "weibull") f$family <- "weibull"
   f
+}
+
+
+#' @keywords internal
+.classify_BFBayesFactor <- function(x) {
+  if (!requireNamespace("BayesFactor", quietly = TRUE)) {
+    stop("This function needs `BayesFactor` to be installed.")
+  }
+
+  if (any(class(x@denominator) %in% c("BFcorrelation"))) {
+    "correlation"
+  } else if (any(class(x@denominator) %in% c("BFoneSample", "BFindepSample"))) {
+    "ttest"
+  } else if (any(class(x@denominator) %in% c("BFmetat"))) {
+    "meta"
+  } else if (any(class(x@denominator) %in% c("BFlinearModel"))) {
+    "linear"
+  } else{
+    class(x@denominator)
+  }
 }

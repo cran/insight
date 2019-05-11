@@ -1,6 +1,6 @@
 .runThisTest <- Sys.getenv("RunAllinsightTests") == "yes"
+# if (.runThisTest) {
 
-if (.runThisTest && Sys.getenv("USER") != "travis") {
   if (suppressWarnings(
     require("testthat") &&
       require("insight") &&
@@ -8,12 +8,18 @@ if (.runThisTest && Sys.getenv("USER") != "travis") {
   )) {
     context("insight, rstanarm")
 
-    set.seed(123)
-    m1 <- stan_glmer(
-      cbind(incidence, size - incidence) ~ size + period + (1 | herd),
-      data = lme4::cbpp, family = binomial, QR = TRUE,
-      chains = 2, cores = 1, seed = 12345, iter = 500, refresh = 0
-    )
+    m1 <- insight::download_model("stanreg_merMod_5")
+    m2 <- insight::download_model("stanreg_glm_6")
+    m3 <- insight::download_model("stanreg_glm_1")
+
+    test_that("get_priors", {
+      expect_equal(colnames(get_priors(m1)), c("parameter", "distribution", "location", "scale"))
+      expect_equal(colnames(get_priors(m2)), c("parameter", "distribution", "location", "scale", "adjusted_scale"))
+      expect_equal(get_priors(m1)$scale, c(10.0, 2.5, 2.5, 2.5, 2.5), tolerance = 1e-3)
+      expect_equal(get_priors(m2)$adjusted_scale, c(4.3586628, 0.4119705, 0.5360283, 0.6172700, 1.0896657, 1.0896657), tolerance = 1e-3)
+      expect_equal(get_priors(m3)$adjusted_scale, c(NA, 2.555042), tolerance = 1e-3)
+    })
+
 
     test_that("clean_names", {
       expect_identical(clean_names(m1), c("incidence", "size", "period", "herd"))
@@ -35,6 +41,14 @@ if (.runThisTest && Sys.getenv("USER") != "travis") {
     test_that("get_response", {
       expect_equal(nrow(get_response(m1)), 56)
       expect_equal(colnames(get_response(m1)), c("incidence", "size"))
+    })
+
+    test_that("find_random", {
+      expect_equal(find_random(m1), list(random = "herd"))
+    })
+
+    test_that("get_random", {
+      expect_equal(get_random(m1), lme4::cbpp[, "herd", drop = FALSE])
     })
 
     test_that("find_terms", {
@@ -68,6 +82,7 @@ if (.runThisTest && Sys.getenv("USER") != "travis") {
           random = sprintf("b[(Intercept) herd:%i]", 1:15)
         )
       )
+      expect_equal(find_parameters(m1, flatten = TRUE), c("(Intercept)", "size", "period2", "period3", "period4", sprintf("b[(Intercept) herd:%i]", 1:15)))
     })
 
     test_that("find_paramaters", {
@@ -93,7 +108,7 @@ if (.runThisTest && Sys.getenv("USER") != "travis") {
       expect_equal(nrow(get_data(m1)), 56)
       expect_equal(
         colnames(get_data(m1)),
-        c("cbind(incidence, size - incidence)", "size", "period", "herd", "incidence")
+        c("incidence", "size", "period", "herd")
       )
     })
 
@@ -135,4 +150,5 @@ if (.runThisTest && Sys.getenv("USER") != "travis") {
       ))
     })
   }
-}
+
+# }

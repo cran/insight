@@ -83,6 +83,18 @@ find_algorithm.logistf <- function(x, ...) {
 
 
 #' @export
+find_algorithm.bigglm <- function(x, ...) {
+  list("algorithm" = "ML")
+}
+
+
+#' @export
+find_algorithm.biglm <- function(x, ...) {
+  list("algorithm" = "OLS")
+}
+
+
+#' @export
 find_algorithm.gamlss <- function(x, ...) {
   list("algorithm" = as.character(x$method)[1])
 }
@@ -100,6 +112,18 @@ find_algorithm.gam <- function(x, ...) {
 #' @export
 find_algorithm.lm <- function(x, ...) {
   list("algorithm" = "OLS")
+}
+
+
+#' @export
+find_algorithm.speedlm <- function(x, ...) {
+  list("algorithm" = x$method)
+}
+
+
+#' @export
+find_algorithm.speedglm <- function(x, ...) {
+  list("algorithm" = x$method)
 }
 
 
@@ -124,6 +148,12 @@ find_algorithm.rqss <- function(x, ...) {
 #' @export
 find_algorithm.glm <- function(x, ...) {
   list("algorithm" = "ML")
+}
+
+
+#' @export
+find_algorithm.LORgee <- function(x, ...) {
+  list("algorithm" = "Fisher's scoring ML")
 }
 
 
