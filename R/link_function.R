@@ -29,7 +29,7 @@ link_function <- function(x, ...) {
 
 #' @export
 link_function.default <- function(x, ...) {
-  if (inherits(x, "list") && obj_has_name(x, "gam")) {
+  if (inherits(x, "list") && .obj_has_name(x, "gam")) {
     x <- x$gam
     class(x) <- c(class(x), c("glm", "lm"))
   }
@@ -68,6 +68,24 @@ link_function.bigglm <- function(x, ...) {
 #' @export
 link_function.multinom <- function(x, ...) {
   stats::make.link(link = "logit")$linkfun
+}
+
+
+#' @export
+link_function.BBreg <- function(x, ...) {
+  stats::make.link(link = "logit")$linkfun
+}
+
+
+#' @export
+link_function.BBmm <- function(x, ...) {
+  stats::make.link(link = "logit")$linkfun
+}
+
+
+#' @export
+link_function.glimML <- function(x, ...) {
+  stats::make.link(link = x@link)$linkfun
 }
 
 
@@ -342,6 +360,12 @@ link_function.plm <- function(x, ...) {
 
 #' @export
 link_function.coxph <- function(x, ...) {
+  stats::make.link("logit")$linkfun
+}
+
+
+#' @export
+link_function.survfit <- function(x, ...) {
   stats::make.link("logit")$linkfun
 }
 

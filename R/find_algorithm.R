@@ -89,6 +89,26 @@ find_algorithm.bigglm <- function(x, ...) {
 
 
 #' @export
+find_algorithm.BBreg <- function(x, ...) {
+  list("algorithm" = "ML")
+}
+
+
+#' @export
+find_algorithm.glimML <- function(x, ...) {
+  list("algorithm" = "ML")
+}
+
+
+#' @export
+find_algorithm.BBmm <- function(x, ...) {
+  method <- parse(text = .safe_deparse(x$call))[[1]]$method
+  if (is.null(method)) method <- "BB-NR"
+  list(algorithm = "extended likelihood", optimizer = method)
+}
+
+
+#' @export
 find_algorithm.biglm <- function(x, ...) {
   list("algorithm" = "OLS")
 }

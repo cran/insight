@@ -1,6 +1,6 @@
 .runThisTest <- Sys.getenv("RunAllinsightTests") == "yes"
 
-# if (.runThisTest) {
+if (.runThisTest || Sys.getenv("USER") == "travis") {
 
   if (suppressWarnings(
     require("testthat") &&
@@ -85,13 +85,13 @@
       expect_equal(colnames(get_response(m5)), c("count", "count2"))
     })
 
-    test_that("find_terms", {
-      expect_identical(find_terms(m1), list(response = "count", conditional = c("Age", "Base", "Trt"), random = "patient"))
-      expect_identical(find_terms(m1, effects = "fixed"), list(response = "count", conditional = c("Age", "Base", "Trt")))
-      expect_null(find_terms(m1, component = "zi"))
+    test_that("find_variables", {
+      expect_identical(find_variables(m1), list(response = "count", conditional = c("Age", "Base", "Trt"), random = "patient"))
+      expect_identical(find_variables(m1, effects = "fixed"), list(response = "count", conditional = c("Age", "Base", "Trt")))
+      expect_null(find_variables(m1, component = "zi"))
 
       expect_identical(
-        find_terms(m2),
+        find_variables(m2),
         list(
           response = c(SepalLength = "Sepal.Length", SepalWidth = "Sepal.Width"),
           SepalLength = list(conditional = c("Petal.Length", "Sepal.Width", "Species")),
@@ -99,11 +99,11 @@
         )
       )
 
-      expect_identical(find_terms(m2, flatten = TRUE), c("Sepal.Length", "Sepal.Width", "Petal.Length", "Species"))
-      expect_identical(find_terms(m3), list(response = c("r", "n"), conditional = c("treat", "c2")))
+      expect_identical(find_variables(m2, flatten = TRUE), c("Sepal.Length", "Sepal.Width", "Petal.Length", "Species"))
+      expect_identical(find_variables(m3), list(response = c("r", "n"), conditional = c("treat", "c2")))
 
       expect_identical(
-        find_terms(m4),
+        find_variables(m4),
         list(
           response = "count",
           conditional = c("child", "camper"),
@@ -113,7 +113,7 @@
         )
       )
 
-      expect_identical(find_terms(m4, flatten = TRUE), c("count", "child", "camper", "persons"))
+      expect_identical(find_variables(m4, flatten = TRUE), c("count", "child", "camper", "persons"))
     })
 
     test_that("n_obs", {
@@ -159,8 +159,8 @@
         find_parameters(m2),
         structure(
           list(
-            SepalLength = list(conditional = c("b_SepalLength_Intercept", "b_SepalLength_Petal.Length", "b_SepalLength_Sepal.Width", "b_SepalLength_Speciesversicolor", "b_SepalLength_Speciesvirginica")),
-            SepalWidth = list(conditional = c("b_SepalWidth_Intercept", "b_SepalWidth_Speciesversicolor", "b_SepalWidth_Speciesvirginica"))
+            SepalLength = list(conditional = c("b_SepalLength_Intercept", "b_SepalLength_Petal.Length", "b_SepalLength_Sepal.Width", "b_SepalLength_Speciesversicolor", "b_SepalLength_Speciesvirginica"), sigma = "sigma_SepalLength"),
+            SepalWidth = list(conditional = c("b_SepalWidth_Intercept", "b_SepalWidth_Speciesversicolor", "b_SepalWidth_Speciesvirginica"), sigma = "sigma_SepalWidth")
           ),
           "is_mv" = "1"
         )
@@ -276,9 +276,9 @@
       expect_true(is_multivariate(m5))
     })
 
-    test_that("find_variables", {
+    test_that("find_terms", {
       expect_equal(
-        find_variables(m2),
+        find_terms(m2),
         list(
           SepalLength = list(
             response = "Sepal.Length",
@@ -318,14 +318,98 @@
         get_priors(m3),
         data.frame(
           parameter = c("c2", "treat1", "treat1:c2"),
-          distribution = c("", "", ""),
-          location = c("", "", ""),
-          scale = c("", "", ""),
+          distribution = c("uniform", "uniform", "uniform"),
+          location = c(0, 0, 0),
+          scale = c(NA, NA, NA),
           stringsAsFactors = FALSE
+        )
+      )
+    })
+
+
+    test_that("clean_parameters", {
+      expect_equal(
+        clean_parameters(m4),
+        structure(
+          list(
+            Parameter = c(
+              "b_Intercept", "b_child", "b_camper", "r_persons.1.Intercept.", "r_persons.2.Intercept.",
+              "r_persons.3.Intercept.", "r_persons.4.Intercept.",  "b_zi_Intercept", "b_zi_child",
+              "b_zi_camper", "r_persons__zi.1.Intercept.", "r_persons__zi.2.Intercept.", "r_persons__zi.3.Intercept.",
+              "r_persons__zi.4.Intercept."
+            ),
+            Effects = c("fixed", "fixed", "fixed", "random", "random", "random", "random",
+                        "fixed", "fixed", "fixed", "random", "random", "random", "random"),
+            Component = c("conditional", "conditional", "conditional", "conditional", "conditional", "conditional",
+                          "conditional", "zero_inflated", "zero_inflated", "zero_inflated", "zero_inflated",
+                          "zero_inflated", "zero_inflated", "zero_inflated"),
+            Group = c("", "", "", "Intercept: persons", "Intercept: persons", "Intercept: persons",
+                      "Intercept: persons", "", "", "", "Intercept: persons", "Intercept: persons",
+                      "Intercept: persons", "Intercept: persons"),
+            Cleaned_Parameter = c("(Intercept)", "child", "camper", "persons.1", "persons.2",
+                                  "persons.3", "persons.4", "(Intercept)", "child", "camper",
+                                  "persons.1", "persons.2", "persons.3", "persons.4")
+          ),
+          class = c("clean_parameters", "data.frame"),
+          row.names = c(NA, -14L)
+        )
+      )
+
+      expect_equal(
+        clean_parameters(m5),
+        structure(
+          list(
+            Parameter = c(
+              "b_count_Intercept", "b_count_child", "b_count_camper", "b_count2_Intercept", "b_count2_child",
+              "b_count2_livebait", "r_persons__count.1.Intercept.", "r_persons__count.2.Intercept.", "r_persons__count.3.Intercept.",
+              "r_persons__count.4.Intercept.", "r_persons__count2.1.Intercept.", "r_persons__count2.2.Intercept.",
+              "r_persons__count2.3.Intercept.", "r_persons__count2.4.Intercept.", "b_zi_count_Intercept",
+              "b_zi_count_camper", "b_zi_count2_Intercept", "b_zi_count2_child", "r_persons__zi_count.1.Intercept.",
+              "r_persons__zi_count.2.Intercept.", "r_persons__zi_count.3.Intercept.", "r_persons__zi_count.4.Intercept.",
+              "r_persons__zi_count2.1.Intercept.", "r_persons__zi_count2.2.Intercept.", "r_persons__zi_count2.3.Intercept.",
+              "r_persons__zi_count2.4.Intercept."
+            ),
+            Effects = c(
+              "fixed", "fixed", "fixed", "fixed", "fixed", "fixed", "random", "random",
+              "random", "random", "random", "random", "random", "random", "fixed", "fixed",
+              "fixed", "fixed", "random", "random", "random", "random", "random", "random",
+              "random", "random"
+            ),
+            Component = c(
+              "conditional", "conditional", "conditional", "conditional", "conditional",
+              "conditional", "conditional", "conditional", "conditional", "conditional",
+              "conditional", "conditional", "conditional", "conditional", "zero_inflated",
+              "zero_inflated", "zero_inflated", "zero_inflated", "zero_inflated", "zero_inflated",
+              "zero_inflated", "zero_inflated", "zero_inflated", "zero_inflated", "zero_inflated",
+              "zero_inflated"
+            ),
+            Group = c(
+              "", "", "", "", "", "", "Intercept: persons", "Intercept: persons", "Intercept: persons",
+              "Intercept: persons", "Intercept: persons2", "Intercept: persons2", "Intercept: persons2",
+              "Intercept: persons2", "", "", "", "", "Intercept: persons", "Intercept: persons",
+              "Intercept: persons", "Intercept: persons", "Intercept: persons2", "Intercept: persons2",
+              "Intercept: persons2", "Intercept: persons2"
+            ),
+            Response = c(
+              "count", "count", "count", "count2", "count2", "count2", "count", "count",
+              "count", "count", "count2", "count2", "count2", "count2", "count", "count",
+              "count2", "count2", "count", "count", "count", "count", "count2", "count2",
+              "count2", "count2"
+            ),
+            Cleaned_Parameter = c(
+              "(Intercept)", "child", "camper", "(Intercept)", "child", "livebait",
+              "persons.1", "persons.2", "persons.3", "persons.4", "persons2.1", "persons2.2",
+              "persons2.3", "persons2.4", "(Intercept)", "camper", "(Intercept)", "child",
+              "persons.1", "persons.2", "persons.3", "persons.4", "persons2.1", "persons2.2",
+              "persons2.3", "persons2.4"
+            )
+          ),
+          class = c("clean_parameters", "data.frame"),
+          row.names = c(NA, -26L)
         )
       )
     })
 
   }
 
-# }
+}

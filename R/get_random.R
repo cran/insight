@@ -1,4 +1,4 @@
-#' @title Get the data from random effects terms
+#' @title Get the data from random effects
 #' @name get_random
 #'
 #' @description Returns the data from all random effects terms.
@@ -28,7 +28,7 @@
 #' head(get_random(m))
 #' @export
 get_random <- function(x) {
-  if (is_empty_object(find_random(x))) {
+  if (.is_empty_object(find_random(x))) {
     warning("No random effects found in model.")
     return(NULL)
   }

@@ -1,45 +1,64 @@
 # remove trailing/leading spaces from character vectors
-trim <- function(x) gsub("^\\s+|\\s+$", "", x)
+.trim <- function(x) gsub("^\\s+|\\s+$", "", x)
+
+
 
 # remove NULL elements from lists
-compact_list <- function(x) x[!sapply(x, function(i) length(i) == 0 || is.null(i) || any(i == "NULL"))]
+.compact_list <- function(x) x[!sapply(x, function(i) length(i) == 0 || is.null(i) || any(i == "NULL"))]
+
 
 
 # remove values from vector
 .remove_values <- function(x, values) {
   remove <- x %in% values
   if (any(remove)) {
-    x <- x[-remove]
+    x <- x[!remove]
   }
   x
 }
 
 
+
 # is string empty?
-is_empty_string <- function(x) {
+.is_empty_string <- function(x) {
   x <- x[!is.na(x)]
   length(x) == 0 || all(nchar(x) == 0)
 }
 
+
 # is string empty?
-is_empty_object <- function(x) {
+.is_empty_object <- function(x) {
+  if (is.list(x)) {
+    x <- tryCatch(
+      {.compact_list(x)},
+      error = function(x) { x }
+    )
+  }
+  # this is an ugly fix because of ugly tibbles
+  if (inherits(x, c("tbl_df", "tbl"))) x <- as.data.frame(x)
   x <- suppressWarnings(x[!is.na(x)])
   length(x) == 0 || is.null(x)
 }
 
+
+
 # does string contain pattern?
-string_contains <- function(pattern, x) {
+.string_contains <- function(pattern, x) {
   pattern <- paste0("\\Q", pattern, "\\E")
   grepl(pattern, x, perl = TRUE)
 }
 
+
+
 # has object an element with given name?
-obj_has_name <- function(x, name) {
+.obj_has_name <- function(x, name) {
   name %in% names(x)
 }
 
+
+
 # merge data frames, remove double columns
-merge_dataframes <- function(data, ..., replace = TRUE) {
+.merge_dataframes <- function(data, ..., replace = TRUE) {
   # check for identical column names
   tmp <- cbind(...)
 
@@ -76,59 +95,60 @@ merge_dataframes <- function(data, ..., replace = TRUE) {
 
 # removes random effects from a formula that is in lmer-notation
 #' @importFrom stats terms drop.terms update
-get_fixed_effects <- function(f) {
-  f_string <- deparse(f, width.cutoff = 500)
+.get_fixed_effects <- function(f) {
+  f_string <- .safe_deparse(f)
 
   # for some wird brms-models, we also have a "|" in the response.
   # in order to check for "|" only in the random effects, we have
   # to remove the response here...
 
-  f_response <- deparse(f[[2]], width.cutoff = 500)
+  f_response <- .safe_deparse(f[[2]])
   f_predictors <- sub(f_response, "", f_string, fixed = TRUE)
 
   if (grepl("|", f_predictors, fixed = TRUE)) {
     # intercept only model, w/o "1" in formula notation?
     # e.g. "Reaction ~ (1 + Days | Subject)"
-    if (length(f) > 2 && grepl("^\\(", deparse(f[[3]], width.cutoff = 500))) {
-      trim(paste0(as.character(f[[2]]), " ~ 1"))
+    if (length(f) > 2 && grepl("^\\(", .safe_deparse(f[[3]]))) {
+      .trim(paste0(.safe_deparse(f[[2]]), " ~ 1"))
     } else if (!grepl("\\+(\\s)*\\((.*)\\)", f_string)) {
       f_terms <- stats::terms(f)
       pos_bar <- grep("|", labels(f_terms), fixed = TRUE)
       no_bars <- stats::drop.terms(f_terms, pos_bar, keep.response = TRUE)
       stats::update(f_terms, no_bars)
     } else {
-      trim(gsub("\\+(\\s)*\\((.*)\\)", "", f_string))
+      .trim(gsub("\\+(\\s)*\\((.*)\\)", "", f_string))
     }
   } else {
-    trim(gsub("\\+(\\s)*\\((.*)\\)", "", f_string))
+    .trim(gsub("\\+(\\s)*\\((.*)\\)", "", f_string))
   }
 }
 
 
-# extract random effects from formula
-get_model_random <- function(f, split_nested = FALSE, model) {
 
-  is_special <- inherits(model, c("MCMCglmm", "gee", "LORgee", "felm", "feis", "BFBayesFactor"))
+# extract random effects from formula
+.get_model_random <- function(f, split_nested = FALSE, model) {
+
+  is_special <- inherits(model, c("MCMCglmm", "gee", "LORgee", "felm", "feis", "BFBayesFactor", "BBmm", "glimML"))
 
   if (!requireNamespace("lme4", quietly = TRUE)) {
     stop("To use this function, please install package 'lme4'.")
   }
 
-  if (identical(deparse(f, width.cutoff = 500), "~0") ||
-    identical(deparse(f, width.cutoff = 500), "~1")) {
+  if (identical(.safe_deparse(f), "~0") ||
+    identical(.safe_deparse(f), "~1")) {
     return(NULL)
   }
 
-  re <- sapply(lme4::findbars(f), deparse, width.cutoff = 500)
+  re <- sapply(lme4::findbars(f), .safe_deparse)
 
-  if (is_special && is_empty_object(re)) {
+  if (is_special && .is_empty_object(re)) {
     re <- all.vars(f[[2L]])
     if (length(re) > 1) {
       re <- as.list(re)
       split_nested <- FALSE
     }
   } else {
-    re <- trim(substring(re, max(gregexpr(pattern = "\\|", re)[[1]]) + 1))
+    re <- .trim(substring(re, max(gregexpr(pattern = "\\|", re)[[1]]) + 1))
   }
 
   if (split_nested) {
@@ -139,41 +159,41 @@ get_model_random <- function(f, split_nested = FALSE, model) {
 }
 
 
+
 # in case we need the random effects terms as formula (symbol),
 # not as character string, then call this functions instead of
-# get_model_random()
-#' @keywords internal
-get_group_factor <- function(x, f) {
+# .get_model_random()
+.get_group_factor <- function(x, f) {
   if (is.list(f)) {
     f <- lapply(f, function(.x) {
-      get_model_random(.x, split_nested = TRUE, x)
+      .get_model_random(.x, split_nested = TRUE, x)
     })
   } else {
-    f <- get_model_random(f, split_nested = TRUE, x)
+    f <- .get_model_random(f, split_nested = TRUE, x)
   }
 
   if (is.null(f)) return(NULL)
 
   if (is.list(f)) {
-    f <- lapply(f, as.symbol)
+    f <- lapply(f, function(i) sapply(i, as.symbol))
   } else {
-    f <- as.symbol(f)
+    f <- sapply(f, as.symbol)
   }
 
   f
 }
 
 
+
 # to reduce redundant code, I extract this part which is used several
 # times accross this package
-#' @keywords internal
 .get_elements <- function(effects, component) {
   elements <- c("conditional", "random", "zero_inflated", "zero_inflated_random", "dispersion", "instruments", "simplex", "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes")
 
   elements <- switch(
     effects,
     all = elements,
-    fixed = elements[elements %in% c("conditional", "zero_inflated", "dispersion", "instruments", "simplex", "smooth_terms", "correlation", "slopes")],
+    fixed = elements[elements %in% c("conditional", "zero_inflated", "dispersion", "instruments", "simplex", "smooth_terms", "correlation", "slopes", "sigma")],
     random = elements[elements %in% c("random", "zero_inflated_random")]
   )
 
@@ -186,6 +206,7 @@ get_group_factor <- function(x, f) {
     dispersion = elements[elements == "dispersion"],
     instruments = elements[elements == "instruments"],
     simplex = elements[elements == "simplex"],
+    sigma = elements[elements == "sigma"],
     smooth_terms = elements[elements == "smooth_terms"],
     correlation = elements[elements == "correlation"],
     slopes = elements[elements == "slopes"]
@@ -195,12 +216,30 @@ get_group_factor <- function(x, f) {
 }
 
 
+
 # return data from a data frame that is in the environment,
 # and subset the data, if necessary
-#' @keywords internal
 .get_data_from_env <- function(x) {
-  dat <- eval(x$call$data, envir = parent.frame())
-  if (obj_has_name(x$call, "subset")) {
+  # first try, parent frame
+  dat <- tryCatch(
+    {
+      eval(x$call$data, envir = parent.frame())
+    },
+    error = function(e) { NULL }
+  )
+
+  if (is.null(dat)) {
+    # second try, global env
+    dat <- tryCatch(
+      {
+        eval(x$call$data, envir = globalenv())
+      },
+      error = function(e) { NULL }
+    )
+  }
+
+
+  if (!is.null(dat) && .obj_has_name(x$call, "subset")) {
     dat <- subset(dat, subset = eval(x$call$subset))
   }
 
@@ -208,10 +247,10 @@ get_group_factor <- function(x, f) {
 }
 
 
+
 # checks if a mixed model fit is singular or not. Need own function,
 # because lme4::isSingular() does not work with glmmTMB
 #' @importFrom stats na.omit
-#' @keywords internal
 .is_singular <- function(x, vals, tolerance = 1e-5) {
   if (!requireNamespace("lme4", quietly = TRUE)) {
     stop("Package `lme4` needs to be installed to compute variances for mixed models.", call. = FALSE)
@@ -241,8 +280,8 @@ get_group_factor <- function(x, f) {
 }
 
 
+
 # Filter parameters from Stan-model fits
-#' @keywords internal
 .filter_pars <- function(l, parameters = NULL) {
   if (!is.null(parameters)) {
     is_mv <- attr(l, "is_mv", exact = TRUE)
@@ -260,6 +299,7 @@ get_group_factor <- function(x, f) {
 }
 
 
+
 .filter_pars_univariate <- function(l, parameters) {
   lapply(l, function(component) {
     unlist(unname(sapply(
@@ -273,28 +313,73 @@ get_group_factor <- function(x, f) {
 }
 
 
+
 # remove column
-#' @keywords internal
 .remove_column <- function(data, variables) {
   data[, -which(colnames(data) %in% variables), drop = FALSE]
 }
 
 
+
 .grep_smoothers <- function(x) {
   grepl("^(s\\()", x, perl = TRUE) |
+    grepl("^(ti\\()", x, perl = TRUE) |
+    grepl("^(te\\()", x, perl = TRUE) |
+    grepl("^(t2\\()", x, perl = TRUE) |
     grepl("^(gam::s\\()", x, perl = TRUE) |
     grepl("^(VGAM::s\\()", x, perl = TRUE) |
     grepl("^(mgcv::s\\()", x, perl = TRUE) |
+    grepl("^(mgcv::ti\\()", x, perl = TRUE) |
+    grepl("^(mgcv::te\\()", x, perl = TRUE) |
     grepl("^(brms::s\\()", x, perl = TRUE) |
+    grepl("^(brms::t2\\()", x, perl = TRUE) |
     grepl("^(smooth_sd\\[)", x, perl = TRUE)
 }
 
 
+
 .grep_non_smoothers <- function(x) {
   grepl("^(?!(s\\())", x, perl = TRUE) &
+    grepl("^(?!(ti\\())", x, perl = TRUE) &
+    grepl("^(?!(te\\())", x, perl = TRUE) &
+    grepl("^(?!(t2\\())", x, perl = TRUE) &
     grepl("^(?!(gam::s\\())", x, perl = TRUE) &
     grepl("^(?!(VGAM::s\\())", x, perl = TRUE) &
     grepl("^(?!(mgcv::s\\())", x, perl = TRUE) &
+    grepl("^(?!(mgcv::ti\\())", x, perl = TRUE) &
+    grepl("^(?!(mgcv::te\\())", x, perl = TRUE) &
     grepl("^(?!(brms::s\\())", x, perl = TRUE) &
+    grepl("^(?!(brms::t2\\())", x, perl = TRUE) &
     grepl("^(?!(smooth_sd\\[))", x, perl = TRUE)
+}
+
+
+
+# .split_formula <- function(f) {
+#   rhs <- if (length(f) > 2)
+#     f[[3L]]
+#   else
+#     f[[2L]]
+#
+#   lapply(.extract_formula_parts(rhs), .safe_deparse)
+# }
+#
+#
+# .extract_formula_parts <- function(x, sep = "|") {
+#   if (is.null(x))
+#     return(NULL)
+#   rval <- list()
+#   if (length(x) > 1L && x[[1L]] == sep) {
+#     while (length(x) > 1L && x[[1L]] == sep) {
+#       rval <- c(x[[3L]], rval)
+#       x <- x[[2L]]
+#     }
+#   }
+#   c(x, rval)
+# }
+
+
+
+.safe_deparse <- function(string) {
+  paste0(sapply(deparse(string, width.cutoff = 500), .trim, simplify = TRUE), collapse = " ")
 }

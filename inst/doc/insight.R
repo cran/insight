@@ -7,11 +7,17 @@ knitr::opts_chunk$set(
 ## ----out.width="100%", echo=FALSE----------------------------------------
 knitr::include_graphics("insight_design_1.png", dpi = 72)
 
-## ----out.width="100%", echo=FALSE----------------------------------------
-knitr::include_graphics("insight_design_2.png", dpi = 72)
+## ----out.width="65%", echo=FALSE-----------------------------------------
+knitr::include_graphics("figure3a.png", dpi = 72)
 
-## ----out.width="100%", echo=FALSE----------------------------------------
-knitr::include_graphics("insight_design_3.png", dpi = 72)
+## ----out.width="80%", echo=FALSE-----------------------------------------
+knitr::include_graphics("figure3b.png", dpi = 72)
+
+## ----out.width="80%", echo=FALSE-----------------------------------------
+knitr::include_graphics("figure3c.png", dpi = 72)
+
+## ----out.width="65%", echo=FALSE-----------------------------------------
+knitr::include_graphics("figure3d.png", dpi = 72)
 
 ## ----echo=TRUE,message=FALSE,warning=FALSE-------------------------------
 library(insight)
@@ -29,7 +35,7 @@ for (i in 1:5) {
 }
 
 model <- lmer(
-  Reaction ~ Days + I(Days^2) + log1p(Weeks) +
+  Reaction ~ Days + I(Days^2) + log1p(Weeks) + cat +
     (1 | mygrp / mysubgrp) + 
     (1 + Days | Subject),
   data = sleepstudy

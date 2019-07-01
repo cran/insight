@@ -1,9 +1,11 @@
 .runThisTest <- Sys.getenv("RunAllinsightTests") == "yes"
-# if (.runThisTest) {
+
+if (.runThisTest || Sys.getenv("USER") == "travis") {
 
   if (suppressWarnings(
     require("testthat") &&
       require("insight") &&
+      require("BayesFactor") &&
       require("rstanarm")
   )) {
     context("insight, rstanarm")
@@ -12,12 +14,24 @@
     m2 <- insight::download_model("stanreg_glm_6")
     m3 <- insight::download_model("stanreg_glm_1")
 
+    data("puzzles")
+    m4 <- stan_glm(RT ~ color * shape, data = puzzles, prior = rstanarm::cauchy(0, c(3, 1, 2)), iter = 500, chains = 2)
+    m5 <- stan_glm(RT ~ color * shape, data = puzzles, prior = rstanarm::cauchy(0, c(1, 2, 3)), iter = 500, chains = 2)
+    m6 <- insight::download_model("stanreg_gamm4_1")
+
     test_that("get_priors", {
       expect_equal(colnames(get_priors(m1)), c("parameter", "distribution", "location", "scale"))
       expect_equal(colnames(get_priors(m2)), c("parameter", "distribution", "location", "scale", "adjusted_scale"))
       expect_equal(get_priors(m1)$scale, c(10.0, 2.5, 2.5, 2.5, 2.5), tolerance = 1e-3)
-      expect_equal(get_priors(m2)$adjusted_scale, c(4.3586628, 0.4119705, 0.5360283, 0.6172700, 1.0896657, 1.0896657), tolerance = 1e-3)
+      expect_equal(get_priors(m2)$adjusted_scale, c(4.35866284936698, 1.08966571234175, 1.08966571234175, 0.617270040728345, 0.536028320794122, 0.411970489526739), tolerance = 1e-3)
       expect_equal(get_priors(m3)$adjusted_scale, c(NA, 2.555042), tolerance = 1e-3)
+      expect_equal(get_priors(m4)$adjusted_scale, c(25.5992021152256, 7.67976063456768, 2.55992021152256, 5.11984042304512), tolerance = 1e-3)
+      expect_equal(get_priors(m5)$adjusted_scale, c(25.5992021152256, 2.55992021152256, 5.11984042304512, 7.67976063456768), tolerance = 1e-3)
+      expect_equal(
+        get_priors(m6),
+        data.frame(parameter = "(Intercept)", distribution = "normal",location = 0, scale = 10, adjusted_scale = 4.35866284936698, stringsAsFactors = FALSE, row.names = NULL),
+        tolerance = 1e-3
+      )
     })
 
 
@@ -55,19 +69,30 @@
       expect_identical(
         find_terms(m1),
         list(
+          response = "cbind(incidence, size - incidence)",
+          conditional = c("size", "period"),
+          random = "herd"
+        )
+      )
+    })
+
+    test_that("find_variables", {
+      expect_identical(
+        find_variables(m1),
+        list(
           response = c("incidence", "size"),
           conditional = c("size", "period"),
           random = "herd"
         )
       )
       expect_identical(
-        find_terms(m1, effects = "fixed"),
+        find_variables(m1, effects = "fixed"),
         list(
           response = c("incidence", "size"),
           conditional = c("size", "period")
         )
       )
-      expect_null(find_terms(m1, component = "zi"))
+      expect_null(find_variables(m1, component = "zi"))
     })
 
     test_that("n_obs", {
@@ -149,6 +174,22 @@
         warmup = 250
       ))
     })
+
+    test_that("clean_parameters", {
+      expect_equal(
+        clean_parameters(m2),
+        structure(list(Parameter = c("(Intercept)", "Speciesversicolor",
+          "Speciesvirginica", "Petal.Length", "Speciesversicolor:Petal.Length",
+          "Speciesvirginica:Petal.Length"), Effects = c("fixed", "fixed",
+          "fixed", "fixed", "fixed", "fixed"), Component = c("conditional",
+          "conditional", "conditional", "conditional", "conditional", "conditional"),
+          Cleaned_Parameter = c("(Intercept)", "Speciesversicolor",
+          "Speciesvirginica", "Petal.Length", "Speciesversicolor:Petal.Length",
+          "Speciesvirginica:Petal.Length")), class = c("clean_parameters", "data.frame"), row.names = c(NA, -6L)
+        )
+      )
+    })
+
   }
 
-# }
+}

@@ -9,7 +9,7 @@
 #'   with colon. See 'Examples'.
 #'
 #' @inheritParams find_predictors
-#' @inheritParams find_terms
+#' @inheritParams find_variables
 #'
 #' @return A list of character vectors that represent the name(s) of the
 #'    random effects (grouping factors). Depending on the model, the
@@ -45,13 +45,13 @@ find_random <- function(x, split_nested = FALSE, flatten = FALSE) {
     rn <- names(find_response(x))
     l <- lapply(rn, function(i) .find_random_effects(x, f[[i]], split_nested))
     names(l) <- rn
-    l <- compact_list(l)
+    l <- .compact_list(l)
   } else {
     l <- .find_random_effects(x, f, split_nested)
   }
 
 
-  if (is_empty_object(l)) {
+  if (.is_empty_object(l)) {
     return(NULL)
   }
 
@@ -64,31 +64,31 @@ find_random <- function(x, split_nested = FALSE, flatten = FALSE) {
 
 
 .find_random_effects <- function(x, f, split_nested) {
-  if (!obj_has_name(f, "random") && !obj_has_name(f, "zero_inflated_random")) {
+  if (!.obj_has_name(f, "random") && !.obj_has_name(f, "zero_inflated_random")) {
     return(NULL)
   }
 
-  if (obj_has_name(f, "random")) {
+  if (.obj_has_name(f, "random")) {
     if (is.list(f$random)) {
-      r1 <- unique(unlist(lapply(f$random, function(.x) get_model_random(.x, split_nested, x))))
+      r1 <- unique(unlist(lapply(f$random, function(.x) .get_model_random(.x, split_nested, x))))
     } else {
-      r1 <- unique(unlist(get_model_random(f$random, split_nested, x)))
+      r1 <- unique(unlist(.get_model_random(f$random, split_nested, x)))
     }
   } else {
     r1 <- NULL
   }
 
 
-  if (obj_has_name(f, "zero_inflated_random")) {
+  if (.obj_has_name(f, "zero_inflated_random")) {
     if (is.list(f$zero_inflated_random)) {
-      r2 <- unique(unlist(lapply(f$zero_inflated_random, function(.x) get_model_random(.x, split_nested, x))))
+      r2 <- unique(unlist(lapply(f$zero_inflated_random, function(.x) .get_model_random(.x, split_nested, x))))
     } else {
-      r2 <- unique(get_model_random(f$zero_inflated_random, split_nested, x))
+      r2 <- unique(.get_model_random(f$zero_inflated_random, split_nested, x))
     }
   } else {
     r2 <- NULL
   }
 
 
-  compact_list(list(random = r1, zero_inflated_random = r2))
+  .compact_list(list(random = r1, zero_inflated_random = r2))
 }

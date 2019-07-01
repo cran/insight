@@ -116,6 +116,17 @@ if (require("testthat") && require("insight") && require("stats") && require("Ba
     expect_equal(find_random(x), list(random = "ID"))
   })
 
+  test_that("find_variables", {
+    expect_equal(
+      find_variables(x),
+      list(
+        response = "RT",
+        conditional = c("shape", "color"),
+        random = "ID"
+      )
+    )
+  })
+
   test_that("find_terms", {
     expect_equal(
       find_terms(x),
@@ -130,13 +141,13 @@ if (require("testthat") && require("insight") && require("stats") && require("Ba
   test_that("get_priors", {
     expect_equal(
       get_priors(x),
-      structure(list(
-        parameters = c("fixed", "random", "continuous"),
-        distribution = c("Cauchy", "Cauchy", "Cauchy"),
+      data.frame(
+        parameter = c("fixed", "random", "continuous"),
+        distribution = c("cauchy", "cauchy", "cauchy"),
         location = c(0, 0, 0),
-        scale = c(0.5, 1, 0.353553390593274)),
-        class = "data.frame",
-        row.names = c("fixed", "random", "continuous")
+        scale = c(0.5, 1, 0.353553390593274),
+        stringsAsFactors = FALSE,
+        row.names = NULL
       ),
       tolerance = 1e-5
     )
@@ -177,15 +188,13 @@ if (require("testthat") && require("insight") && require("stats") && require("Ba
   test_that("get_priors", {
     expect_equal(
       get_priors(x),
-      structure(
-        list(
-          parameters = c("fixed", "random", "continuous"),
-          distribution = c("Cauchy", "Cauchy", "Cauchy"),
-          location = c(0, 0, 0),
-          scale = c(0.5, 1, 0.353553390593274)
-        ),
-        class = "data.frame",
-        row.names = c("fixed", "random", "continuous")
+      data.frame(
+        parameter = c("fixed", "random", "continuous"),
+        distribution = c("cauchy", "cauchy", "cauchy"),
+        location = c(0, 0, 0),
+        scale = c(0.5, 1, 0.353553390593274),
+        stringsAsFactors = FALSE,
+        row.names = NULL
       ),
       tolerance = 1e-5
     )

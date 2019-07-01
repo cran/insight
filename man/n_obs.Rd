@@ -3,11 +3,14 @@
 \name{n_obs}
 \alias{n_obs}
 \alias{n_obs.svyolr}
+\alias{n_obs.stanmvreg}
 \title{Get number of observations from a model}
 \usage{
 n_obs(x, ...)
 
 \method{n_obs}{svyolr}(x, weighted = FALSE, ...)
+
+\method{n_obs}{stanmvreg}(x, select = NULL, ...)
 }
 \arguments{
 \item{x}{A fitted model.}
@@ -15,6 +18,9 @@ n_obs(x, ...)
 \item{...}{Currently not used.}
 
 \item{weighted}{For survey designs, returns the weighted sample size.}
+
+\item{select}{Optional name(s) of response variables for which to extract values.
+Can be used in case of regression models with multiple response variables.}
 }
 \value{
 The number of observations used to fit the model, or \code{NULL} if
@@ -23,6 +29,10 @@ The number of observations used to fit the model, or \code{NULL} if
 \description{
 This method returns the number of observation that were used
   to fit the model, as numeric value.
+}
+\note{
+For model-objects supported by \pkg{insight} that \emph{do not} have
+a \code{nobs()}-method, \pkg{insight} provides a \code{nobs()}-method as well.
 }
 \examples{
 data(mtcars)

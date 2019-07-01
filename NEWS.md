@@ -1,3 +1,51 @@
+# insight 0.4.0
+
+## General
+
+* Updates `CITATION`, based on publication in [JOSS](https://doi.org/10.21105/joss.01412).
+* Added `nobs()`-method for those model-objects supported by *insight* that did not yet provide such a method.
+
+## New supported model classes
+
+* `betabin` and `negbin` (*aod*), `BBreg` and `BBmm` (*HRQoL*), `wbm` (*panelr*), `survfit` (*survival*)
+
+## New functions
+
+* `clean_parameters()`, which returns a data frame with "decomposed" parameters, i.e. a data frame with information about the clean paramter name, whether it is a fixed or random effect, from conditional or zero-inflated component, and if it is a parameter related to specific grouping factors of random effects (#106).
+* `print_parameters()`, which can be called on top of `clean_parameters()` to get a list of data frames that represent the different model components (fixed, random, zero-inflated, ...) and which is in shape for printing summary statistics of complex models.
+* `find_interactions()` to return all low/high order interaction terms in a model.
+* `find_weights()` and `get_weights()` to find / get model weights.
+
+## Breaking changes
+
+* To reduce interface complexity, `find_parameters()` and `get_parameters()` for objects of class `aovlist` now return the elements `$conditional` and `$random`, to be in line with other supported objects.
+* The argument `resp` in `get_response()` was renamed to `select`, to have a more clear verb (#114).
+* The functions `find_variables()` and `find_terms()` were flipped, because what previously was considered as "term" was actually a "variable", and vice versa.
+
+## Changes to functions
+
+* `find_parameters()` and `get_parameters()` now allow to return a `sigma`-element for multivariate-response models (*brmsfit*, *stanmvreg*).
+* `find_parameters()` and `get_parameters()` now return the intercepts for **polr** models.
+* `find_parameters()` gets an `effects` and a `component`-argument, similar to many other functions in _insight_.
+* `get_priors()` now returns `distribution = "uniform"` when model was fitted with flat priors.
+* `model_info()` now returns an element `$is_hurdle` for hurdle models.
+
+## Bug fixes
+
+* `find_parameters()` returned priors for `brmsfit`-objects as `$random`-element. Now, `find_parameters()` returns a `$priors`-element (#98).
+* `find_parameters()` did not remove smooth-parameters that used `te()` or `ti()`.
+* Fixed various issues with non-linear *brms*-models.
+* `find_formula()` (and hence, `find_response()` or `get_data()`) did not work for multi-column responses in null-models (#100).
+* Fixed bugs with models from package *plm* that occured during the latest plm-update.
+* `find_predictors()` did not split nested random effects when these were written as `g1:g2` instead `g2/g2` in the random part of the model formula.
+* Fixed issues with `all_model_equal()`.
+* `get_data()` did not return `(weights)` columns for some model objects.
+* `get_priors()` for *stanreg*-models returned the priors in sorted order, so sometimes parameter names and associated prior values did not match (#111).
+* `get_variance()` did not calculate random effect variances, when interaction terms in random slopes were also present in fixed effects, but the interaction was written in different order (e.g., `a*b` and `b*a`) (#112).
+* Fixed issue with tibbles in `get_data()`.
+* Fixed issue with `get_priors()` for *stanreg*-models, when `prior_summary()` returned `NULL` for a prior (#116).
+* Fixed issue with the recent update of *GLMMadaptive*, which broke some of the functions.
+
 # insight 0.3.0
 
 ## New supported model classes

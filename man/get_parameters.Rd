@@ -2,12 +2,17 @@
 % Please edit documentation in R/get_parameters.R
 \name{get_parameters}
 \alias{get_parameters}
+\alias{get_parameters.BBmm}
+\alias{get_parameters.glimML}
 \alias{get_parameters.gam}
 \alias{get_parameters.vgam}
+\alias{get_parameters.rqss}
 \alias{get_parameters.Gam}
 \alias{get_parameters.zeroinfl}
 \alias{get_parameters.gamm}
+\alias{get_parameters.aovlist}
 \alias{get_parameters.hurdle}
+\alias{get_parameters.MCMCglmm}
 \alias{get_parameters.coxme}
 \alias{get_parameters.merMod}
 \alias{get_parameters.rlmerMod}
@@ -23,10 +28,18 @@
 \usage{
 get_parameters(x, ...)
 
+\method{get_parameters}{BBmm}(x, effects = c("fixed", "random"), ...)
+
+\method{get_parameters}{glimML}(x, effects = c("fixed", "random", "all"),
+  ...)
+
 \method{get_parameters}{gam}(x, component = c("all", "conditional",
   "smooth_terms"), ...)
 
 \method{get_parameters}{vgam}(x, component = c("all", "conditional",
+  "smooth_terms"), ...)
+
+\method{get_parameters}{rqss}(x, component = c("all", "conditional",
   "smooth_terms"), ...)
 
 \method{get_parameters}{Gam}(x, component = c("all", "conditional",
@@ -38,8 +51,14 @@ get_parameters(x, ...)
 \method{get_parameters}{gamm}(x, component = c("all", "conditional",
   "smooth_terms"), ...)
 
+\method{get_parameters}{aovlist}(x, effects = c("fixed", "random",
+  "all"), ...)
+
 \method{get_parameters}{hurdle}(x, component = c("all", "conditional",
   "zi", "zero_inflated"), ...)
+
+\method{get_parameters}{MCMCglmm}(x, effects = c("fixed", "random",
+  "all"), ...)
 
 \method{get_parameters}{coxme}(x, effects = c("fixed", "random"), ...)
 
@@ -61,7 +80,8 @@ get_parameters(x, ...)
 
 \method{get_parameters}{brmsfit}(x, effects = c("fixed", "random",
   "all"), component = c("all", "conditional", "zi", "zero_inflated",
-  "dispersion", "simplex", "smooth_terms"), parameters = NULL, ...)
+  "dispersion", "simplex", "sigma", "smooth_terms"), parameters = NULL,
+  ...)
 
 \method{get_parameters}{stanreg}(x, effects = c("fixed", "random",
   "all"), parameters = NULL, ...)
@@ -77,14 +97,14 @@ get_parameters(x, ...)
 
 \item{...}{Currently not used.}
 
-\item{component}{Should all predictor variables, predictor variables for the
+\item{effects}{Should parameters for fixed effects, random effects
+or both be returned? Only applies to mixed models. May be abbreviated.}
+
+\item{component}{Should all parameters, parameters for the
 conditional model, the zero-inflated part of the model, the dispersion
 term or the instrumental variables be returned? Applies to models
 with zero-inflated and/or dispersion formula, or to models with instrumental
 variable (so called fixed-effects regressions). May be abbreviated.}
-
-\item{effects}{Should variables for fixed effects, random effects
-or both be returned? Only applies to mixed models. May be abbreviated.}
 
 \item{parameters}{Regular expression pattern that describes the parameters that
 should be returned.}
@@ -96,15 +116,25 @@ should be returned.}
 \value{
 \itemize{
   \item for non-Bayesian models and if \code{effects = "fixed"}, a data frame with two columns: the parameter names and the related point estimates
-  \item if \code{effects = "random"}, a list of data frames with the random effects (as returned by \code{ranef()}
-  \item for Bayesian models, the posterior samples from the requested parameters as data frame.
-  \item for Anova (\code{aov()}) with error term, a list of parameters for the conditional, the within-subject and the between-subjects parameters
+  \item if \code{effects = "random"}, a list of data frames with the random effects (as returned by \code{ranef()}), unless the random effects have the same simplified structure as fixed effects (e.g. for models from \pkg{MCMCglmm})
+  \item for Bayesian models, the posterior samples from the requested parameters as data frame
+  \item for Anova (\code{aov()}) with error term, a list of parameters for the conditional and the random effects parameters
   \item for models with smooth terms or zero-inflation component, a data frame with three columns: the parameter names, the related point estimates and the component
 }
 }
 \description{
-Returns the point estimates (or posterior samples for Bayesian
+Returns the coefficients (or posterior samples for Bayesian
    models) from a model.
+}
+\details{
+In most cases when models either return different "effects" (fixed,
+random) or "components" (conditional, zero-inflated, ...), the arguments
+\code{effects} and \code{component} can be used.
+\cr \cr
+\code{get_parameters()} is comparable to \code{coef()}, however, the coefficients
+are returned as data frame (with columns for names and point estimates of
+coefficients). For Bayesian models, the posterior samples of parameters are
+returned.
 }
 \examples{
 data(mtcars)

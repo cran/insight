@@ -26,9 +26,9 @@ find_response <- function(x, combine = TRUE) {
   # this is for multivariate response models, where
   # we have a list of formulas
   if (is_multivariate(f)) {
-    resp <- unlist(lapply(f, function(i) deparse(i$conditional[[2L]], width.cutoff = 500L)))
+    resp <- unlist(lapply(f, function(i) .safe_deparse(i$conditional[[2L]])))
   } else {
-    resp <- deparse(f$conditional[[2L]], width.cutoff = 500L)
+    resp <- .safe_deparse(f$conditional[[2L]])
   }
 
   check_cbind(resp, combine)
@@ -45,11 +45,11 @@ check_cbind <- function(resp, combine) {
     resp <- .extract_combined_response(resp, "Curv")
   } else if (!combine && any(grepl("/", resp, fixed = TRUE))) {
     resp <- strsplit(resp, split = "/", fixed = TRUE)
-    resp <- gsub("(I|\\(|\\))", "", trim(unlist(resp)))
-  } else if (any(string_contains("|", resp))) {
+    resp <- gsub("(I|\\(|\\))", "", .trim(unlist(resp)))
+  } else if (any(.string_contains("|", resp))) {
     # check for brms Additional Response Information
-    r1 <- trim(sub("(.*)\\|(.*)", "\\1", resp))
-    r2 <- trim(sub("(.*)\\|(.*)\\(([^,)]*).*", "\\3", resp))
+    r1 <- .trim(sub("(.*)\\|(.*)", "\\1", resp))
+    r2 <- .trim(sub("(.*)\\|(.*)\\(([^,)]*).*", "\\3", resp))
     resp <- c(r1, r2)
   }
 
@@ -60,10 +60,10 @@ check_cbind <- function(resp, combine) {
 .extract_combined_response <- function(resp, pattern) {
   resp <- sub(sprintf("%s\\(([^,].*)([\\)].*)", pattern), "\\1", resp)
   resp <- strsplit(resp, split = ",", fixed = TRUE)
-  resp <- trim(unlist(resp))
+  resp <- .trim(unlist(resp))
 
-  if (any(string_contains("-", resp[2]))) {
-    resp[2] <- trim(sub("(.*)(\\-)(.*)", "\\1", resp[2]))
+  if (any(.string_contains("-", resp[2]))) {
+    resp[2] <- .trim(sub("(.*)(\\-)(.*)", "\\1", resp[2]))
   }
 
   resp

@@ -6,35 +6,11 @@ if (require("testthat") && require("insight") && require("glmmTMB")) {
   fish$livebait <- as.factor(fish$livebait)
   fish$camper <- as.factor(fish$camper)
 
-  m1 <- glmmTMB(
-    count ~ child + camper + (1 | persons),
-    ziformula = ~ child + camper + (1 | persons),
-    data = fish,
-    family = truncated_poisson()
-  )
-
-  m2 <- glmmTMB(
-    count ~ child + camper + (1 | persons),
-    data = fish,
-    family = poisson()
-  )
-
-  m3 <- glmmTMB(
-    count ~ child + camper + (1 | persons),
-    ziformula = ~ child + livebait + (1 | persons),
-    data = fish,
-    family = truncated_poisson()
-  )
-
-  fish$ID <- sample(1:4, nrow(fish), replace = TRUE)
-
-  m4 <- glmmTMB(
-    count ~ child + camper + (1 | persons),
-    ziformula = ~ child + livebait + (1 | ID),
-    dispformula = ~xb,
-    data = fish,
-    family = truncated_poisson()
-  )
+  m1 <- download_model("glmmTMB_zi_1")
+  m2 <- download_model("glmmTMB_1")
+  m3 <- download_model("glmmTMB_zi_2")
+  m4 <- download_model("glmmTMB_zi_5")
+  m7 <- download_model("glmmTMB_zi_6")
 
   data(Salamanders)
   m5 <- glmmTMB(
@@ -45,6 +21,14 @@ if (require("testthat") && require("insight") && require("glmmTMB")) {
   )
 
   m6 <- glmmTMB(count ~ 1, ziformula = ~1, family = poisson(), data = Salamanders)
+
+  test_that("find_weights", {
+    expect_null(find_weights(m2))
+  })
+
+  test_that("get_weights", {
+    expect_null(get_weights(m2))
+  })
 
   test_that("model_info", {
     expect_true(model_info(m1)$is_zeroinf)
@@ -193,8 +177,22 @@ if (require("testthat") && require("insight") && require("glmmTMB")) {
       dispersion = "xb"
     ))
     expect_identical(find_terms(m4, flatten = TRUE), c("count", "child", "camper", "persons", "livebait", "ID", "xb"))
-    expect_identical(find_terms(m6), list(response = "count"))
-    expect_identical(find_terms(m6, flatten = TRUE), "count")
+    expect_identical(find_terms(m6), list(response = "count", conditional = "1"))
+    expect_identical(find_terms(m6, flatten = TRUE), c("count", "1"))
+  })
+
+  test_that("find_variables", {
+    expect_identical(find_variables(m4), list(
+      response = "count",
+      conditional = c("child", "camper"),
+      random = "persons",
+      zero_inflated = c("child", "livebait"),
+      zero_inflated_random = "ID",
+      dispersion = "xb"
+    ))
+    expect_identical(find_variables(m4, flatten = TRUE), c("count", "child", "camper", "persons", "livebait", "ID", "xb"))
+    expect_identical(find_variables(m6), list(response = "count"))
+    expect_identical(find_variables(m6, flatten = TRUE), "count")
   })
 
   test_that("get_response", {
@@ -237,6 +235,7 @@ if (require("testthat") && require("insight") && require("glmmTMB")) {
         zero_inflated_random = list(ID = "(Intercept)")
       )
     )
+
     expect_equal(find_parameters(m4, flatten = TRUE), c("(Intercept)", "child", "camper1", "livebait1"))
     expect_equal(
       find_parameters(m6),
@@ -245,6 +244,51 @@ if (require("testthat") && require("insight") && require("glmmTMB")) {
         zero_inflated = "(Intercept)"
       )
     )
+
+    expect_equal(
+      find_parameters(m3),
+      list(
+        conditional = c("(Intercept)", "child", "camper1"),
+        random = list(persons = "(Intercept)"),
+        zero_inflated = c("(Intercept)", "child", "livebait1"),
+        zero_inflated_random = list(persons = "(Intercept)")
+      )
+    )
+
+    expect_equal(
+      find_parameters(m3),
+      list(
+        conditional = c("(Intercept)", "child", "camper1"),
+        random = list(persons = "(Intercept)"),
+        zero_inflated = c("(Intercept)", "child", "livebait1"),
+        zero_inflated_random = list(persons = "(Intercept)")
+      )
+    )
+
+    expect_equal(
+      find_parameters(m3, effects = "fixed"),
+      list(
+        conditional = c("(Intercept)", "child", "camper1"),
+        zero_inflated = c("(Intercept)", "child", "livebait1")
+      )
+    )
+
+    expect_equal(
+      find_parameters(m3, effects = "random", component = "zi"),
+      list(
+        zero_inflated_random = list(persons = "(Intercept)")
+      )
+    )
+
+    expect_equal(
+      find_parameters(m3, effects = "fixed", component = "zi", flatten = TRUE),
+      c("(Intercept)", "child", "livebait1")
+    )
+
+  })
+
+
+  test_that("get_paramaters", {
     expect_equal(nrow(get_parameters(m4)), 6)
     expect_equal(colnames(get_parameters(m4)), c("parameter", "estimate", "component"))
     expect_equal(get_parameters(m4)$parameter, c("(Intercept)", "child", "camper1", "(Intercept)", "child", "livebait1"))
@@ -298,19 +342,26 @@ if (require("testthat") && require("insight") && require("glmmTMB")) {
 
     expect_null(find_random_slopes(m6))
 
-    expect_warning(
-      m <- glmmTMB(
-        count ~ child + camper + (1 + xb| persons),
-        ziformula = ~ child + livebait + (1 + zg + nofish| ID),
-        dispformula = ~xb,
-        data = fish,
-        family = truncated_poisson()
-      )
-    )
-
     expect_equal(
-      find_random_slopes(m),
+      find_random_slopes(m7),
       list(random = "xb", zero_inflated_random = c("zg", "nofish"))
+    )
+  })
+
+  test_that("clean_parameters", {
+    expect_equal(
+      clean_parameters(m1),
+      structure(
+        list(
+          Parameter = c("(Intercept)", "child", "camper1", "(Intercept)", "(Intercept)", "child", "camper1", "(Intercept)"),
+          Effects = c("fixed", "fixed", "fixed", "random", "fixed", "fixed", "fixed", "random"),
+          Component = c("conditional", "conditional", "conditional", "conditional", "zero_inflated", "zero_inflated", "zero_inflated", "zero_inflated"),
+          Group = c("", "", "", "persons", "", "", "", "persons"),
+          Cleaned_Parameter = c("(Intercept)", "child", "camper1", "(Intercept)", "(Intercept)", "child", "camper1", "(Intercept)")
+        ),
+        class = c("clean_parameters", "data.frame"),
+        row.names = c(NA, -8L)
+      )
     )
   })
 

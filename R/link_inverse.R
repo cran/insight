@@ -28,7 +28,7 @@ link_inverse <- function(x, ...) {
 
 #' @export
 link_inverse.default <- function(x, ...) {
-  if (inherits(x, "list") && obj_has_name(x, "gam")) {
+  if (inherits(x, "list") && .obj_has_name(x, "gam")) {
     x <- x$gam
     class(x) <- c(class(x), c("glm", "lm"))
   }
@@ -122,6 +122,12 @@ link_inverse.iv_robust <- function(x, ...) {
 
 #' @export
 link_inverse.coxph <- function(x, ...) {
+  stats::make.link("logit")$linkinv
+}
+
+
+#' @export
+link_inverse.survfit <- function(x, ...) {
   stats::make.link("logit")$linkinv
 }
 
@@ -331,6 +337,24 @@ link_inverse.gmnl <- function(x, ...) {
 #' @export
 link_inverse.mlogit <- function(x, ...) {
   stats::make.link("logit")$linkinv
+}
+
+
+#' @export
+link_inverse.BBreg <- function(x, ...) {
+  stats::make.link("logit")$linkinv
+}
+
+
+#' @export
+link_inverse.BBmm <- function(x, ...) {
+  stats::make.link("logit")$linkinv
+}
+
+
+#' @export
+link_inverse.glimML <- function(x, ...) {
+  stats::make.link(x@link)$linkinv
 }
 
 

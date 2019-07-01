@@ -11,8 +11,14 @@
 #'   like \code{s()} for splines or \code{log()} are removed from
 #'   the model terms.
 #'
-#' @note If \code{x} is a regression model, this function is equal to calling
-#'   \code{find_terms()}.
+#' @note Typically, this method is intended to work on character vectors,
+#'   in order to remove patterns that obscure the variable names. For
+#'   convenience reasons it is also possible to call \code{clean_names()}
+#'   also on a model object. If \code{x} is a regression model, this
+#'   function is (almost) equal to calling \code{find_variables()}. The
+#'   main difference is that \code{clean_names()} always returns a character
+#'   vector, while \code{find_variables()} returns a list of character
+#'   vectors, unless \code{flatten = TRUE}. See 'Examples'.
 #'
 #' @examples
 #' # example from ?stats::glm
@@ -21,6 +27,19 @@
 #' treatment <- gl(3, 3)
 #' m <- glm(counts ~ log(outcome) + as.factor(treatment), family = poisson())
 #' clean_names(m)
+#'
+#' # difference "clean_names()" and "find_variables()"
+#' library(lme4)
+#' m <- glmer(
+#'   cbind(incidence, size - incidence) ~ period + (1 | herd),
+#'   data = cbpp,
+#'   family = binomial
+#' )
+#'
+#' clean_names(m)
+#' find_variables(m)
+#' find_variables(m, flatten = TRUE)
+#'
 #' @export
 clean_names <- function(x) {
   UseMethod("clean_names")
@@ -29,7 +48,7 @@ clean_names <- function(x) {
 
 #' @export
 clean_names.default <- function(x) {
-  cleaned <- unname(find_terms(x, flatten = TRUE))
+  cleaned <- unname(find_variables(x, flatten = TRUE))
   .remove_values(cleaned, c("1", "0"))
 }
 
@@ -40,9 +59,9 @@ clean_names.character <- function(x) {
 }
 
 
-.remove_pattern_from_names <- function(x, ignore_asis = FALSE) {
+.remove_pattern_from_names <- function(x, ignore_asis = FALSE, ignore_lag = FALSE) {
   # return if x is empty
-  if (is_empty_string(x)) return("")
+  if (.is_empty_string(x)) return("")
 
   # for gam-smoothers/loess, remove s()- and lo()-function in column name
   # for survival, remove strata(), and so on...
@@ -53,6 +72,12 @@ clean_names.character <- function(x) {
     "pb", "lo", "bs", "ns", "t2", "te", "ti", "tt", "mi", "mo", "gp", "s", "I"
   )
 
+  # sometimes needed for panelr models, where we need to preserve "lag()"
+  if (ignore_lag) {
+    lag_pattern <- which(pattern == "lag")
+    if (length(lag_pattern)) pattern <- pattern[-lag_pattern]
+  }
+
   # do we have a "log()" pattern here? if yes, get capture region
   # which matches the "cleaned" variable name
   cleaned <- sapply(1:length(x), function(i) {
@@ -60,20 +85,20 @@ clean_names.character <- function(x) {
       # remove possible  namespace
       x[i] <- sub("(.*)::(.*)", "\\2", x[i])
       if (pattern[j] == "offset") {
-        x[i] <- trim(unique(sub("^offset\\(([^-+ )]*).*", "\\1", x[i])))
+        x[i] <- .trim(unique(sub("^offset\\(([^-+ )]*).*", "\\1", x[i])))
       } else if (pattern[j] == "I") {
-        if (!ignore_asis) x[i] <- trim(unique(sub("I\\((\\w*).*", "\\1", x[i])))
+        if (!ignore_asis) x[i] <- .trim(unique(sub("I\\((\\w*).*", "\\1", x[i])))
       } else if (pattern[j] == "asis") {
-        if (!ignore_asis) x[i] <- trim(unique(sub("asis\\((\\w*).*", "\\1", x[i])))
+        if (!ignore_asis) x[i] <- .trim(unique(sub("asis\\((\\w*).*", "\\1", x[i])))
       } else if (pattern[j] == "log-log") {
-        x[i] <- trim(unique(sub("^log\\(log\\(([^,)]*)).*", "\\1", x[i])))
+        x[i] <- .trim(unique(sub("^log\\(log\\(([^,)]*)).*", "\\1", x[i])))
       } else {
         p <- paste0("^", pattern[j], "\\(([^,)]*).*")
         x[i] <- unique(sub(p, "\\1", x[i]))
       }
     }
     # for coxme-models, remove random-effect things...
-    trim(sub("^(.*)\\|(.*)", "\\2", x[i]))
+    .trim(sub("^(.*)\\|(.*)", "\\2", x[i]))
   })
 
   # remove for random intercept only models

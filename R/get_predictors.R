@@ -1,4 +1,4 @@
-#' @title Get the data from predictor variables
+#' @title Get the data from model predictors
 #' @name get_predictors
 #'
 #' @description Returns the data from all predictor variables (fixed effects).
@@ -12,9 +12,14 @@
 #' head(get_predictors(m))
 #' @export
 get_predictors <- function(x) {
-  dat <- get_data(x)[, find_predictors(x, effects = "fixed", component = "all", flatten = TRUE), drop = FALSE]
+  vars <- if (inherits(x, "wbm"))
+    unlist(.compact_list(find_terms(x, flatten = FALSE)[c("conditional", "instruments")]))
+  else
+    find_predictors(x, effects = "fixed", component = "all", flatten = TRUE)
 
-  if (is_empty_object(dat)) {
+  dat <- get_data(x)[, vars, drop = FALSE]
+
+  if (.is_empty_object(dat)) {
     print_color("Warning: Data frame is empty, probably you have an intercept-only model?\n", "red")
     return(NULL)
   }

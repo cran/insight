@@ -32,14 +32,14 @@ get_data <- function(x, ...) {
 
 #' @export
 get_data.default <- function(x, ...) {
-  if (inherits(x, "list") && obj_has_name(x, "gam")) {
+  if (inherits(x, "list") && .obj_has_name(x, "gam")) {
     x <- x$gam
     class(x) <- c(class(x), c("glm", "lm"))
   }
 
   mf <- tryCatch({
     if (inherits(x, "Zelig-relogit")) {
-      get_zelig_relogit_frame(x)
+      .get_zelig_relogit_frame(x)
     } else {
       stats::model.frame(x)
     }
@@ -49,21 +49,21 @@ get_data.default <- function(x, ...) {
   }
   )
 
-  prepare_get_data(x, mf)
+  .prepare_get_data(x, mf)
 }
 
 
 #' @export
 get_data.biglm <- function(x, ...) {
   mf <- stats::model.frame(x)
-  prepare_get_data(x, mf)
+  .prepare_get_data(x, mf)
 }
 
 
 #' @export
 get_data.bigglm <- function(x, ...) {
   mf <- stats::model.frame(x)
-  prepare_get_data(x, mf)
+  .prepare_get_data(x, mf)
 }
 
 
@@ -78,7 +78,7 @@ get_data.felm <- function(x, effects = c("all", "fixed", "random"), ...) {
 get_data.feis <- function(x, effects = c("all", "fixed", "random"), ...) {
   effects <- match.arg(effects)
   mf <- tryCatch({
-    get(deparse(x$call$data, width.cutoff = 500), envir = parent.frame())[, find_terms(x, flatten = TRUE), drop = FALSE]
+    get(.safe_deparse(x$call$data), envir = parent.frame())[, find_variables(x, flatten = TRUE), drop = FALSE]
   },
   error = function(x) {
     stats::model.frame(x)
@@ -92,11 +92,11 @@ get_data.feis <- function(x, effects = c("all", "fixed", "random"), ...) {
 get_data.LORgee <- function(x, effects = c("all", "fixed", "random"), ...) {
   effects <- match.arg(effects)
   mf <- tryCatch({
-    dat <- .get_data_from_env(x)[, find_terms(x, flatten = TRUE), drop = FALSE]
+    dat <- .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
     switch(
       effects,
-      all = dat[, find_terms(x, flatten = TRUE), drop = FALSE],
-      fixed = dat[, find_terms(x, effects = "fixed", flatten = TRUE), drop = FALSE],
+      all = dat[, find_variables(x, flatten = TRUE), drop = FALSE],
+      fixed = dat[, find_variables(x, effects = "fixed", flatten = TRUE), drop = FALSE],
       random = dat[, find_random(x, flatten = TRUE), drop = FALSE]
     )
   },
@@ -104,14 +104,62 @@ get_data.LORgee <- function(x, effects = c("all", "fixed", "random"), ...) {
     stats::model.frame(x)
   })
 
-  prepare_get_data(x, stats::na.omit(mf))
+  .prepare_get_data(x, stats::na.omit(mf))
+}
+
+
+#' @export
+get_data.survfit <- function(x, ...) {
+  mf <- tryCatch({
+    .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
+  },
+  error = function(x) {
+    NULL
+  })
+
+  .prepare_get_data(x, stats::na.omit(mf))
+}
+
+
+#' @export
+get_data.BBmm <- function(x, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+  mf <- tryCatch({
+    dat <- .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
+    switch(
+      effects,
+      all = dat[, find_variables(x, flatten = TRUE), drop = FALSE],
+      fixed = dat[, find_variables(x, effects = "fixed", flatten = TRUE), drop = FALSE],
+      random = dat[, find_random(x, flatten = TRUE), drop = FALSE]
+    )
+  },
+  error = function(x) {
+    x$X
+  })
+
+  .prepare_get_data(x, stats::na.omit(mf))
+}
+
+
+#' @export
+get_data.glimML <- function(x, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+  dat <- x@data
+  mf <- switch(
+    effects,
+    all = dat[, find_variables(x, flatten = TRUE), drop = FALSE],
+    fixed = dat[, find_variables(x, effects = "fixed", flatten = TRUE), drop = FALSE],
+    random = dat[, find_random(x, flatten = TRUE), drop = FALSE]
+  )
+
+  .prepare_get_data(x, stats::na.omit(mf))
 }
 
 
 #' @export
 get_data.gbm <- function(x, ...) {
   mf <- tryCatch({
-    get(deparse(x$call$data, width.cutoff = 500), envir = parent.frame())[, find_terms(x, flatten = TRUE), drop = FALSE]
+    get(.safe_deparse(x$call$data), envir = parent.frame())[, find_variables(x, flatten = TRUE), drop = FALSE]
   },
   error = function(x) {
     stats::model.frame(x)
@@ -124,10 +172,10 @@ get_data.gbm <- function(x, ...) {
 #' @export
 get_data.tobit <- function(x, ...) {
   dat <- .get_data_from_env(x)
-  ft <- find_terms(x, flatten = TRUE)
+  ft <- find_variables(x, flatten = TRUE)
   remain <- intersect(ft, colnames(dat))
 
-  prepare_get_data(x, stats::na.omit(dat[, remain, drop = FALSE]))
+  .prepare_get_data(x, stats::na.omit(dat[, remain, drop = FALSE]))
 }
 
 
@@ -142,8 +190,27 @@ get_data.plm <- function(x, ...) {
   mf <- stats::model.frame(x)
   cn <- colnames(mf)
   mf <- as.data.frame(lapply(mf, as.vector))
-  colnames(mf) <- cn
-  prepare_get_data(x, mf)
+  colnames(mf) <- clean_names(cn)
+  model_terms <- find_variables(x, effects = "all", component = "all", flatten = TRUE)
+  .prepare_get_data(x, mf[, model_terms, drop = FALSE])
+}
+
+
+#' @export
+get_data.wbm <- function(x, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+  mf <- stats::model.frame(x)
+
+  # dat <- as.data.frame(x@orig_data)
+
+  if (effects == "random") {
+    return(stats::na.omit(mf[, unique(find_random(x, split_nested = TRUE, flatten = TRUE)), drop = FALSE]))
+  }
+
+  resp.col <- which(colnames(mf) == find_response(x))
+  mf <- mf[, c(resp.col, (1:ncol(mf))[-resp.col])]
+
+  .prepare_get_data(x, stats::na.omit(mf))
 }
 
 
@@ -152,7 +219,7 @@ get_data.gamm <- function(x, ...) {
   x <- x$gam
   class(x) <- c(class(x), c("glm", "lm"))
   mf <- stats::model.frame(x)
-  prepare_get_data(x, mf)
+  .prepare_get_data(x, mf)
 }
 
 
@@ -160,11 +227,11 @@ get_data.gamm <- function(x, ...) {
 get_data.ivreg <- function(x, ...) {
   mf <- stats::model.frame(x)
   cn <- clean_names(colnames(mf))
-  ft <- find_terms(x, flatten = TRUE)
+  ft <- find_variables(x, flatten = TRUE)
 
   remain <- setdiff(ft, cn)
 
-  if (is_empty_object(remain)) {
+  if (.is_empty_object(remain)) {
     final_mf <- mf
   } else {
     final_mf <- tryCatch({
@@ -177,7 +244,7 @@ get_data.ivreg <- function(x, ...) {
     )
   }
 
-  prepare_get_data(x, stats::na.omit(final_mf))
+  .prepare_get_data(x, stats::na.omit(final_mf))
 }
 
 
@@ -185,11 +252,11 @@ get_data.ivreg <- function(x, ...) {
 get_data.iv_robust <- function(x, ...) {
   mf <- stats::model.frame(x)
   cn <- clean_names(colnames(mf))
-  ft <- find_terms(x, flatten = TRUE)
+  ft <- find_variables(x, flatten = TRUE)
 
   remain <- setdiff(ft, cn)
 
-  if (is_empty_object(remain)) {
+  if (.is_empty_object(remain)) {
     final_mf <- mf
   } else {
     final_mf <- tryCatch({
@@ -202,7 +269,7 @@ get_data.iv_robust <- function(x, ...) {
     )
   }
 
-  prepare_get_data(x, stats::na.omit(final_mf))
+  .prepare_get_data(x, stats::na.omit(final_mf))
 }
 
 
@@ -216,7 +283,7 @@ get_data.clm2 <- function(x, ...) {
   }
   )
 
-  prepare_get_data(x, mf)
+  .prepare_get_data(x, mf)
 }
 
 
@@ -224,21 +291,21 @@ get_data.clm2 <- function(x, ...) {
 #' @export
 get_data.hurdle <- function(x, component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), ...) {
   component <- match.arg(component)
-  reurn_zeroinf_data(x, component)
+  .return_zeroinf_data(x, component)
 }
 
 
 #' @export
 get_data.zeroinfl <- function(x, component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), ...) {
   component <- match.arg(component)
-  reurn_zeroinf_data(x, component)
+  .return_zeroinf_data(x, component)
 }
 
 
 #' @export
 get_data.zerotrunc <- function(x, component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), ...) {
   component <- match.arg(component)
-  reurn_zeroinf_data(x, component)
+  .return_zeroinf_data(x, component)
 }
 
 
@@ -248,7 +315,7 @@ get_data.glmmTMB <- function(x, effects = c("all", "fixed", "random"), component
   effects <- match.arg(effects)
   component <- match.arg(component)
 
-  model.terms <- find_terms(x, effects = "all", component = "all", flatten = FALSE)
+  model.terms <- find_variables(x, effects = "all", component = "all", flatten = FALSE)
 
   mf <- tryCatch({
     stats::model.frame(x)
@@ -258,14 +325,14 @@ get_data.glmmTMB <- function(x, effects = c("all", "fixed", "random"), component
   }
   )
 
-  mf <- prepare_get_data(x, mf)
+  mf <- .prepare_get_data(x, mf)
 
   # add variables from other model components
-  mf <- add_zeroinf_data(x, mf, model.terms$dispersion)
-  mf <- add_zeroinf_data(x, mf, model.terms$zero_inflated)
-  mf <- add_zeroinf_data(x, mf, model.terms$zero_inflated_random)
+  mf <- .add_zeroinf_data(x, mf, model.terms$dispersion)
+  mf <- .add_zeroinf_data(x, mf, model.terms$zero_inflated)
+  mf <- .add_zeroinf_data(x, mf, model.terms$zero_inflated_random)
 
-  return_data(mf, effects, component, model.terms)
+  .return_data(x, mf, effects, component, model.terms)
 }
 
 
@@ -287,7 +354,7 @@ get_data.merMod <- function(x, effects = c("all", "fixed", "random"), ...) {
   }
   )
 
-  prepare_get_data(x, mf, effects)
+  .prepare_get_data(x, mf, effects)
 }
 
 
@@ -334,14 +401,14 @@ get_data.lme <- function(x, effects = c("all", "fixed", "random"), ...) {
 #' @export
 get_data.vgam <- function(x, ...) {
   mf <- tryCatch({
-    get(x@misc$dataname, envir = parent.frame())[, find_terms(x, flatten = TRUE), drop = FALSE]
+    get(x@misc$dataname, envir = parent.frame())[, find_variables(x, flatten = TRUE), drop = FALSE]
   },
   error = function(x) {
     NULL
   }
   )
 
-  prepare_get_data(x, mf)
+  .prepare_get_data(x, mf)
 }
 
 
@@ -353,8 +420,8 @@ get_data.gee <- function(x, effects = c("all", "fixed", "random"), ...) {
     dat <- .get_data_from_env(x)
     switch(
       effects,
-      all = dat[, find_terms(x, flatten = TRUE), drop = FALSE],
-      fixed = dat[, find_terms(x, effects = "fixed", flatten = TRUE), drop = FALSE],
+      all = dat[, find_variables(x, flatten = TRUE), drop = FALSE],
+      fixed = dat[, find_variables(x, effects = "fixed", flatten = TRUE), drop = FALSE],
       random = dat[, find_random(x, flatten = TRUE), drop = FALSE]
     )
   },
@@ -363,7 +430,7 @@ get_data.gee <- function(x, effects = c("all", "fixed", "random"), ...) {
   }
   )
 
-  prepare_get_data(x, stats::na.omit(mf))
+  .prepare_get_data(x, stats::na.omit(mf))
 }
 
 
@@ -371,28 +438,28 @@ get_data.gee <- function(x, effects = c("all", "fixed", "random"), ...) {
 #' @export
 get_data.rqss <- function(x, effects = c("all", "fixed", "random"), ...) {
   mf <- tryCatch({
-    .get_data_from_env(x)[, find_terms(x, flatten = TRUE), drop = FALSE]
+    .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
   },
   error = function(x) {
     NULL
   }
   )
 
-  prepare_get_data(x, stats::na.omit(mf))
+  .prepare_get_data(x, stats::na.omit(mf))
 }
 
 
 #' @export
 get_data.gls <- function(x, ...) {
   mf <- tryCatch({
-    .get_data_from_env(x)[, find_terms(x, flatten = TRUE), drop = FALSE]
+    .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
   },
   error = function(x) {
     NULL
   }
   )
 
-  prepare_get_data(x, stats::na.omit(mf))
+  .prepare_get_data(x, stats::na.omit(mf))
 }
 
 
@@ -406,7 +473,7 @@ get_data.gmnl <- function(x, ...) {
   }
   )
 
-  prepare_get_data(x, mf)
+  .prepare_get_data(x, mf)
 }
 
 
@@ -418,24 +485,24 @@ get_data.MixMod <- function(x, effects = c("all", "fixed", "random"), component 
 
   tryCatch({
     fitfram <- x$model_frames$mfX
-    if (!is_empty_object(x$model_frames$mfZ)) {
-      fitfram <- merge_dataframes(x$model_frames$mfZ, fitfram, replace = TRUE)
+    if (!.is_empty_object(x$model_frames$mfZ)) {
+      fitfram <- .merge_dataframes(x$model_frames$mfZ, fitfram, replace = TRUE)
     }
-    if (!is_empty_object(x$model_frames$mfX_zi)) {
-      fitfram <- merge_dataframes(x$model_frames$mfX_zi, fitfram, replace = TRUE)
+    if (!.is_empty_object(x$model_frames$mfX_zi)) {
+      fitfram <- .merge_dataframes(x$model_frames$mfX_zi, fitfram, replace = TRUE)
     }
-    if (!is_empty_object(x$model_frames$mfZ_zi)) {
-      fitfram <- merge_dataframes(x$model_frames$mfZ_zi, fitfram, replace = TRUE)
+    if (!.is_empty_object(x$model_frames$mfZ_zi)) {
+      fitfram <- .merge_dataframes(x$model_frames$mfZ_zi, fitfram, replace = TRUE)
     }
 
-    fitfram$grp__id <- x$id
+    fitfram$grp__id <- unlist(x$id)
     colnames(fitfram)[ncol(fitfram)] <- x$id_name[1]
 
     # test...
-    fitfram <- prepare_get_data(x, fitfram)
+    fitfram <- .prepare_get_data(x, fitfram)
 
-    model.terms <- find_terms(x, effects = "all", component = "all", flatten = FALSE)
-    return_data(mf = fitfram, effects, component, model.terms)
+    model.terms <- find_variables(x, effects = "all", component = "all", flatten = FALSE)
+    .return_data(x, mf = fitfram, effects, component, model.terms)
   },
   error = function(x) {
     NULL
@@ -450,11 +517,12 @@ get_data.brmsfit <- function(x, effects = c("all", "fixed", "random"), component
   effects <- match.arg(effects)
   component <- match.arg(component)
 
-  model.terms <- find_terms(x, effects = "all", component = "all", flatten = FALSE)
+  model.terms <- find_variables(x, effects = "all", component = "all", flatten = FALSE)
   mf <- stats::model.frame(x)
 
-  return_data(
-    prepare_get_data(x, mf, effects = effects),
+  .return_data(
+    x,
+    .prepare_get_data(x, mf, effects = effects),
     effects,
     component,
     model.terms,
@@ -468,11 +536,12 @@ get_data.brmsfit <- function(x, effects = c("all", "fixed", "random"), component
 get_data.stanreg <- function(x, effects = c("all", "fixed", "random"), ...) {
   effects <- match.arg(effects)
 
-  model.terms <- find_terms(x, effects = "all", component = "all", flatten = FALSE)
+  model.terms <- find_variables(x, effects = "all", component = "all", flatten = FALSE)
   mf <- stats::model.frame(x)
 
-  return_data(
-    prepare_get_data(x, mf, effects = effects),
+  .return_data(
+    x,
+    .prepare_get_data(x, mf, effects = effects),
     effects,
     component = "all",
     model.terms,
@@ -500,7 +569,7 @@ get_data.vglm <- function(x, ...) {
   }
   )
 
-  prepare_get_data(x, mf)
+  .prepare_get_data(x, mf)
 }
 
 
@@ -509,7 +578,7 @@ get_data.stanmvreg <- function(x, ...) {
   mf <- tryCatch({
     out <- data.frame()
     for (i in stats::model.frame(x))
-      out <- merge_dataframes(out, i)
+      out <- .merge_dataframes(out, i)
 
     out
   },
@@ -518,7 +587,7 @@ get_data.stanmvreg <- function(x, ...) {
   }
   )
 
-  prepare_get_data(x, mf)
+  .prepare_get_data(x, mf)
 }
 
 
@@ -557,13 +626,13 @@ get_data.MCMCglmm <- function(x, effects = c("all", "fixed", "random"), ...) {
   }
   )
 
-  prepare_get_data(x, mf, effects = effects)
+  .prepare_get_data(x, mf, effects = effects)
 }
 
 
 #' @importFrom stats getCall formula na.omit
-prepare_get_data <- function(x, mf, effects = "fixed") {
-  if (is_empty_object(mf)) {
+.prepare_get_data <- function(x, mf, effects = "fixed") {
+  if (.is_empty_object(mf)) {
     warning("Could not get model data.", call. = F)
     return(NULL)
   }
@@ -572,9 +641,9 @@ prepare_get_data <- function(x, mf, effects = "fixed") {
   mw <- NULL
 
   # do we have an offset, not specified in the formula?
-  if ("(offset)" %in% colnames(mf) && obj_has_name(x, "call") && obj_has_name(x$call, "offset")) {
+  if ("(offset)" %in% colnames(mf) && .obj_has_name(x, "call") && .obj_has_name(x$call, "offset")) {
     offcol <- which(colnames(mf) == "(offset)")
-    colnames(mf)[offcol] <- clean_names(deparse(x$call$offset, width.cutoff = 500L))
+    colnames(mf)[offcol] <- clean_names(.safe_deparse(x$call$offset))
   }
 
   # clean 1-dimensional matrices
@@ -598,7 +667,7 @@ prepare_get_data <- function(x, mf, effects = "fixed") {
 
   if (mc[1] && rn == colnames(mf)[1]) {
     mc[1] <- FALSE
-    if (inherits(x, c("coxph", "coxme", "survreg", "crq", "psm"))) {
+    if (inherits(x, c("coxph", "coxme", "survreg", "survfit", "crq", "psm"))) {
       mf <- cbind(mf[[1]][, 1], mf[[1]][, 2], mf)
       colnames(mf)[1:2] <- rn_not_combined
     } else {
@@ -673,7 +742,7 @@ prepare_get_data <- function(x, mf, effects = "fixed") {
 
       # check model weights
 
-      if ("(weights)" %in% needed.vars && !obj_has_name(md, "(weights)")) {
+      if ("(weights)" %in% needed.vars && !.obj_has_name(md, "(weights)")) {
         needed.vars <- needed.vars[-which(needed.vars == "(weights)")]
         mw <- mf[["(weights)"]]
       }
@@ -709,7 +778,7 @@ prepare_get_data <- function(x, mf, effects = "fixed") {
   if (any(mos_eisly)) mf <- mf[!mos_eisly]
 
   # clean variable names
-  cvn <- clean_names(colnames(mf))
+  cvn <- .remove_pattern_from_names(colnames(mf), ignore_lag = TRUE)
 
   # keep "as is" variable for response variables in data frame
   if (colnames(mf)[1] == rn[1] && grepl("^I\\(", rn[1])) {
@@ -724,29 +793,43 @@ prepare_get_data <- function(x, mf, effects = "fixed") {
 
     if (!is.null(md)) {
       mf <- cbind(mf, md)
-      cvn <- clean_names(colnames(mf))
+      cvn <- .remove_pattern_from_names(colnames(mf), ignore_lag = TRUE)
       cvn[1] <- rn[1]
     }
   }
 
   # do we have duplicated names?
   dupes <- which(duplicated(cvn))
-  if (!is_empty_string(dupes)) cvn[dupes] <- sprintf("%s.%s", cvn[dupes], 1:length(dupes))
+  if (!.is_empty_string(dupes)) cvn[dupes] <- sprintf("%s.%s", cvn[dupes], 1:length(dupes))
 
   colnames(mf) <- cvn
+
+  # add weighting variable
+  weighting_var <- find_weights(x)
+  if (!is.null(weighting_var) && !weighting_var %in% colnames(mf) && length(weighting_var) == 1) {
+    mf <- tryCatch(
+      {
+        tmp <- cbind(mf, get_weights(x))
+        colnames(tmp)[ncol(tmp)] <- weighting_var
+        tmp
+      },
+      error = function(e) { mf }
+    )
+  }
 
   # add back possible trials-data
   if (!is.null(trials.data)) {
     new.cols <- setdiff(colnames(trials.data), colnames(mf))
-    if (!is_empty_string(new.cols)) mf <- cbind(mf, trials.data[, new.cols, drop = FALSE])
+    if (!.is_empty_string(new.cols)) mf <- cbind(mf, trials.data[, new.cols, drop = FALSE])
   }
 
   mf
 }
 
 
-return_data <- function(mf, effects, component, model.terms, is_mv = FALSE) {
+.return_data <- function(x, mf, effects, component, model.terms, is_mv = FALSE) {
   response <- unlist(model.terms$response)
+
   if (is_mv) {
     fixed.component.data <- switch(
       component,
@@ -778,17 +861,17 @@ return_data <- function(mf, effects, component, model.terms, is_mv = FALSE) {
   } else {
     fixed.component.data <- switch(
       component,
-      all = c(model.terms$conditional, model.terms$zero_inflated, model.terms$dispersion),
-      conditional = model.terms$conditional,
+      all           = c(model.terms$conditional, model.terms$zero_inflated, model.terms$dispersion),
+      conditional   = model.terms$conditional,
       zi = ,
       zero_inflated = model.terms$zero_inflated,
-      dispersion = model.terms$dispersion
+      dispersion    = model.terms$dispersion
     )
 
     random.component.data <- switch(
       component,
-      all = c(model.terms$random, model.terms$zero_inflated_random),
-      conditional = model.terms$random,
+      all           = c(model.terms$random, model.terms$zero_inflated_random),
+      conditional   = model.terms$random,
       zi = ,
       zero_inflated = model.terms$zero_inflated_random
     )
@@ -797,11 +880,11 @@ return_data <- function(mf, effects, component, model.terms, is_mv = FALSE) {
 
   # this is to remove the "1" from intercept-ony-models
 
-  if (!is_empty_object(fixed.component.data)) {
+  if (!.is_empty_object(fixed.component.data)) {
     fixed.component.data <- .remove_values(fixed.component.data, c("1", "0"))
     fixed.component.data <- .remove_values(fixed.component.data, c(1, 0))
   }
-  if (!is_empty_object(random.component.data)) {
+  if (!.is_empty_object(random.component.data)) {
     random.component.data <- .remove_values(random.component.data, c("1", "0"))
     random.component.data <- .remove_values(random.component.data, c(1, 0))
   }
@@ -809,28 +892,33 @@ return_data <- function(mf, effects, component, model.terms, is_mv = FALSE) {
 
   dat <- switch(
     effects,
-    all = mf[, unique(c(response, fixed.component.data, random.component.data)), drop = FALSE],
-    fixed = mf[, unique(c(response, fixed.component.data)), drop = FALSE],
+    all = mf[, unique(c(response, fixed.component.data, random.component.data, find_weights(x))), drop = FALSE],
+    fixed = mf[, unique(c(response, fixed.component.data, find_weights(x))), drop = FALSE],
     random = mf[, unique(random.component.data), drop = FALSE]
   )
 
-  if (is_empty_object(dat)) {
+  if (.is_empty_object(dat)) {
     print_color(sprintf("Warning: Data frame is empty, probably component '%s' does not exist in the %s-part of the model?\n", component, effects), "red")
     return(NULL)
   }
+
+  if ("(offset)" %in% colnames(mf) && !("(offset)" %in% colnames(dat))) {
+    dat <- cbind(dat, mf[["(offset"]])
+  }
+
 
   dat
 }
 
 
-add_zeroinf_data <- function(x, mf, tn) {
+.add_zeroinf_data <- function(x, mf, tn) {
   tryCatch({
     env_data <- eval(x$call$data, envir = parent.frame())[, tn, drop = FALSE]
-    if (obj_has_name(x$call, "subset")) {
+    if (.obj_has_name(x$call, "subset")) {
       env_data <- subset(env_data, subset = eval(x$call$subset))
     }
 
-    merge_dataframes(env_data, mf, replace = TRUE)
+    .merge_dataframes(env_data, mf, replace = TRUE)
   },
   error = function(x) {
     mf
@@ -839,14 +927,14 @@ add_zeroinf_data <- function(x, mf, tn) {
 }
 
 
-get_zelig_relogit_frame <- function(x) {
-  vars <- find_terms(x, flatten = TRUE)
+.get_zelig_relogit_frame <- function(x) {
+  vars <- find_variables(x, flatten = TRUE)
   x$data[, vars, drop = FALSE]
 }
 
 
-reurn_zeroinf_data <- function(x, component) {
-  model.terms <- find_terms(x, effects = "all", component = "all", flatten = FALSE)
+.return_zeroinf_data <- function(x, component) {
+  model.terms <- find_variables(x, effects = "all", component = "all", flatten = FALSE)
 
   mf <- tryCatch({
     stats::model.frame(x)
@@ -856,9 +944,9 @@ reurn_zeroinf_data <- function(x, component) {
   }
   )
 
-  mf <- prepare_get_data(x, mf)
+  mf <- .prepare_get_data(x, mf)
   # add variables from other model components
-  mf <- add_zeroinf_data(x, mf, model.terms$zero_inflated)
+  mf <- .add_zeroinf_data(x, mf, model.terms$zero_inflated)
 
   fixed.data <- switch(
     component,
@@ -868,24 +956,23 @@ reurn_zeroinf_data <- function(x, component) {
     zero_inflated = model.terms$zero_inflated
   )
 
-  mf[, unique(c(model.terms$response, fixed.data)), drop = FALSE]
+  mf[, unique(c(model.terms$response, fixed.data, find_weights(x))), drop = FALSE]
 }
 
 
 
 
-#' @keywords internal
 .get_data_from_modelframe <- function(x, dat, effects) {
   cn <- clean_names(colnames(dat))
 
   ft <- switch(
     effects,
-    fixed = find_terms(x, effects = "fixed", flatten = TRUE),
-    all = find_terms(x, flatten = TRUE),
+    fixed = find_variables(x, effects = "fixed", flatten = TRUE),
+    all = find_variables(x, flatten = TRUE),
     random = find_random(x, split_nested = TRUE, flatten = TRUE)
   )
 
-  remain <- intersect(ft, cn)
+  remain <- intersect(c(ft, find_weights(x)), cn)
 
   mf <- tryCatch({
     dat[, remain, drop = FALSE]
@@ -895,5 +982,5 @@ reurn_zeroinf_data <- function(x, component) {
   }
   )
 
-  prepare_get_data(x, mf, effects)
+  .prepare_get_data(x, mf, effects)
 }

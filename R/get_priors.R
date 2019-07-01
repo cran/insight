@@ -30,13 +30,19 @@ get_priors.stanreg <- function(x, ...) {
 
   ps <- rstanarm::prior_summary(x)
 
-  l <- lapply(ps[c("prior_intercept", "prior")], function(x) {
-    do.call(cbind, x)
-  })
+  l <- .compact_list(lapply(ps[c("prior_intercept", "prior")], function(.x) {
+    if (!is.null(.x)) do.call(cbind, .x)
+  }))
 
-  prior_info <- Reduce(function(x, y) merge(x, y, all = TRUE), l)
+  if (length(l) > 1) {
+    prior_info <- Reduce(function(x, y) merge(x, y, all = TRUE, sort = FALSE), l)
+  } else {
+    cn <- colnames(l[[1]])
+    prior_info <- as.data.frame(l)
+    colnames(prior_info) <- cn
+  }
+
   prior_info$parameter <- find_parameters(x)$conditional
-
   prior_info <- prior_info[, intersect(c("parameter", "dist", "location", "scale", "adjusted_scale"), colnames(prior_info))]
 
   colnames(prior_info) <- gsub("dist", "distribution", colnames(prior_info))
@@ -64,7 +70,7 @@ get_priors.brmsfit <- function(x, ...) {
   # check which parameters have a default prior
   need_def_prior <- which(x$prior$prior == "" & x$prior$class == "b" & x$prior$coef != "")
 
-  if (!is_empty_object(def_prior_b) && !is_empty_object(need_def_prior)) {
+  if (!.is_empty_object(def_prior_b) && !.is_empty_object(need_def_prior)) {
     x$prior$prior[need_def_prior] <- x$prior$prior[def_prior_b]
   }
 
@@ -75,7 +81,7 @@ get_priors.brmsfit <- function(x, ...) {
   # check which parameters have a default prior
   need_def_prior <- which(x$prior$prior == "" & x$prior$class == "Intercept" & x$prior$coef != "")
 
-  if (!is_empty_object(def_prior_intercept) && !is_empty_object(need_def_prior)) {
+  if (!.is_empty_object(def_prior_intercept) && !.is_empty_object(need_def_prior)) {
     x$prior$prior[need_def_prior] <- x$prior$prior[def_prior_intercept]
   }
 
@@ -96,8 +102,11 @@ get_priors.brmsfit <- function(x, ...) {
       as.character(x)
   }), stringsAsFactors = FALSE)
 
-  if (is_empty_string(pinfo$distribution)) {
+  if (.is_empty_string(pinfo$distribution)) {
     print_color("Model was fitted with uninformative (flat) priors!\n", "red")
+    pinfo$distribution <- "uniform"
+    pinfo$location <- 0
+    pinfo$scale <- NA
   }
 
   pinfo
@@ -107,14 +116,21 @@ get_priors.brmsfit <- function(x, ...) {
 #' @importFrom utils tail
 #' @export
 get_priors.BFBayesFactor <- function(x, ...) {
-  prior <- compact_list(utils::tail(x@numerator, 1)[[1]]@prior[[1]])
+  prior <- .compact_list(utils::tail(x@numerator, 1)[[1]]@prior[[1]])
+
+  switch(
+    .classify_BFBayesFactor(x),
+    "correlation" = names(prior) <- "rho",
+    "ttest" = names(prior) <- "Difference"
+  )
 
   data.frame(
-    parameters = names(prior),
-    distribution = "Cauchy",
+    parameter = names(prior),
+    distribution = "cauchy",
     location = 0,
     scale = unlist(prior),
-    stringsAsFactors = FALSE
+    stringsAsFactors = FALSE,
+    row.names = NULL
   )
 }
 

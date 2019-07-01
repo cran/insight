@@ -28,6 +28,7 @@ Retrieve information from model objects.
      \item \code{is_negbin}: family is negative binomial
      \item \code{is_count}: model is a count model (i.e. family is either poisson or negative binomial)
      \item \code{is_beta}: family is beta
+     \item \code{is_betabinomial}: family is beta-binomial
      \item \code{is_exponential}: family is exponential (e.g. Gamma or Weibull)
      \item \code{is_logit}: model has logit link
      \item \code{is_progit}: model has probit link
@@ -38,6 +39,7 @@ Retrieve information from model objects.
      \item \code{is_censored}: model is a censored model
      \item \code{is_zeroinf}: model has zero-inflation component
      \item \code{is_zero_inflated}: alias for \code{is_zeroinf}
+     \item \code{is_hurdle}: model has zero-inflation component and is a hurdle-model (truncated family distribution)
      \item \code{is_mixed}: model is a mixed effects model (with random effects)
      \item \code{is_multivariate}: model is a multivariate response model (currently only works for \emph{brmsfit} objects)
      \item \code{is_trial}: model response contains additional information about the trials
@@ -50,6 +52,16 @@ Retrieve information from model objects.
    }
 }
 \examples{
+ldose <- rep(0:5, 2)
+numdead <- c(1, 4, 9, 13, 18, 20, 0, 2, 6, 10, 12, 16)
+sex <- factor(rep(c("M", "F"), c(6, 6)))
+SF <- cbind(numdead, numalive = 20 - numdead)
+dat <- data.frame(ldose, sex, SF, stringsAsFactors = FALSE)
+m <- glm(SF ~ sex * ldose, family = binomial)
+
+model_info(m)
+
+\dontrun{
 library(glmmTMB)
 data("Salamanders")
 m <- glmmTMB(
@@ -58,7 +70,7 @@ m <- glmmTMB(
   dispformula = ~DOY,
   data = Salamanders,
   family = nbinom2
-)
+)}
 
 model_info(m)
 }

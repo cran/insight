@@ -19,6 +19,7 @@
 #'      \item \code{is_negbin}: family is negative binomial
 #'      \item \code{is_count}: model is a count model (i.e. family is either poisson or negative binomial)
 #'      \item \code{is_beta}: family is beta
+#'      \item \code{is_betabinomial}: family is beta-binomial
 #'      \item \code{is_exponential}: family is exponential (e.g. Gamma or Weibull)
 #'      \item \code{is_logit}: model has logit link
 #'      \item \code{is_progit}: model has probit link
@@ -29,6 +30,7 @@
 #'      \item \code{is_censored}: model is a censored model
 #'      \item \code{is_zeroinf}: model has zero-inflation component
 #'      \item \code{is_zero_inflated}: alias for \code{is_zeroinf}
+#'      \item \code{is_hurdle}: model has zero-inflation component and is a hurdle-model (truncated family distribution)
 #'      \item \code{is_mixed}: model is a mixed effects model (with random effects)
 #'      \item \code{is_multivariate}: model is a multivariate response model (currently only works for \emph{brmsfit} objects)
 #'      \item \code{is_trial}: model response contains additional information about the trials
@@ -41,6 +43,16 @@
 #'    }
 #'
 #' @examples
+#' ldose <- rep(0:5, 2)
+#' numdead <- c(1, 4, 9, 13, 18, 20, 0, 2, 6, 10, 12, 16)
+#' sex <- factor(rep(c("M", "F"), c(6, 6)))
+#' SF <- cbind(numdead, numalive = 20 - numdead)
+#' dat <- data.frame(ldose, sex, SF, stringsAsFactors = FALSE)
+#' m <- glm(SF ~ sex * ldose, family = binomial)
+#'
+#' model_info(m)
+#'
+#' \dontrun{
 #' library(glmmTMB)
 #' data("Salamanders")
 #' m <- glmmTMB(
@@ -49,7 +61,7 @@
 #'   dispformula = ~DOY,
 #'   data = Salamanders,
 #'   family = nbinom2
-#' )
+#' )}
 #'
 #' model_info(m)
 #' @importFrom stats formula terms
@@ -68,7 +80,7 @@ model_info.data.frame <- function(x, ...) {
 #' @importFrom stats family
 #' @export
 model_info.default <- function(x, ...) {
-  if (inherits(x, "list") && obj_has_name(x, "gam")) {
+  if (inherits(x, "list") && .obj_has_name(x, "gam")) {
     x <- x$gam
     class(x) <- c(class(x), c("glm", "lm"))
   }
@@ -245,6 +257,49 @@ model_info.rq <- function(x, ...) {
 
 
 #' @export
+model_info.BBreg <- function(x, ...) {
+  make_family(
+    x = x,
+    fitfam = "betabinomial",
+    logit.link = TRUE,
+    multi.var = FALSE,
+    zero.inf = FALSE,
+    link.fun = "logit",
+    ...
+  )
+}
+
+
+#' @export
+model_info.BBmm <- function(x, ...) {
+  make_family(
+    x = x,
+    fitfam = "betabinomial",
+    logit.link = TRUE,
+    multi.var = FALSE,
+    zero.inf = FALSE,
+    link.fun = "logit",
+    ...
+  )
+}
+
+
+#' @export
+model_info.glimML <- function(x, ...) {
+  fitfam <- switch(x@method, BB = "betabinomial", NB = "negative binomial")
+  make_family(
+    x = x,
+    fitfam = fitfam,
+    logit.link = x@link == "logit",
+    multi.var = FALSE,
+    zero.inf = FALSE,
+    link.fun = x@link,
+    ...
+  )
+}
+
+
+#' @export
 model_info.crq <- function(x, ...) {
   make_family(x, ...)
 }
@@ -323,7 +378,7 @@ model_info.vgam <- function(x, ...) {
   make_family(
     x = x,
     fitfam = faminfo@vfamily[1],
-    logit.link = any(string_contains("logit", faminfo@blurb)),
+    logit.link = any(.string_contains("logit", faminfo@blurb)),
     link.fun = link.fun,
     ...
   )
@@ -338,7 +393,7 @@ model_info.vglm <- function(x, ...) {
   make_family(
     x = x,
     fitfam = faminfo@vfamily[1],
-    logit.link = any(string_contains("logit", faminfo@blurb)),
+    logit.link = any(.string_contains("logit", faminfo@blurb)),
     link.fun = link.fun,
     ...
   )
@@ -385,6 +440,7 @@ model_info.hurdle <- function(x, ...) {
     x = x,
     fitfam = fitfam,
     zero.inf = TRUE,
+    hurdle = TRUE,
     link.fun = "log",
     ...
   )
@@ -424,7 +480,8 @@ model_info.glmmTMB <- function(x, ...) {
   make_family(
     x = x,
     fitfam = faminfo$family,
-    zero.inf = !is_empty_object(lme4::fixef(x)$zi),
+    zero.inf = !.is_empty_object(lme4::fixef(x)$zi),
+    hurdle = grepl("truncated", faminfo$family),
     logit.link = faminfo$link == "logit",
     link.fun = faminfo$link,
     ...
@@ -476,6 +533,18 @@ model_info.betareg <- function(x, ...) {
 
 #' @export
 model_info.coxph <- function(x, ...) {
+  make_family(
+    x = x,
+    fitfam = "survival",
+    logit.link = TRUE,
+    link.fun = NULL,
+    ...
+  )
+}
+
+
+#' @export
+model_info.survfit <- function(x, ...) {
   make_family(
     x = x,
     fitfam = "survival",
@@ -737,8 +806,7 @@ model_info.mlm <- function(x, ...) {
 }
 
 
-#' @keywords internal
-make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, logit.link = FALSE, multi.var = FALSE, link.fun = "identity", ...) {
+make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, hurdle = FALSE, logit.link = FALSE, multi.var = FALSE, link.fun = "identity", ...) {
   # create logical for family
   binom_fam <-
     fitfam %in% c("bernoulli", "binomial", "quasibinomial", "binomialff") |
@@ -756,7 +824,11 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, logit.link = F
       grepl("\\Qnegbinomial\\E", fitfam, ignore.case = TRUE) |
       grepl("\\Qneg_binomial\\E", fitfam, ignore.case = TRUE)
 
-  beta_fam <- inherits(x, "betareg") | fitfam %in% c("beta")
+  beta_fam <- inherits(x, "betareg") | fitfam %in% c("beta", "betabinomial")
+  betabin_fam <- inherits(x, "BBreg") | fitfam %in% "betabinomial"
+
+  ## TODO beta-binomial = binomial?
+  if (betabin_fam) binom_fam <- TRUE
 
   exponential_fam <- fitfam %in% c("Gamma", "weibull")
 
@@ -773,6 +845,11 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, logit.link = F
     grepl("^(zt|zi|za|hu)", fitfam, perl = TRUE) |
     grepl("^truncated", fitfam, perl = TRUE)
 
+  hurdle <- hurdle |
+    grepl("\\Qhurdle\\E", fitfam, ignore.case = TRUE) |
+    grepl("^hu", fitfam, perl = TRUE) |
+    grepl("^truncated", fitfam, perl = TRUE)
+
   is.ordinal <-
     inherits(x, c("svyolr", "polr", "clm", "clm2", "clmm", "gmnl", "mlogit", "multinom", "LORgee")) |
       fitfam %in% c("cumulative", "cratio", "sratio", "acat", "ordinal", "multinomial")
@@ -786,8 +863,8 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, logit.link = F
 
   if (inherits(x, "brmsfit") && is.null(stats::formula(x)$responses)) {
     is.trial <- tryCatch({
-      rv <- deparse(stats::formula(x)$formula[[2L]], width.cutoff = 500L)
-      trim(sub("(.*)\\|(.*)\\(([^,)]*).*", "\\2", rv)) %in% c("trials", "resp_trials")
+      rv <- .safe_deparse(stats::formula(x)$formula[[2L]])
+      .trim(sub("(.*)\\|(.*)\\(([^,)]*).*", "\\2", rv)) %in% c("trials", "resp_trials")
     },
     error = function(x) {
       FALSE
@@ -797,7 +874,7 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, logit.link = F
 
   if (binom_fam && !inherits(x, "brmsfit")) {
     is.trial <- tryCatch({
-      rv <- deparse(stats::formula(x)[[2L]], width.cutoff = 500L)
+      rv <- .safe_deparse(stats::formula(x)[[2L]])
       grepl("cbind\\((.*)\\)", rv)
     },
     error = function(x) {
@@ -807,11 +884,11 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, logit.link = F
   }
 
   dots <- list(...)
-  if (obj_has_name(dots, "no_terms") && isTRUE(dots$no_terms)) {
+  if (.obj_has_name(dots, "no_terms") && isTRUE(dots$no_terms)) {
     model_terms <- NULL
   } else {
     model_terms <- tryCatch({
-      find_terms(x, effects = "all", component = "all", flatten = FALSE)
+      find_variables(x, effects = "all", component = "all", flatten = FALSE)
     },
     error = function(x) {
       NULL
@@ -856,6 +933,7 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, logit.link = F
     is_poisson = poisson_fam,
     is_negbin = neg_bin_fam,
     is_beta = beta_fam,
+    is_betabinomial = betabin_fam,
     is_exponential = exponential_fam,
     is_logit = logit.link,
     is_probit = link.fun == "probit",
@@ -864,6 +942,7 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, logit.link = F
     is_tweedie = tweedie_model,
     is_zeroinf = zero.inf,
     is_zero_inflated = zero.inf,
+    is_hurdle = hurdle,
     is_ordinal = is.ordinal,
     is_categorical = is.categorical,
     is_mixed = !is.null(find_random(x)),
@@ -909,7 +988,6 @@ get_ordinal_link <- function(x) {
 }
 
 
-#' @keywords internal
 .classify_BFBayesFactor <- function(x) {
   if (!requireNamespace("BayesFactor", quietly = TRUE)) {
     stop("This function needs `BayesFactor` to be installed.")

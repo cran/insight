@@ -2,29 +2,53 @@
 % Please edit documentation in R/find_parameters.R
 \name{find_parameters}
 \alias{find_parameters}
+\alias{find_parameters.gam}
+\alias{find_parameters.merMod}
+\alias{find_parameters.zeroinfl}
+\alias{find_parameters.hurdle}
 \alias{find_parameters.brmsfit}
 \alias{find_parameters.stanreg}
-\alias{find_parameters.stanmvreg}
 \title{Find names of model parameters}
 \usage{
-find_parameters(x, flatten = FALSE, ...)
+find_parameters(x, ...)
 
-\method{find_parameters}{brmsfit}(x, flatten = FALSE,
+\method{find_parameters}{gam}(x, component = c("all", "conditional",
+  "smooth_terms"), flatten = FALSE, ...)
+
+\method{find_parameters}{merMod}(x, effects = c("all", "fixed",
+  "random"), flatten = FALSE, ...)
+
+\method{find_parameters}{zeroinfl}(x, component = c("all", "conditional",
+  "zi", "zero_inflated"), flatten = FALSE, ...)
+
+\method{find_parameters}{hurdle}(x, component = c("all", "conditional",
+  "zi", "zero_inflated"), flatten = FALSE, ...)
+
+\method{find_parameters}{brmsfit}(x, effects = c("all", "fixed",
+  "random"), component = c("all", "conditional", "zi", "zero_inflated",
+  "dispersion", "simplex", "sigma", "smooth_terms"), flatten = FALSE,
   parameters = NULL, ...)
 
-\method{find_parameters}{stanreg}(x, flatten = FALSE,
-  parameters = NULL, ...)
-
-\method{find_parameters}{stanmvreg}(x, flatten = FALSE,
-  parameters = NULL, ...)
+\method{find_parameters}{stanreg}(x, effects = c("all", "fixed",
+  "random"), component = c("all", "conditional", "smooth_terms"),
+  flatten = FALSE, parameters = NULL, ...)
 }
 \arguments{
 \item{x}{A fitted model.}
 
+\item{...}{Currently not used.}
+
+\item{component}{Should all parameters, parameters for the
+conditional model, the zero-inflated part of the model, the dispersion
+term or the instrumental variables be returned? Applies to models
+with zero-inflated and/or dispersion formula, or to models with instrumental
+variable (so called fixed-effects regressions). May be abbreviated.}
+
 \item{flatten}{Logical, if \code{TRUE}, the values are returned
 as character vector, not as list. Duplicated values are removed.}
 
-\item{...}{Currently not used.}
+\item{effects}{Should parameters for fixed effects, random effects
+or both be returned? Only applies to mixed models. May be abbreviated.}
 
 \item{parameters}{Regular expression pattern that describes the parameters that
 should be returned.}
@@ -41,8 +65,6 @@ A list of parameter names. For simple models, only one list-element,
      \item \code{dispersion}, the dispersion parameters
      \item \code{simplex}, simplex parameters of monotonic effects (\pkg{brms} only)
      \item \code{smooth_terms}, the smooth parameters
-     \item \code{within}, the within-subject effects of Anovas (\code{aov()}) with error term
-     \item \code{between}, the between-subjects effects of Anovas (\code{aov()}) with error term
    }
 }
 \description{
@@ -50,6 +72,12 @@ Returns the names of model parameters, like they typically
     appear in the \code{summary()} output. For Bayesian models, the parameter
     names equal the column names of the posterior samples after coercion
     from \code{as.data.frame()}.
+}
+\details{
+In most cases when models either return different "effects" (fixed,
+random) or "components" (conditional, zero-inflated, ...), the arguments
+\code{effects} and \code{component} can be used. Not all model classes that
+support these arguments are listed here in the 'Usage' section.
 }
 \examples{
 data(mtcars)

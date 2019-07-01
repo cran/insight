@@ -22,16 +22,16 @@
 #' @export
 is_model <- function(x) {
   inherits(x, c(
-    "aov", "aovlist", "betareg", "BFBayesFactor", "biglm", "bigglm",
+    "aov", "aovlist", "BBmm", "BBreg", "betareg", "BFBayesFactor", "biglm", "bigglm",
     "brmsfit", "censReg", "clm", "clm2", "clmm", "coxme", "coxph",
     "crch", "crq", "feis", "felm", "gam", "Gam", "gamlss", "gamm", "gbm",
-    "gee", "geeglm", "glm", "glmmPQL", "glmmTMB", "glmrob", "glmRob",
+    "gee", "geeglm", "glimML", "glm", "glmmPQL", "glmmTMB", "glmrob", "glmRob",
     "gls", "gmnl", "htest", "hurdle", "iv_robust", "ivreg", "lm",
     "lm_robust", "lme", "lmrob", "lmRob", "logistf", "LORgee", "lrm",
     "ols", "MCMCglmm", "merMod", "mixed", "MixMod", "mlm", "mlogit",
     "multinom", "plm", "polr", "psm", "rlmerMod", "rq", "rqss",
-    "speedlm", "speedglm", "stanmvreg", "stanreg", "survreg",
+    "speedlm", "speedglm", "stanmvreg", "stanreg", "survfit", "survreg",
     "svyglm", "svyolr", "tobit", "truncreg", "vgam", "vglm",
-    "zeroinfl", "zerotrunc"
+    "wbm", "wblm", "zeroinfl", "zerotrunc"
   ))
 }

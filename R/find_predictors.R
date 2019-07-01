@@ -45,21 +45,22 @@ find_predictors <- function(x, effects = c("fixed", "random", "all"), component 
   is_mv <- is_multivariate(f)
   elements <- .get_elements(effects, component)
 
+
   # filter formulas, depending on requested effects and components
   if (is_mv) {
-    f <- lapply(f, function(.x) prepare_predictors(x, .x, elements))
+    f <- lapply(f, function(.x) .prepare_predictors(x, .x, elements))
   } else {
-    f <- prepare_predictors(x, f, elements)
+    f <- .prepare_predictors(x, f, elements)
   }
 
   # random effects are returned as list, so we need to unlist here
   if (is_mv) {
-    l <- lapply(f, return_vars)
+    l <- lapply(f, function(.i) return_vars(.i, x))
   } else {
-    l <- return_vars(f)
+    l <- return_vars(f, x)
   }
 
-  if (is_empty_object(l) || is_empty_object(compact_list(l))) {
+  if (.is_empty_object(l) || .is_empty_object(.compact_list(l))) {
     return(NULL)
   }
 
@@ -71,7 +72,7 @@ find_predictors <- function(x, effects = c("fixed", "random", "all"), component 
 }
 
 
-return_vars <- function(f) {
+return_vars <- function(f, x) {
   l <- lapply(names(f), function(i) {
     if (i %in% c("random", "zero_inflated_random")) {
       unique(paste(unlist(f[[i]])))
@@ -88,34 +89,44 @@ return_vars <- function(f) {
     }
   })
 
-  empty_elements <- sapply(l, is_empty_object)
-  l <- compact_list(l)
+  empty_elements <- sapply(l, .is_empty_object)
+  l <- .compact_list(l)
+
+  # here we handle special cases for non-linear model in brms
+  if (inherits(x, "brmsfit")) {
+    nf <- stats::formula(x)
+    if (!is.null(attr(nf$formula, "nl", exact = TRUE)) && .obj_has_name(nf, "pforms")) {
+      nl_parms <- names(nf$pforms)
+      l <- lapply(l, .remove_values, nl_parms)
+    }
+  }
 
   # remove constants
-  l <- lapply(l, .remove_values, c("pi", "1", "0"))
+  l <- lapply(l, .remove_values, c(".", "pi", "1", "0"))
   l <- lapply(l, .remove_values, c(0, 1))
+  l <- lapply(l, function(i) gsub("`", "", i, fixed = TRUE))
   names(l) <- names(f)[!empty_elements]
 
   l
 }
 
 
-prepare_predictors <- function(x, f, elements) {
+.prepare_predictors <- function(x, f, elements) {
   f <- f[names(f) %in% elements]
 
   # from conditional model, remove response
-  if (obj_has_name(f, "conditional")) {
+  if (.obj_has_name(f, "conditional")) {
     f[["conditional"]] <- f[["conditional"]][[3]]
   }
 
   # if we have random effects, just return grouping variable, not random slopes
-  if (obj_has_name(f, "random")) {
-    f[["random"]] <- get_group_factor(x, f[["random"]])
+  if (.obj_has_name(f, "random")) {
+    f[["random"]] <- .get_group_factor(x, f[["random"]])
   }
 
   # same for zi-random effects
-  if (obj_has_name(f, "zero_inflated_random")) {
-    f[["zero_inflated_random"]] <- get_group_factor(x, f[["zero_inflated_random"]])
+  if (.obj_has_name(f, "zero_inflated_random")) {
+    f[["zero_inflated_random"]] <- .get_group_factor(x, f[["zero_inflated_random"]])
   }
 
   f
