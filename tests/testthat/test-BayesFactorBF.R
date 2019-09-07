@@ -1,9 +1,11 @@
-if (require("testthat") && require("insight") && require("stats") && require("BayesFactor")) {
-
+if (require("testthat") &&
+  require("insight") &&
+  require("stats") &&
+  require("BayesFactor")) {
   context("BF correlation")
   x <- correlationBF(y = iris$Sepal.Length, x = iris$Sepal.Width)
   test_that("get_data", {
-      expect_true(is.data.frame(get_data(x)))
+    expect_true(is.data.frame(get_data(x)))
   })
   test_that("find_formula", {
     expect_null(find_formula(x))
@@ -36,7 +38,8 @@ if (require("testthat") && require("insight") && require("stats") && require("Ba
   # ---------------------------
   context("BF t.test two samples")
   data(chickwts)
-  chickwts <- chickwts[chickwts$feed %in% c("horsebean","linseed"),]
+  chickwts <-
+    chickwts[chickwts$feed %in% c("horsebean", "linseed"), ]
   chickwts$feed <- factor(chickwts$feed)
   x <- ttestBF(formula = weight ~ feed, data = chickwts)
   test_that("get_data", {
@@ -88,7 +91,8 @@ if (require("testthat") && require("insight") && require("stats") && require("Ba
   # ---------------------------
   context("BF ANOVA Random")
   data(puzzles)
-  x <- anovaBF(RT ~ shape * color + ID, data = puzzles, whichRandom = "ID")
+  x <-
+    anovaBF(RT ~ shape * color + ID, data = puzzles, whichRandom = "ID")
 
   test_that("get_data", {
     expect_true(is.data.frame(get_data(x)))
@@ -179,7 +183,6 @@ if (require("testthat") && require("insight") && require("stats") && require("Ba
   })
   test_that("find_formula", {
     expect_equal(find_formula(x), list(conditional = as.formula("len ~ supp + dose")))
-
   })
   test_that("get_parameters", {
     expect_null(get_parameters(x))
@@ -200,4 +203,7 @@ if (require("testthat") && require("insight") && require("stats") && require("Ba
     )
   })
 
+  test_that("find_statistic", {
+    expect_null(find_statistic(x))
+  })
 }

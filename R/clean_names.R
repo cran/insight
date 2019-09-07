@@ -39,7 +39,6 @@
 #' clean_names(m)
 #' find_variables(m)
 #' find_variables(m, flatten = TRUE)
-#'
 #' @export
 clean_names <- function(x) {
   UseMethod("clean_names")
@@ -61,7 +60,9 @@ clean_names.character <- function(x) {
 
 .remove_pattern_from_names <- function(x, ignore_asis = FALSE, ignore_lag = FALSE) {
   # return if x is empty
-  if (.is_empty_string(x)) return("")
+  if (.is_empty_string(x)) {
+    return("")
+  }
 
   # for gam-smoothers/loess, remove s()- and lo()-function in column name
   # for survival, remove strata(), and so on...
@@ -69,7 +70,8 @@ clean_names.character <- function(x) {
     "as.factor", "factor", "offset", "log1p", "log10", "log2", "log-log",
     "log", "lag", "diff", "pspline", "poly", "catg", "asis", "matrx", "pol",
     "strata", "strat", "scale", "scored", "interaction", "sqrt", "lsp", "rcs",
-    "pb", "lo", "bs", "ns", "t2", "te", "ti", "tt", "mi", "mo", "gp", "s", "I"
+    "pb", "lo", "bs", "ns", "t2", "te", "ti", "tt", # need to be fixed first "mmc", "mm",
+    "mi", "mo", "gp", "s", "I"
   )
 
   # sometimes needed for panelr models, where we need to preserve "lag()"
@@ -92,6 +94,11 @@ clean_names.character <- function(x) {
         if (!ignore_asis) x[i] <- .trim(unique(sub("asis\\((\\w*).*", "\\1", x[i])))
       } else if (pattern[j] == "log-log") {
         x[i] <- .trim(unique(sub("^log\\(log\\(([^,)]*)).*", "\\1", x[i])))
+      } else if (pattern[j] %in% c("mmc", "mm")) {
+        ## TODO multimembership-models need to be fixed
+        p <- paste0("^", pattern[j], "\\((.*)\\).*")
+        g <- .trim(sub(p, "\\1", x[i]))
+        x[i] <- .trim(unlist(strsplit(g, ",")))
       } else {
         p <- paste0("^", pattern[j], "\\(([^,)]*).*")
         x[i] <- unique(sub(p, "\\1", x[i]))
@@ -103,4 +110,27 @@ clean_names.character <- function(x) {
 
   # remove for random intercept only models
   .remove_values(cleaned, c("1", "0"))
+}
+
+
+
+## TODO multimembership-models may also have weights, this does not work yet
+
+.clean_brms_mm <- function(x) {
+  # only clean for mm() / mmc() functions, else return x
+  if (!grepl("^(mmc|mm)\\(", x)) {
+    return(x)
+  }
+
+  # extract terms from mm() / mmc() functions, i.e. get
+  # multimembership-terms
+  unname(.compact_character(unlist(sapply(c("mmc", "mm"), function(j) {
+    if (grepl(paste0("^", j, "\\("), x = x)) {
+      p <- paste0("^", j, "\\((.*)\\).*")
+      g <- .trim(sub(p, "\\1", x))
+      .trim(unlist(strsplit(g, ",")))
+    } else {
+      ""
+    }
+  }, simplify = FALSE))))
 }

@@ -34,9 +34,12 @@
 # is string empty?
 .is_empty_object <- function(x) {
   if (is.list(x)) {
-    x <- tryCatch(
-      {.compact_list(x)},
-      error = function(x) { x }
+    x <- tryCatch({
+      .compact_list(x)
+    },
+    error = function(x) {
+      x
+    }
     )
   }
   # this is an ugly fix because of ugly tibbles
@@ -61,13 +64,25 @@
 }
 
 
+# checks if a brms-models is a multi-membership-model
+.is_multi_membership <- function(x) {
+  if (inherits(x, "brmsfit")) {
+    re <- find_random(x, split_nested = TRUE, flatten = TRUE)
+    any(grepl("^(mmc|mm)\\(", re))
+  } else {
+    return(FALSE)
+  }
+}
+
 
 # merge data frames, remove double columns
 .merge_dataframes <- function(data, ..., replace = TRUE) {
   # check for identical column names
   tmp <- cbind(...)
 
-  if (nrow(data) == 0) return(tmp)
+  if (nrow(data) == 0) {
+    return(tmp)
+  }
 
   doubles <- colnames(tmp) %in% colnames(data)
 
@@ -132,7 +147,6 @@
 
 # extract random effects from formula
 .get_model_random <- function(f, split_nested = FALSE, model) {
-
   is_special <- inherits(model, c("MCMCglmm", "gee", "LORgee", "felm", "feis", "BFBayesFactor", "BBmm", "glimML"))
 
   if (!requireNamespace("lme4", quietly = TRUE)) {
@@ -157,7 +171,31 @@
   }
 
   if (split_nested) {
-    unique(unlist(strsplit(re, "\\:")))
+    # remove parenthesis for nested models
+    re <- unique(unlist(strsplit(re, "\\:")))
+
+    # nested random effects, e.g. g1 / g2 / g3, deparse to "g0:(g1:g2)".
+    # when we split at ":", we have "g0", "(g1" and "g2)". In such cases,
+    # we need to remove the parantheses. But we need to preserve them in
+    # case we have group factors in other models, like panelr, where we can
+    # have "lag(union)" as group factor. In such cases, parantheses should be
+    # preserved. We here check if group factors, after passing to "clean_names()",
+    # still have "(" or ")" in their name, and if so, just remove parantheses
+    # for these cases...
+
+    has_parantheses <- vapply(
+      clean_names(re),
+      function(i) {
+        grepl("[\\(\\)]", x = i)
+      },
+      logical(1)
+    )
+
+    if (any(has_parantheses)) {
+      re[has_parantheses] <- sub(pattern = "[\\(\\)]", replacement = "", x = re[has_parantheses])
+    }
+
+    re
   } else {
     unique(re)
   }
@@ -177,7 +215,9 @@
     f <- .get_model_random(f, split_nested = TRUE, x)
   }
 
-  if (is.null(f)) return(NULL)
+  if (is.null(f)) {
+    return(NULL)
+  }
 
   if (is.list(f)) {
     f <- lapply(f, function(i) sapply(i, as.symbol))
@@ -226,20 +266,22 @@
 # and subset the data, if necessary
 .get_data_from_env <- function(x) {
   # first try, parent frame
-  dat <- tryCatch(
-    {
-      eval(x$call$data, envir = parent.frame())
-    },
-    error = function(e) { NULL }
+  dat <- tryCatch({
+    eval(x$call$data, envir = parent.frame())
+  },
+  error = function(e) {
+    NULL
+  }
   )
 
   if (is.null(dat)) {
     # second try, global env
-    dat <- tryCatch(
-      {
-        eval(x$call$data, envir = globalenv())
-      },
-      error = function(e) { NULL }
+    dat <- tryCatch({
+      eval(x$call$data, envir = globalenv())
+    },
+    error = function(e) {
+      NULL
+    }
     )
   }
 
@@ -261,43 +303,46 @@
     stop("Package `lme4` needs to be installed to compute variances for mixed models.", call. = FALSE)
   }
 
-  tryCatch(
-    {
-      if (inherits(x, "glmmTMB")) {
-        is_si <- any(sapply(vals$vc, function(.x) any(abs(diag(.x)) < tolerance)))
-      } else if (inherits(x, "merMod")) {
-        theta <- lme4::getME(x, "theta")
-        diag.element <- lme4::getME(x, "lower") == 0
-        is_si <- any(abs(theta[diag.element]) < tolerance)
-      } else if (inherits(x, "MixMod")) {
-        vc <- diag(x$D)
-        is_si <- any(sapply(vc, function(.x) any(abs(.x) < tolerance)))
-      } else if (inherits(x, "lme")) {
-        is_si <- any(abs(stats::na.omit(as.numeric(diag(vals$vc))) < tolerance))
-      } else {
-        is_si <- FALSE
-      }
+  tryCatch({
+    if (inherits(x, c("glmmTMB", "clmm"))) {
+      is_si <- any(sapply(vals$vc, function(.x) any(abs(diag(.x)) < tolerance)))
+    } else if (inherits(x, "merMod")) {
+      theta <- lme4::getME(x, "theta")
+      diag.element <- lme4::getME(x, "lower") == 0
+      is_si <- any(abs(theta[diag.element]) < tolerance)
+    } else if (inherits(x, "MixMod")) {
+      vc <- diag(x$D)
+      is_si <- any(sapply(vc, function(.x) any(abs(.x) < tolerance)))
+    } else if (inherits(x, "lme")) {
+      is_si <- any(abs(stats::na.omit(as.numeric(diag(vals$vc))) < tolerance))
+    } else {
+      is_si <- FALSE
+    }
 
-      is_si
-    },
-    error = function(x) { FALSE }
+    is_si
+  },
+  error = function(x) {
+    FALSE
+  }
   )
 }
 
 
 
 # Filter parameters from Stan-model fits
-.filter_pars <- function(l, parameters = NULL) {
+.filter_pars <- function(l, parameters = NULL, is_mv = NULL) {
   if (!is.null(parameters)) {
-    is_mv <- attr(l, "is_mv", exact = TRUE)
-    if (is_multivariate(l)) {
+    if (is.null(is_mv)) {
+      is_mv <- isTRUE(attr(l, "is_mv", exact = TRUE) == "1")
+    }
+    if (is_multivariate(l) || is_mv) {
       for (i in names(l)) {
         l[[i]] <- .filter_pars_univariate(l[[i]], parameters)
       }
     } else {
       l <- .filter_pars_univariate(l, parameters)
     }
-    attr(l, "is_mv") <- is_mv
+    if (isTRUE(is_mv)) attr(l, "is_mv") <- "1"
   }
 
   l
@@ -343,14 +388,26 @@
 
 
 
+.grep_zi_smoothers <- function(x) {
+  grepl("^(s\\.\\d\\()", x, perl = TRUE) |
+    grepl("^(gam::s\\.\\d\\()", x, perl = TRUE) |
+    grepl("^(mgcv::s\\.\\d\\()", x, perl = TRUE)
+}
+
+
+
 .grep_non_smoothers <- function(x) {
   grepl("^(?!(s\\())", x, perl = TRUE) &
+    # this one captures smoothers in zi- or mv-models from gam
+    grepl("^(?!(s\\.\\d\\())", x, perl = TRUE) &
     grepl("^(?!(ti\\())", x, perl = TRUE) &
     grepl("^(?!(te\\())", x, perl = TRUE) &
     grepl("^(?!(t2\\())", x, perl = TRUE) &
     grepl("^(?!(gam::s\\())", x, perl = TRUE) &
+    grepl("^(?!(gam::s\\.\\d\\())", x, perl = TRUE) &
     grepl("^(?!(VGAM::s\\())", x, perl = TRUE) &
     grepl("^(?!(mgcv::s\\())", x, perl = TRUE) &
+    grepl("^(?!(mgcv::s\\.\\d\\())", x, perl = TRUE) &
     grepl("^(?!(mgcv::ti\\())", x, perl = TRUE) &
     grepl("^(?!(mgcv::te\\())", x, perl = TRUE) &
     grepl("^(?!(brms::s\\())", x, perl = TRUE) &
@@ -387,4 +444,28 @@
 
 .safe_deparse <- function(string) {
   paste0(sapply(deparse(string, width.cutoff = 500), .trim, simplify = TRUE), collapse = " ")
+}
+
+
+
+#' @importFrom stats family
+.gam_family <- function(x) {
+  faminfo <- tryCatch(
+    {
+      stats::family(x)
+    },
+    error = function(e) { NULL }
+  )
+
+  # try to set manually, if not found otherwise
+  if (is.null(faminfo)) {
+    faminfo <- tryCatch(
+      {
+        x$family
+      },
+      error = function(e) { NULL }
+    )
+  }
+
+  faminfo
 }

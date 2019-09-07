@@ -22,7 +22,6 @@
 #' cbpp$trials <- cbpp$size - cbpp$incidence
 #' m <- glm(cbind(incidence, trials) ~ period, data = cbpp, family = binomial)
 #' head(get_data(m))
-#'
 #' @importFrom stats model.frame na.omit
 #' @export
 get_data <- function(x, ...) {
@@ -82,7 +81,8 @@ get_data.feis <- function(x, effects = c("all", "fixed", "random"), ...) {
   },
   error = function(x) {
     stats::model.frame(x)
-  })
+  }
+  )
 
   .get_data_from_modelframe(x, mf, effects)
 }
@@ -102,7 +102,8 @@ get_data.LORgee <- function(x, effects = c("all", "fixed", "random"), ...) {
   },
   error = function(x) {
     stats::model.frame(x)
-  })
+  }
+  )
 
   .prepare_get_data(x, stats::na.omit(mf))
 }
@@ -115,7 +116,8 @@ get_data.survfit <- function(x, ...) {
   },
   error = function(x) {
     NULL
-  })
+  }
+  )
 
   .prepare_get_data(x, stats::na.omit(mf))
 }
@@ -135,7 +137,8 @@ get_data.BBmm <- function(x, effects = c("all", "fixed", "random"), ...) {
   },
   error = function(x) {
     x$X
-  })
+  }
+  )
 
   .prepare_get_data(x, stats::na.omit(mf))
 }
@@ -163,7 +166,8 @@ get_data.gbm <- function(x, ...) {
   },
   error = function(x) {
     stats::model.frame(x)
-  })
+  }
+  )
 
   .get_data_from_modelframe(x, mf, effects = "all")
 }
@@ -387,11 +391,11 @@ get_data.clmm <- function(x, effects = c("all", "fixed", "random"), ...) {
 get_data.lme <- function(x, effects = c("all", "fixed", "random"), ...) {
   effects <- match.arg(effects)
   dat <- tryCatch({
-      x$data
-    },
-    error = function(x) {
-      NULL
-    }
+    x$data
+  },
+  error = function(x) {
+    NULL
+  }
   )
 
   .get_data_from_modelframe(x, dat, effects)
@@ -520,6 +524,12 @@ get_data.brmsfit <- function(x, effects = c("all", "fixed", "random"), component
   model.terms <- find_variables(x, effects = "all", component = "all", flatten = FALSE)
   mf <- stats::model.frame(x)
 
+  if (.is_multi_membership(x)) {
+    model.terms <- lapply(model.terms, .clean_brms_mm)
+    rs <- setdiff(unname(unlist(find_random_slopes(x))), unname(unlist(model.terms)))
+    if (!.is_empty_object(rs)) model.terms$random <- c(rs, model.terms$random)
+  }
+
   .return_data(
     x,
     .prepare_get_data(x, mf, effects = effects),
@@ -577,8 +587,9 @@ get_data.vglm <- function(x, ...) {
 get_data.stanmvreg <- function(x, ...) {
   mf <- tryCatch({
     out <- data.frame()
-    for (i in stats::model.frame(x))
+    for (i in stats::model.frame(x)) {
       out <- .merge_dataframes(out, i)
+    }
 
     out
   },
@@ -751,7 +762,21 @@ get_data.MCMCglmm <- function(x, effects = c("all", "fixed", "random"), ...) {
         mf <- md
       } else {
         needed.vars <- unique(clean_names(needed.vars))
-        mf <- stats::na.omit(md[, needed.vars, drop = FALSE])
+        mf <- md[, needed.vars, drop = FALSE]
+        # we need this hack to save variable and value label attributes, if any
+        value_labels <- lapply(mf, function(.l) attr(.l, "labels", exact = TRUE))
+        variable_labels <- lapply(mf, function(.l) attr(.l, "label", exact = TRUE))
+        # removing NAs drops all label-attributes
+        mf <- stats::na.omit(mf)
+        # then set back attributes
+        mf <- as.data.frame(mapply(function(.d, .l) {
+          attr(.d, "labels") <- .l
+          .d
+        }, mf, value_labels, SIMPLIFY = FALSE), stringsAsFactors = FALSE)
+        mf <- as.data.frame(mapply(function(.d, .l) {
+          attr(.d, "label") <- .l
+          .d
+        }, mf, variable_labels, SIMPLIFY = FALSE), stringsAsFactors = FALSE)
       }
 
       # add back model weights, if any
@@ -807,13 +832,14 @@ get_data.MCMCglmm <- function(x, effects = c("all", "fixed", "random"), ...) {
   # add weighting variable
   weighting_var <- find_weights(x)
   if (!is.null(weighting_var) && !weighting_var %in% colnames(mf) && length(weighting_var) == 1) {
-    mf <- tryCatch(
-      {
-        tmp <- cbind(mf, get_weights(x))
-        colnames(tmp)[ncol(tmp)] <- weighting_var
-        tmp
-      },
-      error = function(e) { mf }
+    mf <- tryCatch({
+      tmp <- cbind(mf, get_weights(x))
+      colnames(tmp)[ncol(tmp)] <- weighting_var
+      tmp
+    },
+    error = function(e) {
+      mf
+    }
     )
   }
 
@@ -857,21 +883,20 @@ get_data.MCMCglmm <- function(x, effects = c("all", "fixed", "random"), ...) {
 
     fixed.component.data <- unlist(fixed.component.data)
     random.component.data <- unlist(random.component.data)
-
   } else {
     fixed.component.data <- switch(
       component,
-      all           = c(model.terms$conditional, model.terms$zero_inflated, model.terms$dispersion),
-      conditional   = model.terms$conditional,
+      all = c(model.terms$conditional, model.terms$zero_inflated, model.terms$dispersion),
+      conditional = model.terms$conditional,
       zi = ,
       zero_inflated = model.terms$zero_inflated,
-      dispersion    = model.terms$dispersion
+      dispersion = model.terms$dispersion
     )
 
     random.component.data <- switch(
       component,
-      all           = c(model.terms$random, model.terms$zero_inflated_random),
-      conditional   = model.terms$random,
+      all = c(model.terms$random, model.terms$zero_inflated_random),
+      conditional = model.terms$random,
       zi = ,
       zero_inflated = model.terms$zero_inflated_random
     )

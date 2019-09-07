@@ -36,13 +36,17 @@ link_function.default <- function(x, ...) {
 
   tryCatch({
     # get model family
-    ff <- stats::family(x)
+    ff <- .gam_family(x)
 
     # return link function, if exists
-    if ("linkfun" %in% names(ff)) return(ff$linkfun)
+    if ("linkfun" %in% names(ff)) {
+      return(ff$linkfun)
+    }
 
     # else, create link function from link-string
-    if ("link" %in% names(ff)) return(match.fun(ff$link))
+    if ("link" %in% names(ff)) {
+      return(match.fun(ff$link))
+    }
 
     NULL
   },
@@ -51,6 +55,45 @@ link_function.default <- function(x, ...) {
   }
   )
 }
+
+
+
+#' @export
+link_function.gam <- function(x, ...) {
+  lf <-   tryCatch({
+    # get model family
+    ff <- .gam_family(x)
+
+    # return link function, if exists
+    if ("linkfun" %in% names(ff)) {
+      return(ff$linkfun)
+    }
+
+    # else, create link function from link-string
+    if ("link" %in% names(ff)) {
+      return(match.fun(ff$link))
+    }
+
+    NULL
+  },
+  error = function(x) {
+    NULL
+  }
+  )
+
+  if (is.null(lf)) {
+    mi <- .gam_family(x)
+    if (.obj_has_name(mi, "linfo")) {
+      if (.obj_has_name(mi$linfo, "linkfun"))
+        lf <- mi$linfo$linkfun
+      else
+        lf <- mi$linfo[[1]]$linkfun
+    }
+  }
+
+  lf
+}
+
 
 
 #' @export

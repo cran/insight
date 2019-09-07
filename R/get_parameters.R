@@ -184,11 +184,11 @@ get_parameters.glimML <- function(x, effects = c("fixed", "random", "all"), ...)
 }
 
 
-
+#' @importFrom stats na.omit
 #' @export
 get_parameters.gamlss <- function(x, ...) {
   pars <- list(
-    conditional = stats::coef(x),
+    conditional = stats::na.omit(stats::coef(x)),
     sigma = stats::coef(x, what = "sigma"),
     nu = stats::coef(x, what = "nu"),
     tau = stats::coef(x, what = "tau")
@@ -287,8 +287,8 @@ get_parameters.vgam <- function(x, component = c("all", "conditional", "smooth_t
 get_parameters.crq <- function(x, ...) {
   sc <- summary(x)
   data.frame(
-    parameter = names(sc$coefficients[ ,1]),
-    estimate = unname(sc$coefficients[ ,1])
+    parameter = names(sc$coefficients[, 1]),
+    estimate = unname(sc$coefficients[, 1])
   )
 }
 
@@ -304,7 +304,7 @@ get_parameters.rqss <- function(x, component = c("all", "conditional", "smooth_t
   names(smooth_terms) <- rownames(sc$qsstab)
 
   .return_smooth_parms(
-    conditional = sc$coef[ ,1],
+    conditional = sc$coef[, 1],
     smooth_terms = smooth_terms,
     component = component
   )
@@ -481,7 +481,7 @@ get_parameters.merMod <- function(x, effects = c("fixed", "random"), ...) {
   ))
 
   fixed <- data.frame(
-    parameter = names(l$conditional),
+    parameter = gsub("`", "", names(l$conditional), fixed = TRUE),
     estimate = unname(l$conditional),
     stringsAsFactors = FALSE
   )
@@ -684,12 +684,16 @@ get_parameters.glmmTMB <- function(x, effects = c("fixed", "random"), component 
     stringsAsFactors = FALSE
   )
 
-  fixedzi <- data.frame(
-    parameter = names(l$zero_inflated),
-    estimate = unname(l$zero_inflated),
-    component = "zero_inflated",
-    stringsAsFactors = FALSE
-  )
+  if (.obj_has_name(l, "zero_inflated")) {
+    fixedzi <- data.frame(
+      parameter = names(l$zero_inflated),
+      estimate = unname(l$zero_inflated),
+      component = "zero_inflated",
+      stringsAsFactors = FALSE
+    )
+  } else {
+    fixedzi <- NULL
+  }
 
   if (effects == "fixed") {
     switch(
@@ -737,6 +741,28 @@ get_parameters.stanreg <- function(x, effects = c("fixed", "random", "all"), par
 }
 
 
+#' @rdname get_parameters
+#' @export
+get_parameters.sim.merMod <- function(x, effects = c("fixed", "random", "all"), parameters = NULL, ...) {
+  effects <- match.arg(effects)
+  fe <- re <- NULL
+  if (effects %in% c("fixed", "all")) fe <- .get_armsim_fixef_parms(x)
+  if (effects %in% c("random", "all")) re <- .get_armsim_ranef_parms(x)
+
+  dat <- do.call(cbind, .compact_list(list(fe, re)))
+
+  as.data.frame(dat)[.get_parms_data(x, effects, "all", parameters)]
+}
+
+
+
+#' @export
+get_parameters.sim <- function(x, parameters = NULL, ...) {
+  dat <- .get_armsim_fixef_parms(x)
+  as.data.frame(dat)[.get_parms_data(x, "all", "all", parameters)]
+}
+
+
 
 #' @rdname get_parameters
 #' @export
@@ -763,7 +789,7 @@ get_parameters.BFBayesFactor <- function(x, iterations = 4000, progress = FALSE,
         BayesFactor::posterior(x, iterations = iterations, progress = progress, ...)
       ))
     data.frame("Effect" = as.numeric(posteriors$delta))
-  } else{
+  } else {
     NULL
   }
 }
@@ -850,7 +876,7 @@ get_parameters.stanmvreg <- function(x, effects = c("fixed", "random", "all"), p
     row.names = NULL
   )
 
-  smooth <-  data.frame(
+  smooth <- data.frame(
     parameter = names(smooth_terms),
     estimate = smooth_terms,
     component = "smooth_terms",
@@ -870,4 +896,39 @@ get_parameters.stanmvreg <- function(x, effects = c("fixed", "random", "all"), p
   }
 
   pars
+}
+
+
+
+#' @importFrom methods slot slotNames
+.get_armsim_fixef_parms <- function(x) {
+  sn <- methods::slotNames(x)
+  as.data.frame(methods::slot(x, sn[1]))
+}
+
+
+
+#' @importFrom methods .hasSlot
+.get_armsim_ranef_parms <- function(x) {
+  dat <- NULL
+  if (methods::.hasSlot(x, "ranef")) {
+    re <- x@ranef
+    dat <- data.frame()
+
+    for (i in 1:length(re)) {
+      dn <- dimnames(re[[i]])[[2]]
+      cn <- dimnames(re[[i]])[[3]]
+      l <- lapply(1:length(dn), function(j) {
+        d <- as.data.frame(re[[i]][, j, ])
+        colnames(d) <- sprintf("%s.%s", cn, dn[j])
+        d
+      })
+      if (ncol(dat) == 0)
+        dat <- do.call(cbind, l)
+      else
+        dat <- cbind(dat, do.call(cbind, l))
+    }
+  }
+
+  dat
 }

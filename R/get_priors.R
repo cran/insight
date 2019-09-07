@@ -13,8 +13,9 @@
 #' @examples
 #' \dontrun{
 #' library(rstanarm)
-#' model <- stan_glm(Sepal.Width ~ Species * Petal.Length, data=iris)
-#' get_priors(model)}
+#' model <- stan_glm(Sepal.Width ~ Species * Petal.Length, data = iris)
+#' get_priors(model)
+#' }
 #'
 #' @export
 get_priors <- function(x, ...) {
@@ -49,10 +50,11 @@ get_priors.stanreg <- function(x, ...) {
   colnames(prior_info) <- gsub("df", "DoF", colnames(prior_info))
 
   as.data.frame(lapply(prior_info, function(x) {
-    if (.is_numeric_character(x))
+    if (.is_numeric_character(x)) {
       as.numeric(as.character(x))
-    else
+    } else {
       as.character(x)
+    }
   }), stringsAsFactors = FALSE)
 }
 
@@ -89,17 +91,18 @@ get_priors.brmsfit <- function(x, ...) {
   prior_info <- x$prior[x$prior$coef != "" & x$prior$class %in% c("b", "(Intercept)"), ]
 
   prior_info$distribution <- gsub("(.*)\\(.*", "\\1", prior_info$prior)
-  prior_info$scale <- gsub("(.*)\\((.*)\\,(.*)", "\\2", prior_info$prior)
-  prior_info$location <- gsub("(.*)\\,(.*)\\)(.*)", "\\2", prior_info$prior)
+  prior_info$location <- gsub("(.*)\\((.*)\\,(.*)", "\\2", prior_info$prior)
+  prior_info$scale <- gsub("(.*)\\,(.*)\\)(.*)", "\\2", prior_info$prior)
   prior_info$parameter <- prior_info$coef
 
   prior_info <- prior_info[, c("parameter", "distribution", "location", "scale")]
 
   pinfo <- as.data.frame(lapply(prior_info, function(x) {
-    if (.is_numeric_character(x))
+    if (.is_numeric_character(x)) {
       as.numeric(as.character(x))
-    else
+    } else {
       as.character(x)
+    }
   }), stringsAsFactors = FALSE)
 
   if (.is_empty_string(pinfo$distribution)) {

@@ -64,6 +64,19 @@ find_predictors <- function(x, effects = c("fixed", "random", "all"), component 
     return(NULL)
   }
 
+
+  # some models, like spatial models, have random slopes that are not defined
+  # as fixed effect predictor. In such cases, we have to add the random slope term
+  # manually, so other functions like "get_data()" work as expected...
+
+  if (.obj_has_name(l, "random") && effects == "all") {
+    random_slope <- unname(unlist(find_random_slopes(x)))
+    all_predictors <- unlist(unique(l))
+    rs_not_in_pred <- unique(setdiff(random_slope, all_predictors))
+    if (length(rs_not_in_pred)) l$random <- c(rs_not_in_pred, l$random)
+  }
+
+
   if (flatten) {
     unique(unlist(l))
   } else {

@@ -101,7 +101,7 @@ find_parameters.polr <- function(x, flatten = FALSE, ...) {
 #' @export
 find_parameters.gamlss <- function(x, flatten = FALSE, ...) {
   pars <- list(
-    conditional = names(stats::coef(x)),
+    conditional = names(stats::na.omit(stats::coef(x))),
     sigma = names(stats::coef(x, what = "sigma")),
     nu = names(stats::coef(x, what = "nu")),
     tau = names(stats::coef(x, what = "tau"))
@@ -425,10 +425,11 @@ find_parameters.lme <- function(x, effects = c("all", "fixed", "random"), flatte
   }
 
   re <- lme4::ranef(x)
-  if (is.data.frame(re))
+  if (is.data.frame(re)) {
     rn <- colnames(re)
-  else
+  } else {
     rn <- lapply(re, colnames)
+  }
 
   l <- .compact_list(list(
     conditional = names(lme4::fixef(x)),
@@ -522,7 +523,7 @@ find_parameters.glmmTMB <- function(x, effects = c("all", "fixed", "random"), co
 
 #' @rdname find_parameters
 #' @export
-find_parameters.zeroinfl <- function(x,  component = c("all", "conditional", "zi", "zero_inflated"), flatten = FALSE, ...) {
+find_parameters.zeroinfl <- function(x, component = c("all", "conditional", "zi", "zero_inflated"), flatten = FALSE, ...) {
   cf <- names(stats::coef(x))
   l <- .compact_list(list(
     conditional = cf[grepl("^count_", cf, perl = TRUE)],
@@ -543,7 +544,7 @@ find_parameters.zeroinfl <- function(x,  component = c("all", "conditional", "zi
 
 #' @rdname find_parameters
 #' @export
-find_parameters.hurdle <- function(x,  component = c("all", "conditional", "zi", "zero_inflated"), flatten = FALSE, ...) {
+find_parameters.hurdle <- function(x, component = c("all", "conditional", "zi", "zero_inflated"), flatten = FALSE, ...) {
   cf <- names(stats::coef(x))
   l <- .compact_list(list(
     conditional = cf[grepl("^count_", cf, perl = TRUE)],
@@ -563,7 +564,7 @@ find_parameters.hurdle <- function(x,  component = c("all", "conditional", "zi",
 
 
 #' @export
-find_parameters.zerotrunc <- function(x,  component = c("all", "conditional", "zi", "zero_inflated"), flatten = FALSE, ...) {
+find_parameters.zerotrunc <- function(x, component = c("all", "conditional", "zi", "zero_inflated"), flatten = FALSE, ...) {
   cf <- names(stats::coef(x))
   l <- .compact_list(list(
     conditional = cf[grepl("^count_", cf, perl = TRUE)],
@@ -684,7 +685,7 @@ find_parameters.brmsfit <- function(x, effects = c("all", "fixed", "random"), co
     l <- .compact_list(l[elements])
   }
 
-  l <- .filter_pars(l, parameters)
+  l <- .filter_pars(l, parameters, !is.null(is_mv) && is_mv == "1")
   attr(l, "is_mv") <- is_mv
 
   if (flatten) {
@@ -723,6 +724,47 @@ find_parameters.stanreg <- function(x, effects = c("all", "fixed", "random"), co
     l
   }
 }
+
+
+#' @rdname find_parameters
+#' @export
+find_parameters.sim.merMod <- function(x, effects = c("all", "fixed", "random"), flatten = FALSE, parameters = NULL, ...) {
+  fe <- colnames(.get_armsim_fixef_parms(x))
+  re <- colnames(.get_armsim_ranef_parms(x))
+
+  l <- .compact_list(list(
+    conditional = fe,
+    random = re
+  ))
+
+  l <- .filter_pars(l, parameters)
+
+  effects <- match.arg(effects)
+  elements <- .get_elements(effects, component = "all")
+  l <- .compact_list(l[elements])
+
+  if (flatten) {
+    unique(unlist(l))
+  } else {
+    l
+  }
+}
+
+
+#' @export
+find_parameters.sim <- function(x, flatten = FALSE, parameters = NULL, ...) {
+  l <- .filter_pars(
+    list(conditional = colnames(.get_armsim_fixef_parms(x))),
+    parameters
+  )
+
+  if (flatten) {
+    unique(unlist(l))
+  } else {
+    l
+  }
+}
+
 
 
 #' @export
@@ -778,7 +820,7 @@ find_parameters.stanmvreg <- function(x, effects = c("all", "fixed", "random"), 
 
 
   l <- mapply(c, l.cond, l.random, l.sigma, SIMPLIFY = FALSE)
-  l <- .filter_pars(l, parameters)
+  l <- .filter_pars(l, parameters, is_mv = TRUE)
 
   effects <- match.arg(effects)
   component <- match.arg(component)
@@ -819,5 +861,3 @@ find_parameters.wbm <- function(x, effects = c("all", "fixed", "random"), flatte
     l
   }
 }
-
-

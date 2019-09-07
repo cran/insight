@@ -23,7 +23,7 @@
 #'    }
 #'
 #' @note For models of class \code{lme} or \code{gls} the correlation-component
-#'   is only returned, when it is explicitely defined as named argument
+#'   is only returned, when it is explicitly defined as named argument
 #'   (\code{form}), e.g. \code{corAR1(form = ~1 | Mare)}
 #'
 #' @examples
@@ -64,14 +64,60 @@ find_formula.data.frame <- function(x, ...) {
 
 
 #' @export
+find_formula.gam <- function(x, ...) {
+  f <- tryCatch({
+    stats::formula(x)
+  },
+  error = function(x) {
+    NULL
+  }
+  )
+
+  if (!is.null(f)) {
+    if (is.list(f)) {
+      mi <- .gam_family(x)
+      if (!is.null(mi) && mi$family == "ziplss") {
+        # handle formula for zero-inflated models
+        f <- list(conditional = f[[1]], zero_inflated = f[[2]])
+      } else if (mi$family == "Multivariate normal") {
+        # handle formula for multivariate models
+        r <- lapply(f, function(.i) deparse(.i[[2]]))
+        f <- lapply(f, function(.i) list(conditional = .i))
+        names(f) <- r
+        attr(f, "is_mv") <- "1"
+      }
+    } else {
+      f <- list(conditional = f)
+    }
+  }
+
+  f
+}
+
+
+
+#' @export
 find_formula.gamlss <- function(x, ...) {
   tryCatch({
-    list(
-      conditional = x$mu.formula,
+    if (!requireNamespace("lme4", quietly = TRUE)) {
+      stop("To use this function, please install package 'lme4'.")
+    }
+    f.random <- lapply(lme4::findbars(x$mu.formula), function(.x) {
+      f <- .safe_deparse(.x)
+      stats::as.formula(paste0("~", f))
+    })
+
+    if (length(f.random) == 1) {
+      f.random <- f.random[[1]]
+    }
+
+    .compact_list(list(
+      conditional = stats::as.formula(.get_fixed_effects(x$mu.formula)),
+      random = f.random,
       sigma = x$sigma.formula,
       nu = x$nu.formula,
       tau = x$tau.formula
-    )
+    ))
   },
   error = function(x) {
     NULL
@@ -201,12 +247,13 @@ find_formula.plm <- function(x, ...) {
     f <- .safe_deparse(stats::formula(x))
     bar_pos <- regexpr(pattern = "\\|", f)
 
-    if (bar_pos == -1)
+    if (bar_pos == -1) {
       stop_pos <- nchar(f) + 1
-    else
+    } else {
       stop_pos <- bar_pos
+    }
 
-    cond <- .trim(substr(f, start = 0, stop =  stop_pos - 1))
+    cond <- .trim(substr(f, start = 0, stop = stop_pos - 1))
     instr <- .trim(substr(f, stop_pos + 1, stop = 10000L))
 
     if (.is_empty_string(instr)) {
@@ -671,7 +718,6 @@ find_formula.MixMod <- function(x, ...) {
 #' @export
 find_formula.BFBayesFactor <- function(x, ...) {
   if (.classify_BFBayesFactor(x) == "linear") {
-
     fcond <- utils::tail(x@numerator, 1)[[1]]@identifier$formula
     dt <- utils::tail(x@numerator, 1)[[1]]@dataTypes
     frand <- names(dt)[which(dt == "random")]
@@ -685,8 +731,7 @@ find_formula.BFBayesFactor <- function(x, ...) {
       f.random <- NULL
       f.cond <- stats::as.formula(fcond)
     }
-
-  } else{
+  } else {
     return(NULL)
   }
 
@@ -792,29 +837,31 @@ find_formula.BFBayesFactor <- function(x, ...) {
   ## TODO could be extended to all find_formula()
 
   # fix dot-formulas
-  c.form <- tryCatch(
-    {
-      if (as.character(c.form[3]) == ".") {
-        resp <- .safe_deparse(c.form[2])
-        pred <- setdiff(colnames(.get_data_from_env(x)), resp)
-        c.form <- stats::as.formula(paste(resp, "~", paste0(pred, collapse = " + ")))
-      }
-      c.form
-    },
-    error = function(e) { c.form }
+  c.form <- tryCatch({
+    if (as.character(c.form[3]) == ".") {
+      resp <- .safe_deparse(c.form[2])
+      pred <- setdiff(colnames(.get_data_from_env(x)), resp)
+      c.form <- stats::as.formula(paste(resp, "~", paste0(pred, collapse = " + ")))
+    }
+    c.form
+  },
+  error = function(e) {
+    c.form
+  }
   )
 
   # fix dot-formulas
-  zi.form <- tryCatch(
-    {
-      if (as.character(zi.form[2]) == ".") {
-        resp <- .safe_deparse(c.form[2])
-        pred <- setdiff(colnames(.get_data_from_env(x)), resp)
-        zi.form <- stats::as.formula(paste(resp, "~", paste0(pred, collapse = " + ")))
-      }
-      zi.form
-    },
-    error = function(e) { zi.form }
+  zi.form <- tryCatch({
+    if (as.character(zi.form[2]) == ".") {
+      resp <- .safe_deparse(c.form[2])
+      pred <- setdiff(colnames(.get_data_from_env(x)), resp)
+      zi.form <- stats::as.formula(paste(resp, "~", paste0(pred, collapse = " + ")))
+    }
+    zi.form
+  },
+  error = function(e) {
+    zi.form
+  }
   )
 
 
