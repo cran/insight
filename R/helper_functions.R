@@ -23,6 +23,13 @@
 }
 
 
+# rename values in a vector
+.rename_values <- function(x, old, new) {
+  x[x %in% old] <- new
+  x
+}
+
+
 
 # is string empty?
 .is_empty_string <- function(x) {
@@ -147,7 +154,7 @@
 
 # extract random effects from formula
 .get_model_random <- function(f, split_nested = FALSE, model) {
-  is_special <- inherits(model, c("MCMCglmm", "gee", "LORgee", "felm", "feis", "BFBayesFactor", "BBmm", "glimML"))
+  is_special <- inherits(model, c("MCMCglmm", "gee", "LORgee", "clmm2", "felm", "feis", "BFBayesFactor", "BBmm", "glimML"))
 
   if (!requireNamespace("lme4", quietly = TRUE)) {
     stop("To use this function, please install package 'lme4'.")
@@ -168,6 +175,13 @@
     }
   } else {
     re <- .trim(substring(re, max(gregexpr(pattern = "\\|", re)[[1]]) + 1))
+  }
+
+  # check for multi-membership models
+  if (inherits(model, "brmsfit")) {
+    if (grepl("mm\\((.*)\\)", re)) {
+      re <- trimws(unlist(strsplit(gsub("mm\\((.*)\\)", "\\1", re), ",")))
+    }
   }
 
   if (split_nested) {
@@ -192,7 +206,7 @@
     )
 
     if (any(has_parantheses)) {
-      re[has_parantheses] <- sub(pattern = "[\\(\\)]", replacement = "", x = re[has_parantheses])
+      re[has_parantheses] <- gsub(pattern = "[\\(\\)]", replacement = "", x = re[has_parantheses])
     }
 
     re
@@ -233,19 +247,19 @@
 # to reduce redundant code, I extract this part which is used several
 # times accross this package
 .get_elements <- function(effects, component) {
-  elements <- c("conditional", "random", "zero_inflated", "zero_inflated_random", "dispersion", "instruments", "simplex", "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes")
+  elements <- c("conditional", "nonlinear", "random", "zero_inflated", "zero_inflated_random", "dispersion", "instruments", "simplex", "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes")
 
   elements <- switch(
     effects,
     all = elements,
-    fixed = elements[elements %in% c("conditional", "zero_inflated", "dispersion", "instruments", "simplex", "smooth_terms", "correlation", "slopes", "sigma")],
+    fixed = elements[elements %in% c("conditional", "zero_inflated", "dispersion", "instruments", "simplex", "smooth_terms", "correlation", "slopes", "sigma", "nonlinear")],
     random = elements[elements %in% c("random", "zero_inflated_random")]
   )
 
   elements <- switch(
     component,
     all = elements,
-    conditional = elements[elements %in% c("conditional", "random", "slopes")],
+    conditional = elements[elements %in% c("conditional", "nonlinear", "random", "slopes")],
     zi = ,
     zero_inflated = elements[elements %in% c("zero_inflated", "zero_inflated_random")],
     dispersion = elements[elements == "dispersion"],
@@ -254,43 +268,11 @@
     sigma = elements[elements == "sigma"],
     smooth_terms = elements[elements == "smooth_terms"],
     correlation = elements[elements == "correlation"],
+    nonlinear = elements[elements == "nonlinear"],
     slopes = elements[elements == "slopes"]
   )
 
   elements
-}
-
-
-
-# return data from a data frame that is in the environment,
-# and subset the data, if necessary
-.get_data_from_env <- function(x) {
-  # first try, parent frame
-  dat <- tryCatch({
-    eval(x$call$data, envir = parent.frame())
-  },
-  error = function(e) {
-    NULL
-  }
-  )
-
-  if (is.null(dat)) {
-    # second try, global env
-    dat <- tryCatch({
-      eval(x$call$data, envir = globalenv())
-    },
-    error = function(e) {
-      NULL
-    }
-    )
-  }
-
-
-  if (!is.null(dat) && .obj_has_name(x$call, "subset")) {
-    dat <- subset(dat, subset = eval(x$call$subset))
-  }
-
-  dat
 }
 
 
@@ -468,4 +450,21 @@
   }
 
   faminfo
+}
+
+
+
+# for models with zero-inflation component, return
+# required component of model-summary
+.filter_component <- function(dat, component) {
+  switch(
+    component,
+    "cond" = ,
+    "conditional" = dat[dat$component == "conditional", ],
+    "zi" = ,
+    "zero_inflated" = dat[dat$component == "zero_inflated", ],
+    "dispersion" = dat[dat$component == "dispersion", ],
+    "smooth_terms" = dat[dat$component == "smooth_terms", ],
+    dat
+  )
 }

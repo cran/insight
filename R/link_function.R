@@ -97,6 +97,19 @@ link_function.gam <- function(x, ...) {
 
 
 #' @export
+link_function.bayesx <- function(x, ...) {
+  stats::gaussian(link = "identity")$linkfun
+}
+
+
+#' @export
+link_function.flexsurvreg <- function(x, ...) {
+  dist <- parse(text = .safe_deparse(x$call))[[1]]$dist
+  .make_tobit_family(x, dist)$linkfun
+}
+
+
+#' @export
 link_function.speedglm <- function(x, ...) {
   stats::family(x)$linkfun
 }
@@ -156,6 +169,19 @@ link_function.clm <- function(x, ...) {
 #' @export
 link_function.clm2 <- function(x, ...) {
   stats::make.link(link = get_ordinal_link(x))$linkfun
+}
+
+
+#' @export
+link_function.bamlss <- function(x, ...) {
+  flink <- stats::family(x)$links[1]
+  tryCatch({
+    stats::make.link(flink)$linkfun
+  },
+  error = function(e) {
+    print_colour("\nCould not find appropriate link-function.\n", "red")
+  }
+  )
 }
 
 

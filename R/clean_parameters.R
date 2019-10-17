@@ -58,6 +58,8 @@ clean_parameters.default <- function(x, ...) {
 
     com <- if (grepl("zero_inflated", i, fixed = TRUE)) {
       "zero_inflated"
+    } else if (grepl("nonlinear", i, fixed = TRUE)) {
+      "nonlinear"
     } else {
       "conditional"
     }
@@ -99,6 +101,40 @@ clean_parameters.default <- function(x, ...) {
   out <- do.call(rbind, l)
   out <- .remove_empty_columns_from_pars(out)
   .fix_random_effect_smooth(x, out)
+}
+
+
+
+#' @export
+clean_parameters.lavaan <- function(x, ...) {
+  params <- get_parameters(x)
+
+  data.frame(
+    Parameter = params$parameter,
+    Component = params$component,
+    Group = "",
+    Function = "",
+    Cleaned_Parameter = params$parameter,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+}
+
+
+
+#' @export
+clean_parameters.blavaan <- function(x, ...) {
+  params <- get_parameters.lavaan(x)
+
+  data.frame(
+    Parameter = params$parameter,
+    Component = params$component,
+    Group = "",
+    Function = "",
+    Cleaned_Parameter = params$parameter,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
 }
 
 

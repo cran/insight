@@ -5,13 +5,11 @@ if (require("testthat") &&
 
   data("bioChemists")
 
-  m1 <-
-    zeroinfl(art ~ fem + mar + kid5 + ment |
-      kid5 + phd, data = bioChemists)
+  m1 <- zeroinfl(art ~ fem + mar + kid5 + ment | kid5 + phd, data = bioChemists)
 
   test_that("model_info", {
     expect_true(model_info(m1)$is_poisson)
-    expect_true(model_info(m1)$is_zeroinf)
+    expect_true(model_info(m1)$is_zero_inflated)
   })
 
   test_that("find_predictors", {

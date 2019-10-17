@@ -96,6 +96,13 @@ link_inverse.bigglm <- function(x, ...) {
 
 
 #' @export
+link_inverse.flexsurvreg <- function(x, ...) {
+  dist <- parse(text = .safe_deparse(x$call))[[1]]$dist
+  .make_tobit_family(x, dist)$linkinv
+}
+
+
+#' @export
 link_inverse.gamlss <- function(x, ...) {
   faminfo <- get(x$family[1], asNamespace("gamlss"))()
   faminfo$mu.linkinv
@@ -103,7 +110,26 @@ link_inverse.gamlss <- function(x, ...) {
 
 
 #' @export
+link_inverse.bamlss <- function(x, ...) {
+  flink <- stats::family(x)$links[1]
+  tryCatch({
+    stats::make.link(flink)$linkinv
+  },
+  error = function(e) {
+    print_colour("\nCould not find appropriate link-inverse-function.\n", "red")
+  }
+  )
+}
+
+
+#' @export
 link_inverse.lm <- function(x, ...) {
+  stats::gaussian(link = "identity")$linkinv
+}
+
+
+#' @export
+link_inverse.bayesx <- function(x, ...) {
   stats::gaussian(link = "identity")$linkinv
 }
 

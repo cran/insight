@@ -48,20 +48,6 @@ get_parameters.default <- function(x, ...) {
     return(get_parameters.gam(x, ...))
   }
 
-  ## TODO We may think about returning standard errors as well in a
-  ## later update... However, we need to check models classes. "rms::lrm()"
-  ## e.g. is of class "lrm", "glm" and "lm", and would go into this default
-  ## method, which works with "stats::coef()", but not with "summary()$coefficients"
-
-  # cf <- summary(x)$coefficients
-  # data.frame(
-  #   parameter = row.names(cf),
-  #   estimate = unname(cf[, 1]),
-  #   # std.error = unname(cf[, 2]),
-  #   stringsAsFactors = FALSE,
-  #   row.names = NULL
-  # )
-
   tryCatch({
     cf <- stats::coef(x)
     data.frame(
@@ -75,6 +61,84 @@ get_parameters.default <- function(x, ...) {
     print_color(sprintf("Parameters can't be retrieved for objects of class '%s'.\n", class(x)[1]), "red")
     NULL
   }
+  )
+}
+
+
+
+#' @export
+get_parameters.flexsurvreg <- function(x, ...) {
+  cf <- stats::coef(x)
+  data.frame(
+    parameter = names(cf),
+    estimate = unname(cf),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+}
+
+
+
+#' @export
+get_parameters.mlm <- function(x, ...) {
+  cs <- stats::coef(summary(x))
+
+  out <- lapply(names(cs), function(i) {
+    params <- cs[[i]]
+    data.frame(
+      parameter = rownames(params),
+      estimate = params[, 1],
+      response = gsub("^Response (.*)", "\\1", i),
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  })
+
+  do.call(rbind, out)
+}
+
+
+
+#' @export
+get_parameters.blavaan <- function(x, ...) {
+  if (!requireNamespace("lavaan", quietly = TRUE)) {
+    stop("Package 'lavaan' required for this function to work. Please install it.")
+  }
+
+  if (!requireNamespace("blavaan", quietly = TRUE)) {
+    stop("Package 'blavaan' required for this function to work. Please install it.")
+  }
+
+  draws <- blavaan::blavInspect(x, "draws")
+  posteriors <- as.data.frame(as.matrix(draws))
+
+  names(posteriors) <- names(lavaan::coef(x))
+  posteriors
+}
+
+
+
+#' @export
+get_parameters.lavaan <- function(x, ...) {
+  if (!requireNamespace("lavaan", quietly = TRUE)) {
+    stop("Package 'lavaan' required for this function to work. Please install it.")
+  }
+
+  params <- lavaan::parameterEstimates(x)
+
+  params$parameter = paste0(params$lhs, params$op, params$rhs)
+  params$comp <- NA
+
+  params$comp[params$op == "~"] <- "regression"
+  params$comp[params$op == "=~"] <- "latent"
+  params$comp[params$op == "~~"] <- "residual"
+  params$comp[params$op == "~1"] <- "intercept"
+
+  data.frame(
+    parameter = params$parameter,
+    estimate = params$est,
+    component = params$comp,
+    stringsAsFactors = FALSE
   )
 }
 
@@ -145,6 +209,31 @@ get_parameters.BBmm <- function(x, effects = c("fixed", "random"), ...) {
 
 
 
+#' @importFrom stats coef
+#' @rdname find_parameters
+#' @export
+get_parameters.bayesx <- function(x, component = c("all", "conditional", "smooth_terms"), flatten = FALSE, parameters = NULL, ...) {
+  component <- match.arg(component)
+
+  smooth_terms <- find_parameters(x, component = "smooth_terms", flatten = TRUE)
+
+  fixed_dat <- attr(x$fixed.effects, "sample")
+  smooth_dat <- do.call(cbind, lapply(smooth_terms, function(i) {
+    dat <- data.frame(x$effects[[i]]$Mean)
+    colnames(dat) <- i
+    dat
+  }))
+
+  switch(
+    component,
+    "all" = cbind(fixed_dat, smooth_dat),
+    "conditional" = fixed_dat,
+    "smooth_terms" = smooth_dat
+  )
+}
+
+
+
 #' @rdname get_parameters
 #' @export
 get_parameters.glimML <- function(x, effects = c("fixed", "random", "all"), ...) {
@@ -187,25 +276,35 @@ get_parameters.glimML <- function(x, effects = c("fixed", "random", "all"), ...)
 #' @importFrom stats na.omit
 #' @export
 get_parameters.gamlss <- function(x, ...) {
-  pars <- list(
-    conditional = stats::na.omit(stats::coef(x)),
-    sigma = stats::coef(x, what = "sigma"),
-    nu = stats::coef(x, what = "nu"),
-    tau = stats::coef(x, what = "tau")
-  )
+  pars <- lapply(x$parameters, function(i) {
+    stats::na.omit(stats::coef(x, what = i))
+  })
 
-  data.frame(
-    parameter = c(names(pars$conditional), names(pars$sigma), names(pars$nu), names(pars$tau)),
-    estimate = c(unname(pars$conditional), unname(pars$sigma), unname(pars$nu), unname(pars$tau)),
-    component = c(
-      rep("conditional", length(pars$conditional)),
-      rep("sigma", length(pars$sigma)),
-      rep("nu", length(pars$nu)),
-      rep("tau", length(pars$tau))
-    ),
-    stringsAsFactors = FALSE,
-    row.names = NULL
-  )
+  names(pars) <- x$parameters
+  if ("mu" %in% names(pars)) names(pars)[1] <- "conditional"
+
+  do.call(rbind, lapply(names(pars), function(i) {
+    data.frame(
+      parameter = names(pars[[i]]),
+      estimate = pars[[i]],
+      component = i,
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  }))
+  #
+  # data.frame(
+  #   parameter = c(names(pars$conditional), names(pars$sigma), names(pars$nu), names(pars$tau)),
+  #   estimate = c(unname(pars$conditional), unname(pars$sigma), unname(pars$nu), unname(pars$tau)),
+  #   component = c(
+  #     rep("conditional", length(pars$conditional)),
+  #     rep("sigma", length(pars$sigma)),
+  #     rep("nu", length(pars$nu)),
+  #     rep("tau", length(pars$tau))
+  #   ),
+  #   stringsAsFactors = FALSE,
+  #   row.names = NULL
+  # )
 }
 
 
@@ -466,6 +565,79 @@ get_parameters.coxme <- function(x, effects = c("fixed", "random"), ...) {
 
 
 
+#' @export
+get_parameters.wbm <- function(x, effects = c("fixed", "random"), ...) {
+  effects <- match.arg(effects)
+
+  if (effects == "fixed") {
+    s <- summary(x)
+
+    terms <- c(
+      rownames(s$within_table),
+      rownames(s$between_table),
+      rownames(s$ints_table)
+    )
+
+    params <- rbind(
+      data.frame(params = s$within_table, component = "within", stringsAsFactors = FALSE),
+      data.frame(params = s$between_table, component = "between", stringsAsFactors = FALSE),
+      data.frame(params = s$ints_table, component = "interactions", stringsAsFactors = FALSE)
+    )
+
+    data.frame(
+      parameter = gsub("`", "", terms, fixed = TRUE),
+      estimate = params[[1]],
+      component = params[["component"]],
+      stringsAsFactors = FALSE
+    )
+  } else {
+    if (!requireNamespace("lme4", quietly = TRUE)) {
+      stop("To use this function, please install package 'lme4'.")
+    }
+    lme4::ranef(x)
+  }
+}
+
+
+
+#' @export
+get_parameters.nlmerMod <- function(x, effects = c("fixed", "random"), ...) {
+  if (!requireNamespace("lme4", quietly = TRUE)) {
+    stop("To use this function, please install package 'lme4'.")
+  }
+
+  effects <- match.arg(effects)
+  startvectors <- .get_startvector_from_env(x)
+  fx <- lme4::fixef(x)
+
+  l <- .compact_list(list(
+    conditional = fx[setdiff(names(fx), startvectors)],
+    nonlinear = fx[startvectors],
+    random = lapply(lme4::ranef(x), colnames)
+  ))
+
+  fixed <- data.frame(
+    parameter = c(
+      gsub("`", "", names(l$conditional), fixed = TRUE),
+      gsub("`", "", names(l$nonlinear), fixed = TRUE)
+    ),
+    estimate = c(unname(l$conditional), unname(l$nonlinear)),
+    component = c(
+      rep("fixed", length(l$conditional)),
+      rep("nonlinear", length(l$nonlinear))
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  if (effects == "fixed") {
+    fixed
+  } else {
+    l$random
+  }
+}
+
+
+
 #' @rdname get_parameters
 #' @export
 get_parameters.merMod <- function(x, effects = c("fixed", "random"), ...) {
@@ -713,6 +885,39 @@ get_parameters.glmmTMB <- function(x, effects = c("fixed", "random"), component 
     )
   }
 }
+
+
+
+
+
+#' @export
+get_parameters.multinom <- function(x, ...) {
+  params <- stats::coef(x)
+
+  if (is.matrix(params)) {
+    out <- data.frame()
+    for (i in 1:nrow(params)) {
+      out <- rbind(out, data.frame(
+        parameter = colnames(params),
+        estimate = unname(params[i, ]),
+        response = rownames(params)[i],
+        stringsAsFactors = FALSE,
+        row.names = NULL
+      ))
+    }
+  } else {
+    out <- data.frame(
+      parameter = names(params),
+      estimate = unname(params),
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  }
+
+  out
+}
+
+
 
 
 

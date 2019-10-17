@@ -38,7 +38,11 @@ find_statistic <- function(x, ...) {
       "blmerMod",
       "cch",
       "censReg",
+      "cgam",
+      "cgamm",
       "coeftest",
+      "complmrob",
+      "crq",
       "drc",
       "feis",
       "felm",
@@ -71,6 +75,7 @@ find_statistic <- function(x, ...) {
       "svyglm",
       "svyolr",
       "truncreg",
+      "wbm",
       "wblm"
     )
 
@@ -80,16 +85,22 @@ find_statistic <- function(x, ...) {
     c(
       "aareg",
       "betareg",
+      "bracl",
+      "brglmFit",
+      "brmultinom",
       "clm",
       "clm2",
       "clmm",
+      "clmm2",
       "coxme",
       "coxph",
       "crch",
       "ergm",
+      "flexsurvreg",
       "gee",
       "glimML",
       "glmmadmb",
+      "glmmLasso",
       "glmmTMB",
       "gmnl",
       "hurdle",
@@ -137,6 +148,7 @@ find_statistic <- function(x, ...) {
   g.mods <-
     c(
       "bigglm",
+      "gam",
       "glm",
       "glmerMod",
       "glmRob",
@@ -165,9 +177,7 @@ find_statistic <- function(x, ...) {
   # pattern finding ----------------------------------------------------------
 
   unclear.mods <-
-    c(
-      "plm"
-    )
+    c("plm")
 
   # no statistic -------------------------------------------------------------
 
@@ -177,12 +187,9 @@ find_statistic <- function(x, ...) {
       "brmsfit",
       "stanreg",
       "stanmvreg",
-      "gam",
       "gbm",
       "list",
       "MCMCglmm",
-      "multinom",
-      "nnet",
       "survfit"
     )
 

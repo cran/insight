@@ -210,24 +210,21 @@ if (require("testthat") &&
       get_parameters(m1),
       data.frame(
         parameter = c(
+          "lag(union)",
+          "wks",
           "(Intercept)",
           "imean(lag(union))",
           "imean(wks)",
-          "lag(union)",
-          "wks",
           "blk",
           "fem",
           "lag(union):blk"
         ),
-        estimate = c(
-          6.59813245629044,
-          -0.0279959204722801,
-          0.00438047648390025,
-          0.0582474262882615,
-          -0.00163678667081885,
-          -0.229414915661438,
-          -0.441756913071962,
-          -0.127319623945541
+        estimate = c(0.0582474262882615, -0.00163678667081885, 6.59813245629044,
+                     -0.0279959204722801, 0.00438047648390025, -0.229414915661438,
+                     -0.441756913071962, -0.127319623945541),
+        component = c(
+          "within", "within", "between", "between",
+          "between", "between", "between", "interactions"
         ),
         stringsAsFactors = FALSE
       ),

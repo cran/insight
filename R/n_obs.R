@@ -73,6 +73,42 @@ nobs.gamm <- function(object, ...) {
 
 
 #' @export
+n_obs.bayesx <- function(x, ...) {
+  length(x$response)
+}
+
+#' @export
+nobs.bayesx <- function(object, ...) {
+  n_obs(object, ...)
+}
+
+
+
+#' @export
+n_obs.flexsurvreg <- function(x, ...) {
+  x$N
+}
+
+#' @export
+nobs.flexsurvreg <- function(object, ...) {
+  n_obs(object, ...)
+}
+
+
+
+#' @export
+n_obs.bamlss <- function(x, ...) {
+  nrow(x$model.frame)
+}
+
+#' @export
+nobs.bamlss <- function(object, ...) {
+  n_obs(object, ...)
+}
+
+
+
+#' @export
 n_obs.lmRob <- function(x, ...) {
   length(x$fitted.values)
 }
@@ -224,6 +260,18 @@ n_obs.crq <- function(x, ...) {
 
 #' @export
 nobs.crq <- function(object, ...) {
+  n_obs(object, ...)
+}
+
+
+#' @importFrom stats fitted
+#' @export
+n_obs.nlrq <- function(x, ...) {
+  length(stats::fitted(x))
+}
+
+#' @export
+nobs.nlrq <- function(object, ...) {
   n_obs(object, ...)
 }
 
