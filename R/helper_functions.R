@@ -41,12 +41,13 @@
 # is string empty?
 .is_empty_object <- function(x) {
   if (is.list(x)) {
-    x <- tryCatch({
-      .compact_list(x)
-    },
-    error = function(x) {
-      x
-    }
+    x <- tryCatch(
+      {
+        .compact_list(x)
+      },
+      error = function(x) {
+        x
+      }
     )
   }
   # this is an ugly fix because of ugly tibbles
@@ -247,12 +248,12 @@
 # to reduce redundant code, I extract this part which is used several
 # times accross this package
 .get_elements <- function(effects, component) {
-  elements <- c("conditional", "nonlinear", "random", "zero_inflated", "zero_inflated_random", "dispersion", "instruments", "simplex", "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes")
+  elements <- c("conditional", "nonlinear", "random", "zero_inflated", "zero_inflated_random", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes")
 
   elements <- switch(
     effects,
     all = elements,
-    fixed = elements[elements %in% c("conditional", "zero_inflated", "dispersion", "instruments", "simplex", "smooth_terms", "correlation", "slopes", "sigma", "nonlinear")],
+    fixed = elements[elements %in% c("conditional", "zero_inflated", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "correlation", "slopes", "sigma", "nonlinear")],
     random = elements[elements %in% c("random", "zero_inflated_random")]
   )
 
@@ -264,6 +265,7 @@
     zero_inflated = elements[elements %in% c("zero_inflated", "zero_inflated_random")],
     dispersion = elements[elements == "dispersion"],
     instruments = elements[elements == "instruments"],
+    interactions = elements[elements == "interactions"],
     simplex = elements[elements == "simplex"],
     sigma = elements[elements == "sigma"],
     smooth_terms = elements[elements == "smooth_terms"],
@@ -285,27 +287,28 @@
     stop("Package `lme4` needs to be installed to compute variances for mixed models.", call. = FALSE)
   }
 
-  tryCatch({
-    if (inherits(x, c("glmmTMB", "clmm"))) {
-      is_si <- any(sapply(vals$vc, function(.x) any(abs(diag(.x)) < tolerance)))
-    } else if (inherits(x, "merMod")) {
-      theta <- lme4::getME(x, "theta")
-      diag.element <- lme4::getME(x, "lower") == 0
-      is_si <- any(abs(theta[diag.element]) < tolerance)
-    } else if (inherits(x, "MixMod")) {
-      vc <- diag(x$D)
-      is_si <- any(sapply(vc, function(.x) any(abs(.x) < tolerance)))
-    } else if (inherits(x, "lme")) {
-      is_si <- any(abs(stats::na.omit(as.numeric(diag(vals$vc))) < tolerance))
-    } else {
-      is_si <- FALSE
-    }
+  tryCatch(
+    {
+      if (inherits(x, c("glmmTMB", "clmm"))) {
+        is_si <- any(sapply(vals$vc, function(.x) any(abs(diag(.x)) < tolerance)))
+      } else if (inherits(x, "merMod")) {
+        theta <- lme4::getME(x, "theta")
+        diag.element <- lme4::getME(x, "lower") == 0
+        is_si <- any(abs(theta[diag.element]) < tolerance)
+      } else if (inherits(x, "MixMod")) {
+        vc <- diag(x$D)
+        is_si <- any(sapply(vc, function(.x) any(abs(.x) < tolerance)))
+      } else if (inherits(x, "lme")) {
+        is_si <- any(abs(stats::na.omit(as.numeric(diag(vals$vc))) < tolerance))
+      } else {
+        is_si <- FALSE
+      }
 
-    is_si
-  },
-  error = function(x) {
-    FALSE
-  }
+      is_si
+    },
+    error = function(x) {
+      FALSE
+    }
   )
 }
 
@@ -436,7 +439,9 @@
     {
       stats::family(x)
     },
-    error = function(e) { NULL }
+    error = function(e) {
+      NULL
+    }
   )
 
   # try to set manually, if not found otherwise
@@ -445,7 +450,9 @@
       {
         x$family
       },
-      error = function(e) { NULL }
+      error = function(e) {
+        NULL
+      }
     )
   }
 
@@ -460,11 +467,47 @@
   switch(
     component,
     "cond" = ,
-    "conditional" = dat[dat$component == "conditional", ],
+    "conditional" = dat[dat$Component == "conditional", ],
     "zi" = ,
-    "zero_inflated" = dat[dat$component == "zero_inflated", ],
-    "dispersion" = dat[dat$component == "dispersion", ],
-    "smooth_terms" = dat[dat$component == "smooth_terms", ],
+    "zero_inflated" = dat[dat$Component == "zero_inflated", ],
+    "dispersion" = dat[dat$Component == "dispersion", ],
+    "smooth_terms" = dat[dat$Component == "smooth_terms", ],
     dat
   )
+}
+
+
+
+
+# capitalizes the first letter in a string
+.capitalize <- function(x) {
+  capped <- grep("^[A-Z]", x, invert = TRUE)
+  substr(x[capped], 1, 1) <- toupper(substr(x[capped], 1, 1))
+  x
+}
+
+
+
+.remove_backticks_from_parameter_names <- function(x) {
+  if (is.data.frame(x) && "Parameter" %in% colnames(x)) {
+    x$Parameter <- gsub("`", "", x$Parameter, fixed = TRUE)
+  }
+  x
+}
+
+
+.remove_backticks_from_string <- function(x) {
+  if (is.character(x)) {
+    x <- gsub("`", "", x, fixed = TRUE)
+  }
+  x
+}
+
+
+.remove_backticks_from_matrix_names <- function(x) {
+  if (is.matrix(x)) {
+    colnames(x) <- gsub("`", "", colnames(x), fixed = TRUE)
+    rownames(x) <- gsub("`", "", colnames(x), fixed = TRUE)
+  }
+  x
 }

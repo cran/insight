@@ -1,25 +1,25 @@
-## ---- include = FALSE----------------------------------------------------
+## ---- include = FALSE---------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
 
-## ----out.width="100%", echo=FALSE----------------------------------------
+## ----out.width="100%", echo=FALSE---------------------------------------------
 knitr::include_graphics("insight_design_1.png", dpi = 72)
 
-## ----out.width="65%", echo=FALSE-----------------------------------------
+## ----out.width="65%", echo=FALSE----------------------------------------------
 knitr::include_graphics("figure3a.png", dpi = 72)
 
-## ----out.width="80%", echo=FALSE-----------------------------------------
+## ----out.width="80%", echo=FALSE----------------------------------------------
 knitr::include_graphics("figure3b.png", dpi = 72)
 
-## ----out.width="80%", echo=FALSE-----------------------------------------
+## ----out.width="80%", echo=FALSE----------------------------------------------
 knitr::include_graphics("figure3c.png", dpi = 72)
 
-## ----out.width="65%", echo=FALSE-----------------------------------------
+## ----out.width="65%", echo=FALSE----------------------------------------------
 knitr::include_graphics("figure3d.png", dpi = 72)
 
-## ----echo=TRUE,message=FALSE,warning=FALSE-------------------------------
+## ----echo=TRUE,message=FALSE,warning=FALSE------------------------------------
 library(insight)
 library(lme4)
 data(sleepstudy)
@@ -41,7 +41,7 @@ model <- lmer(
   data = sleepstudy
 )
 
-## ----echo=TRUE,message=FALSE,warning=FALSE-------------------------------
+## ----echo=TRUE,message=FALSE,warning=FALSE------------------------------------
 # find the response variable
 find_response(model)
 
@@ -64,7 +64,7 @@ find_terms(model)
 # find all variables, i.e. also quadratic or log-transformed predictors
 find_variables(model)
 
-## ----echo=TRUE,message=FALSE,warning=FALSE-------------------------------
+## ----echo=TRUE,message=FALSE,warning=FALSE------------------------------------
 # find model parameters, i.e. coefficients
 find_parameters(model)
 

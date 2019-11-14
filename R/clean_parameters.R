@@ -60,6 +60,8 @@ clean_parameters.default <- function(x, ...) {
       "zero_inflated"
     } else if (grepl("nonlinear", i, fixed = TRUE)) {
       "nonlinear"
+    } else if (grepl("instruments", i, fixed = TRUE)) {
+      "instruments"
     } else {
       "conditional"
     }
@@ -98,10 +100,52 @@ clean_parameters.default <- function(x, ...) {
     }
   })
 
-  out <- do.call(rbind, l)
+  out <- .remove_backticks_from_parameter_names(do.call(rbind, l))
   out <- .remove_empty_columns_from_pars(out)
   .fix_random_effect_smooth(x, out)
 }
+
+
+
+#' @export
+clean_parameters.wbm <- function(x, ...) {
+  pars <- find_parameters(x, effects = "all", component = "all", flatten = FALSE)
+
+  l <- lapply(names(pars), function(i) {
+    com <- if (grepl("random", i, fixed = TRUE)) {
+      "interactions"
+    } else if (grepl("instruments", i, fixed = TRUE)) {
+      "instruments"
+    } else {
+      "conditional"
+    }
+
+    fun <- if (grepl("smooth", i, fixed = TRUE)) {
+      "smooth"
+    } else {
+      ""
+    }
+
+    data.frame(
+      Parameter = pars[[i]],
+      Effects = "fixed",
+      Component = com,
+      Group = "",
+      Function = fun,
+      Cleaned_Parameter = clean_names(pars[[i]]),
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  })
+
+  out <- .remove_backticks_from_parameter_names(do.call(rbind, l))
+  out <- .remove_empty_columns_from_pars(out)
+  .fix_random_effect_smooth(x, out)
+}
+
+
+#' @export
+clean_parameters.wbgee <- clean_parameters.wbm
 
 
 
@@ -110,11 +154,11 @@ clean_parameters.lavaan <- function(x, ...) {
   params <- get_parameters(x)
 
   data.frame(
-    Parameter = params$parameter,
-    Component = params$component,
+    Parameter = params$Parameter,
+    Component = params$Component,
     Group = "",
     Function = "",
-    Cleaned_Parameter = params$parameter,
+    Cleaned_Parameter = params$Parameter,
     stringsAsFactors = FALSE,
     row.names = NULL
   )
@@ -127,11 +171,11 @@ clean_parameters.blavaan <- function(x, ...) {
   params <- get_parameters.lavaan(x)
 
   data.frame(
-    Parameter = params$parameter,
-    Component = params$component,
+    Parameter = params$Parameter,
+    Component = params$Component,
     Group = "",
     Function = "",
-    Cleaned_Parameter = params$parameter,
+    Cleaned_Parameter = params$Parameter,
     stringsAsFactors = FALSE,
     row.names = NULL
   )

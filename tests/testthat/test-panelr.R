@@ -6,7 +6,7 @@ if (require("testthat") &&
   data("WageData")
   wages <- panel_data(WageData, id = id, wave = t)
   m1 <- wbm(lwage ~ lag(union) + wks | blk + fem | blk * lag(union), data = wages)
-  m2 <- wbm(lwage ~ lag(union) + wks | blk + fem | blk * (t | id), data = wages)
+  m2 <- wbm(lwage ~ lag(union) + wks | blk + t | (t | id), data = wages)
 
   test_that("model_info", {
     expect_true(model_info(m1)$is_linear)
@@ -18,35 +18,33 @@ if (require("testthat") &&
       find_predictors(m1),
       list(
         conditional = c("union", "wks"),
-        instruments = c("blk", "fem")
+        instruments = c("blk", "fem"),
+        interactions = c("blk", "union")
       )
     )
     expect_identical(
       find_predictors(m1, flatten = TRUE),
       c("union", "wks", "blk", "fem")
     )
-    expect_identical(
-      find_predictors(m1, effects = "random"),
-      list(random = "lag(union)")
-    )
+    expect_null(find_predictors(m1, effects = "random"))
 
     expect_identical(
       find_predictors(m2),
       list(
         conditional = c("union", "wks"),
-        instruments = c("blk", "fem")
+        instruments = c("blk", "t")
       )
     )
     expect_identical(find_predictors(m2, effects = "random"), list(random = "id"))
   })
 
   test_that("find_random", {
-    expect_identical(find_random(m1), list(random = "lag(union)"))
+    expect_null(find_random(m1))
     expect_identical(find_random(m2), list(random = "id"))
   })
 
   test_that("get_random", {
-    expect_equal(get_random(m1)[[1]], model.frame(m1)$`lag(union)`)
+    expect_null(expect_warning(get_random(m1)))
     expect_equal(get_random(m2)[[1]], model.frame(m2)$id)
   })
 
@@ -65,7 +63,7 @@ if (require("testthat") &&
     )
     expect_equal(
       colnames(get_predictors(m2)),
-      c("lag(union)", "wks", "blk", "fem")
+      c("lag(union)", "wks", "blk", "t")
     )
   })
 
@@ -101,7 +99,6 @@ if (require("testthat") &&
         "lag(union)",
         "wks",
         "blk",
-        "fem",
         "imean(lag(union))",
         "imean(wks)"
       )
@@ -115,7 +112,7 @@ if (require("testthat") &&
       list(
         conditional = as.formula("lwage ~ lag(union) + wks"),
         instruments = as.formula("~blk + fem"),
-        random = as.formula("~blk | lag(union)")
+        interactions = as.formula("~blk * lag(union)")
       )
     )
 
@@ -123,8 +120,8 @@ if (require("testthat") &&
       find_formula(m2),
       list(
         conditional = as.formula("lwage ~ lag(union) + wks"),
-        instruments = as.formula("~blk + fem"),
-        random = as.formula("~blk * t | id")
+        instruments = as.formula("~blk + t"),
+        random = as.formula("~t | id")
       )
     )
   })
@@ -136,12 +133,12 @@ if (require("testthat") &&
         response = "lwage",
         conditional = c("union", "wks"),
         instruments = c("blk", "fem"),
-        random = "lag(union)"
+        interactions = c("blk", "union")
       )
     )
     expect_equal(
       find_variables(m1, flatten = TRUE),
-      c("lwage", "union", "wks", "blk", "fem", "lag(union)")
+      c("lwage", "union", "wks", "blk", "fem")
     )
 
     expect_equal(
@@ -149,13 +146,13 @@ if (require("testthat") &&
       list(
         response = "lwage",
         conditional = c("union", "wks"),
-        instruments = c("blk", "fem"),
-        random = c("t", "id")
+        instruments = c("blk", "t"),
+        random = "id"
       )
     )
     expect_equal(
       find_variables(m2, flatten = TRUE),
-      c("lwage", "union", "wks", "blk", "fem", "t", "id")
+      c("lwage", "union", "wks", "blk", "t", "id")
     )
   })
 
@@ -172,34 +169,19 @@ if (require("testthat") &&
     expect_equal(
       find_parameters(m1),
       list(
-        conditional = c(
-          "(Intercept)",
-          "imean(lag(union))",
-          "imean(wks)",
-          "lag(union)",
-          "wks",
-          "blk",
-          "fem",
-          "lag(union):blk"
-        ),
-        random = list(id = "(Intercept)")
+        conditional = c("lag(union)", "wks"),
+        instruments = c("(Intercept)", "imean(lag(union))", "imean(wks)", "blk", "fem"),
+        random = "lag(union):blk"
       )
     )
+
     expect_equal(nrow(get_parameters(m1)), 8)
 
     expect_equal(
       find_parameters(m2),
       list(
-        conditional = c(
-          "(Intercept)",
-          "imean(lag(union))",
-          "imean(wks)",
-          "lag(union)",
-          "wks",
-          "blk",
-          "fem"
-        ),
-        random = list(id = c("(Intercept)", "t"))
+        conditional = c("lag(union)", "wks"),
+        instruments = c("(Intercept)", "imean(lag(union))", "imean(wks)", "blk", "t")
       )
     )
   })
@@ -209,7 +191,7 @@ if (require("testthat") &&
     expect_equal(
       get_parameters(m1),
       data.frame(
-        parameter = c(
+        Parameter = c(
           "lag(union)",
           "wks",
           "(Intercept)",
@@ -219,10 +201,12 @@ if (require("testthat") &&
           "fem",
           "lag(union):blk"
         ),
-        estimate = c(0.0582474262882615, -0.00163678667081885, 6.59813245629044,
-                     -0.0279959204722801, 0.00438047648390025, -0.229414915661438,
-                     -0.441756913071962, -0.127319623945541),
-        component = c(
+        Estimate = c(
+          0.0582474262882615, -0.00163678667081885, 6.59813245629044,
+          -0.0279959204722801, 0.00438047648390025, -0.229414915661438,
+          -0.441756913071962, -0.127319623945541
+        ),
+        Component = c(
           "within", "within", "between", "between",
           "between", "between", "between", "interactions"
         ),
@@ -240,7 +224,7 @@ if (require("testthat") &&
         response = "lwage",
         conditional = c("lag(union)", "wks"),
         instruments = c("blk", "fem"),
-        random = c("blk", "lag(union)")
+        interactions = c("blk", "lag(union)")
       )
     )
     expect_equal(
@@ -248,8 +232,8 @@ if (require("testthat") &&
       list(
         response = "lwage",
         conditional = c("lag(union)", "wks"),
-        instruments = c("blk", "fem"),
-        random = c("blk", "t", "id")
+        instruments = c("blk", "t"),
+        random = c("t", "id")
       )
     )
   })

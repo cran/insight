@@ -37,6 +37,7 @@ supported_models <- function() {
 
 .supported_models_list <- function() {
   c(
+    "aareg",
     "aov",
     "aovlist",
     "bamlss",
@@ -49,7 +50,9 @@ supported_models <- function() {
     "biglm",
     "bigglm",
     "blavaan",
+    "bracl",
     "brmsfit",
+    "brmultinom",
     "censReg",
     "clm",
     "clm2",
@@ -104,6 +107,8 @@ supported_models <- function() {
     "psm",
     "rlm",
     "rlmerMod",
+    "rma",
+    "rma.uni",
     "rq",
     "rqss",
     "speedlm",
@@ -120,6 +125,7 @@ supported_models <- function() {
     "vglm",
     "wbm",
     "wblm",
+    "wbgee",
     "zeroinfl",
     "zerotrunc"
   )

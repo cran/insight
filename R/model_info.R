@@ -86,16 +86,17 @@ model_info.default <- function(x, ...) {
     class(x) <- c(class(x), c("glm", "lm"))
   }
 
-  faminfo <- tryCatch({
-    if (inherits(x, c("Zelig-relogit"))) {
-      stats::binomial(link = "logit")
-    } else {
-      stats::family(x)
+  faminfo <- tryCatch(
+    {
+      if (inherits(x, c("Zelig-relogit"))) {
+        stats::binomial(link = "logit")
+      } else {
+        stats::family(x)
+      }
+    },
+    error = function(x) {
+      NULL
     }
-  },
-  error = function(x) {
-    NULL
-  }
   )
 
   if (!is.null(faminfo)) {
@@ -594,6 +595,18 @@ model_info.coxph <- function(x, ...) {
 
 
 #' @export
+model_info.aareg <- function(x, ...) {
+  make_family(
+    x = x,
+    fitfam = "survival",
+    logit.link = TRUE,
+    link.fun = NULL,
+    ...
+  )
+}
+
+
+#' @export
 model_info.survfit <- function(x, ...) {
   make_family(
     x = x,
@@ -698,6 +711,19 @@ model_info.svyolr <- function(x, ...) {
 #' @export
 model_info.multinom <- function(x, ...) {
   faminfo <- stats::binomial(link = "logit")
+  make_family(
+    x = x,
+    fitfam = faminfo$family,
+    logit.link = faminfo$link == "logit",
+    link.fun = faminfo$link,
+    ...
+  )
+}
+
+
+#' @export
+model_info.brmultinom <- function(x, ...) {
+  faminfo <- stats::family(x)
   make_family(
     x = x,
     fitfam = faminfo$family,
@@ -856,6 +882,13 @@ model_info.mlm <- function(x, ...) {
 }
 
 
+#' @export
+model_info.rma <- function(x, ...) {
+  make_family(x, ...)
+}
+
+
+
 make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, hurdle = FALSE, logit.link = FALSE, multi.var = FALSE, link.fun = "identity", ...) {
   # create logical for family
   binom_fam <-
@@ -877,15 +910,15 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, hurdle = FALSE
 
   beta_fam <-
     inherits(x, "betareg") |
-    fitfam %in% c(
-      "beta",
-      "Beta",
-      "betabinomial",
-      "Beta Inflated",
-      "Zero Inflated Beta",
-      "Beta Inflated zero",
-      "Beta Inflated one"
-    )
+      fitfam %in% c(
+        "beta",
+        "Beta",
+        "betabinomial",
+        "Beta Inflated",
+        "Zero Inflated Beta",
+        "Beta Inflated zero",
+        "Beta Inflated one"
+      )
 
   betabin_fam <- inherits(x, "BBreg") | fitfam %in% "betabinomial"
 
@@ -914,16 +947,18 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, hurdle = FALSE
     fitfam == "ztnbinom"
 
   is.ordinal <-
-    inherits(x, c("svyolr", "polr", "clm", "clm2", "clmm", "gmnl", "mlogit", "multinom", "LORgee")) |
+    inherits(x, c("svyolr", "polr", "clm", "clm2", "clmm", "gmnl", "mlogit", "multinom", "LORgee", "brmultinom")) |
       fitfam %in% c("cumulative", "cratio", "sratio", "acat", "ordinal", "multinomial")
 
   is.categorical <- fitfam == "categorical"
 
-  is.bayes <- inherits(x, c("brmsfit", "stanfit", "MCMCglmm", "stanreg",
-                            "stanmvreg", "bmerMod", "BFBayesFactor", "bamlss",
-                            "bayesx"))
+  is.bayes <- inherits(x, c(
+    "brmsfit", "stanfit", "MCMCglmm", "stanreg",
+    "stanmvreg", "bmerMod", "BFBayesFactor", "bamlss",
+    "bayesx"
+  ))
 
-  is.survival <- inherits(x, c("survreg", "survfit", "survPresmooth", "flexsurvreg", "coxph", "coxme"))
+  is.survival <- inherits(x, c("aareg", "survreg", "survfit", "survPresmooth", "flexsurvreg", "coxph", "coxme"))
 
   # check if we have binomial models with trials instead of binary outcome
   # and check if we have truncated or censored brms-regression
@@ -933,12 +968,13 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, hurdle = FALSE
   is.truncated <- FALSE
 
   if (inherits(x, "brmsfit") && is.null(stats::formula(x)$responses)) {
-    rv <- tryCatch({
-      .safe_deparse(stats::formula(x)$formula[[2L]])
-    },
-    error = function(x) {
-      NULL
-    }
+    rv <- tryCatch(
+      {
+        .safe_deparse(stats::formula(x)$formula[[2L]])
+      },
+      error = function(x) {
+        NULL
+      }
     )
 
     if (!is.null(rv)) {
@@ -949,13 +985,14 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, hurdle = FALSE
   }
 
   if (binom_fam && !inherits(x, "brmsfit")) {
-    is.trial <- tryCatch({
-      rv <- .safe_deparse(stats::formula(x)[[2L]])
-      grepl("cbind\\((.*)\\)", rv)
-    },
-    error = function(x) {
-      FALSE
-    }
+    is.trial <- tryCatch(
+      {
+        rv <- .safe_deparse(stats::formula(x)[[2L]])
+        grepl("cbind\\((.*)\\)", rv)
+      },
+      error = function(x) {
+        FALSE
+      }
     )
   }
 
@@ -964,12 +1001,13 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, hurdle = FALSE
   if (.obj_has_name(dots, "no_terms") && isTRUE(dots$no_terms)) {
     model_terms <- NULL
   } else {
-    model_terms <- tryCatch({
-      find_variables(x, effects = "all", component = "all", flatten = FALSE)
-    },
-    error = function(x) {
-      NULL
-    }
+    model_terms <- tryCatch(
+      {
+        find_variables(x, effects = "all", component = "all", flatten = FALSE)
+      },
+      error = function(x) {
+        NULL
+      }
     )
   }
 
@@ -1005,6 +1043,9 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, hurdle = FALSE
   }
 
 
+  if (inherits(x, "rma")) is_meta <- TRUE
+
+
   list(
     is_binomial = binom_fam & !neg_bin_fam,
     is_count = poisson_fam | neg_bin_fam,
@@ -1020,7 +1061,6 @@ make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, hurdle = FALSE
     is_survival = is.survival,
     is_linear = linear_model,
     is_tweedie = tweedie_model,
-    ## TODO remove after insight 0.6.0
     is_zeroinf = zero.inf,
     is_zero_inflated = zero.inf,
     is_hurdle = hurdle,
@@ -1054,10 +1094,11 @@ get_ordinal_link <- function(x) {
 #' @importFrom stats gaussian binomial Gamma
 .make_tobit_family <- function(x, dist = NULL) {
   if (is.null(dist)) {
-    if (inherits(x, "flexsurvreg"))
+    if (inherits(x, "flexsurvreg")) {
       dist <- parse(text = .safe_deparse(x$call))[[1]]$dist
-    else
+    } else {
       dist <- x$dist
+    }
   }
   f <- switch(
     dist,

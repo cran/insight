@@ -1,3 +1,25 @@
+# insight 0.7.0
+
+## Breaking changes
+
+* In order to unify column names across easystats-packages, `get_parameters()` and `get_priors()` now return column names according to our naming conventions (i.e. capitalized column names).
+* `model_info()` returned both `$is_zeroinf` and `$is_zero_inflated` for zero-inflated models. Now `$is_zeroinf` is softly deprecated, so `model_info()` will return `$is_zero_inflated` only in future updates.
+
+## New supported model classes
+
+* `aareg` (*survival*), `brmultinom` and `bracl` (*brglm2*), and `wbgee` (*panelr*). Furthermore, for different model-types from *panelr* models (within-between, between, etc.) are now also supported.
+* Preliminary support for `rma` models (*metafor*).
+
+## Changes to functions
+
+* `get_statistic()` supports `multinom` models (*nnet*).
+* `link_inverse()` gets a `what`-argument, to return the link-inverse function for specific distribution parameters from **gamls** models.
+
+## Bug fixes
+
+* Fixed edge case for `find_weights()`.
+* Fixed bug in `get_statistic()` for *glmmTMB* models that won't return any data.
+
 # insight 0.6.0
 
 ## New supported model classes
@@ -17,7 +39,7 @@
 * `model_info()` now returns the element `is_truncated` for truncated regression, or *brmsfit* models with `trunc()` as additional response part.
 * `model_info()` now recognizes beta and beta inflated families from package *gamlss*.
 * Better support for nonlinear quantile regression (`quantreg::nlrq()`).
-* Better support for nonlinear mixed models (`lmer::nlmer()`). Note that model-specification requires the random term to be written in parantheses, i.e. `(slope | group)`.
+* Better support for nonlinear mixed models (`lme4::nlmer()`). Note that model-specification requires the random term to be written in parentheses, i.e. `(slope | group)`.
 
 ## Bug fixes
 

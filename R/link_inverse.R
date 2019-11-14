@@ -3,6 +3,8 @@
 #'
 #' @description Returns the link-inverse function from a model object.
 #'
+#' @param what For \code{gamlss} models, indicates for which distribution
+#'   parameter the link (inverse) function should be returned.
 #' @inheritParams find_predictors
 #' @inheritParams find_formula
 #'
@@ -36,12 +38,13 @@ link_inverse.default <- function(x, ...) {
   if (inherits(x, "Zelig-relogit")) {
     stats::make.link(link = "logit")$linkinv
   } else {
-    tryCatch({
-      stats::family(x)$linkinv
-    },
-    error = function(x) {
-      NULL
-    }
+    tryCatch(
+      {
+        stats::family(x)$linkinv
+      },
+      error = function(x) {
+        NULL
+      }
     )
   }
 }
@@ -49,21 +52,23 @@ link_inverse.default <- function(x, ...) {
 
 #' @export
 link_inverse.gam <- function(x, ...) {
-  li <- tryCatch({
-    .gam_family(x)$linkinv
-  },
-  error = function(x) {
-    NULL
-  }
+  li <- tryCatch(
+    {
+      .gam_family(x)$linkinv
+    },
+    error = function(x) {
+      NULL
+    }
   )
 
   if (is.null(li)) {
     mi <- .gam_family(x)
     if (.obj_has_name(mi, "linfo")) {
-      if (.obj_has_name(mi$linfo, "linkinv"))
+      if (.obj_has_name(mi$linfo, "linkinv")) {
         li <- mi$linfo$linkinv
-      else
+      } else {
         li <- mi$linfo[[1]]$linkinv
+      }
     }
   }
 
@@ -73,12 +78,13 @@ link_inverse.gam <- function(x, ...) {
 
 #' @export
 link_inverse.glm <- function(x, ...) {
-  tryCatch({
-    stats::family(x)$linkinv
-  },
-  error = function(x) {
-    NULL
-  }
+  tryCatch(
+    {
+      stats::family(x)$linkinv
+    },
+    error = function(x) {
+      NULL
+    }
   )
 }
 
@@ -102,22 +108,32 @@ link_inverse.flexsurvreg <- function(x, ...) {
 }
 
 
+#' @rdname link_inverse
 #' @export
-link_inverse.gamlss <- function(x, ...) {
+link_inverse.gamlss <- function(x, what = c("mu", "sigma", "nu", "tau"), ...) {
+  what <- match.arg(what)
   faminfo <- get(x$family[1], asNamespace("gamlss"))()
-  faminfo$mu.linkinv
+  switch(
+    what,
+    "mu" = faminfo$mu.linkinv,
+    "sigma" = faminfo$sigma.linkinv,
+    "nu" = faminfo$nu.linkinv,
+    "tau" = faminfo$tau.linkinv,
+    faminfo$mu.linkinv
+  )
 }
 
 
 #' @export
 link_inverse.bamlss <- function(x, ...) {
   flink <- stats::family(x)$links[1]
-  tryCatch({
-    stats::make.link(flink)$linkinv
-  },
-  error = function(e) {
-    print_colour("\nCould not find appropriate link-inverse-function.\n", "red")
-  }
+  tryCatch(
+    {
+      stats::make.link(flink)$linkinv
+    },
+    error = function(e) {
+      print_colour("\nCould not find appropriate link-inverse-function.\n", "red")
+    }
   )
 }
 

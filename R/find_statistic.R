@@ -115,9 +115,13 @@ find_statistic <- function(x, ...) {
       "mmclogit",
       "negbin",
       "psm",
+      "rma",
+      "rma.uni",
+      "slm",
       "survreg",
       "tobit",
       "vglm",
+      "wbgee",
       "zeroinfl"
     )
 
@@ -150,6 +154,7 @@ find_statistic <- function(x, ...) {
       "bigglm",
       "gam",
       "glm",
+      "glmc",
       "glmerMod",
       "glmRob",
       "glmrob",

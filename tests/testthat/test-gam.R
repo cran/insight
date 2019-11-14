@@ -87,7 +87,8 @@ if (require("testthat") &&
         y0 = list(conditional = as.formula("y0 ~ s(x0) + s(x1)")),
         y1 = list(conditional = as.formula("y1 ~ s(x2) + s(x3)"))
       ),
-      is_mv = "1")
+      is_mv = "1"
+      )
     )
   })
 
@@ -120,7 +121,7 @@ if (require("testthat") &&
     )
     expect_equal(nrow(get_parameters(m1)), 5)
     expect_equal(
-      get_parameters(m1)$parameter,
+      get_parameters(m1)$Parameter,
       c("(Intercept)", "s(x0)", "s(x1)", "s(x2)", "s(x3)")
     )
     expect_equal(nrow(get_parameters(m1, "smooth_terms")), 4)

@@ -5,11 +5,25 @@
 \alias{colour_if}
 \title{Color-formatting for data columns based on condition}
 \usage{
-color_if(x, columns, predicate = `>`, value = 0, color_if = "green",
-  color_else = "red", digits = 2)
+color_if(
+  x,
+  columns,
+  predicate = `>`,
+  value = 0,
+  color_if = "green",
+  color_else = "red",
+  digits = 2
+)
 
-colour_if(x, columns, predicate = `>`, value = 0,
-  colour_if = "green", colour_else = "red", digits = 2)
+colour_if(
+  x,
+  columns,
+  predicate = `>`,
+  value = 0,
+  colour_if = "green",
+  colour_else = "red",
+  digits = 2
+)
 }
 \arguments{
 \item{x}{A data frame}
@@ -65,5 +79,4 @@ p <- function(x, y) {
 # all values in Sepal.Length between 4.9 and 5.1 in green, all remaining in red
 x <- color_if(iris[1:10, ], columns = "Sepal.Length", predicate = p)
 cat(x$Sepal.Length)
-
 }
