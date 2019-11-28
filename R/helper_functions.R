@@ -137,7 +137,18 @@
     # intercept only model, w/o "1" in formula notation?
     # e.g. "Reaction ~ (1 + Days | Subject)"
     if (length(f) > 2 && grepl("^\\(", .safe_deparse(f[[3]]))) {
-      .trim(paste0(.safe_deparse(f[[2]]), " ~ 1"))
+      # check if we have any terms *after* random effects, e.g.
+      # social ~ (1|school) + open + extro + agree + school
+      if (.formula_empty_after_random_effect(f_predictors)) {
+        # here we fix intercept only models with random effects,
+        # like social ~ (1|school).
+        .trim(paste0(.safe_deparse(f[[2]]), " ~ 1"))
+      } else {
+        # here we fix models where random effects come first,
+        # like social ~ (1|school) + open + extro + agree + school
+        # the regex removes "(1|school) + "
+        .trim(gsub("\\((.*)\\)(\\s)*\\+(\\s)*", "", f_string))
+      }
     } else if (!grepl("\\+(\\s)*\\((.*)\\)", f_string)) {
       f_terms <- stats::terms(f)
       pos_bar <- grep("|", labels(f_terms), fixed = TRUE)
@@ -149,6 +160,16 @@
   } else {
     .trim(gsub("\\+(\\s)*\\((.*)\\)", "", f_string))
   }
+}
+
+
+# check if any terms appear in the formula after random effects
+# like "~ (1|school) + open + extro + agree + school"
+# this regex removes "(1|school)", as well as any +, -, *, whitespace etc.
+# if there are any chars left, these come from further terms that come after
+# random effects...
+.formula_empty_after_random_effect <- function(f) {
+  nchar(gsub("(~|\\+|\\*|-|/|:)", "", gsub(" ", "", gsub("\\((.*)\\)", "", f)))) == 0
 }
 
 
@@ -248,12 +269,12 @@
 # to reduce redundant code, I extract this part which is used several
 # times accross this package
 .get_elements <- function(effects, component) {
-  elements <- c("conditional", "nonlinear", "random", "zero_inflated", "zero_inflated_random", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes")
+  elements <- c("conditional", "nonlinear", "random", "zero_inflated", "zero_inflated_random", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes", "cluster")
 
   elements <- switch(
     effects,
     all = elements,
-    fixed = elements[elements %in% c("conditional", "zero_inflated", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "correlation", "slopes", "sigma", "nonlinear")],
+    fixed = elements[elements %in% c("conditional", "zero_inflated", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "correlation", "slopes", "sigma", "nonlinear", "cluster")],
     random = elements[elements %in% c("random", "zero_inflated_random")]
   )
 
@@ -270,6 +291,7 @@
     sigma = elements[elements == "sigma"],
     smooth_terms = elements[elements == "smooth_terms"],
     correlation = elements[elements == "correlation"],
+    cluster = elements[elements == "cluster"],
     nonlinear = elements[elements == "nonlinear"],
     slopes = elements[elements == "slopes"]
   )

@@ -31,6 +31,7 @@ get_data <- function(x, ...) {
 
 # default method ------------------------------------------------------
 
+
 #' @export
 get_data.default <- function(x, ...) {
   if (inherits(x, "list") && .obj_has_name(x, "gam")) {
@@ -38,31 +39,25 @@ get_data.default <- function(x, ...) {
     class(x) <- c(class(x), c("glm", "lm"))
   }
 
-  mf <- tryCatch(
-    {
-      if (inherits(x, "Zelig-relogit")) {
-        .get_zelig_relogit_frame(x)
-      } else {
-        stats::model.frame(x)
-      }
+  mf <- tryCatch({
+    if (inherits(x, "Zelig-relogit")) {
+      .get_zelig_relogit_frame(x)
+    } else {
+      stats::model.frame(x)
+    }
+  },
+  error = function(x) {
+    NULL
+  })
+
+  if (is.null(mf)) {
+    mf <- tryCatch({
+      .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
     },
     error = function(x) {
       NULL
     }
-  )
-
-
-  if (is.null(mf)) {
-    mf <- tryCatch(
-      {
-        .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
-      },
-      error = function(x) {
-        NULL
-      }
-    )
-  }
-
+  )}
 
   .prepare_get_data(x, mf)
 }
@@ -79,6 +74,7 @@ get_data.data.frame <- function(x, ...) {
 
 
 # classical and survival models -----------------------------------------------
+
 
 #' @rdname get_data
 #' @export
@@ -102,12 +98,19 @@ get_data.gee <- function(x, effects = c("all", "fixed", "random"), ...) {
   .prepare_get_data(x, stats::na.omit(mf))
 }
 
+#' @rdname get_data
+#' @export
+get_data.rqss <- get_data.gee
+
+
 
 #' @export
 get_data.gls <- function(x, ...) {
   mf <- tryCatch(
     {
-      .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
+      dat <- .get_data_from_env(x)
+      data_columns <- intersect(colnames(dat), find_variables(x, flatten = TRUE))
+      dat[, data_columns, drop = FALSE]
     },
     error = function(x) {
       NULL
@@ -117,18 +120,28 @@ get_data.gls <- function(x, ...) {
   .prepare_get_data(x, stats::na.omit(mf))
 }
 
-
 #' @export
 get_data.survfit <- get_data.gls
 
 #' @export
 get_data.aareg <- get_data.gls
 
+#' @export
+get_data.complmrob <- get_data.gls
+
+#' @export
+get_data.nlrq <- get_data.gls
+
+
+
+
+
 
 
 
 
 # zero-inflated models -------------------------------------------------------
+
 
 #' @rdname get_data
 #' @export
@@ -137,10 +150,8 @@ get_data.hurdle <- function(x, component = c("all", "conditional", "zi", "zero_i
   .return_zeroinf_data(x, component)
 }
 
-
 #' @export
 get_data.zeroinfl <- get_data.hurdle
-
 
 #' @export
 get_data.zerotrunc <- get_data.hurdle
@@ -150,7 +161,10 @@ get_data.zerotrunc <- get_data.hurdle
 
 
 
+
+
 # mixed models -------------------------------------------------------------
+
 
 #' @rdname get_data
 #' @export
@@ -180,6 +194,7 @@ get_data.glmmTMB <- function(x, effects = c("all", "fixed", "random"), component
 }
 
 
+
 #' @rdname get_data
 #' @export
 get_data.merMod <- function(x, effects = c("all", "fixed", "random"), ...) {
@@ -203,6 +218,7 @@ get_data.merMod <- function(x, effects = c("all", "fixed", "random"), ...) {
 }
 
 
+
 #' @rdname get_data
 #' @export
 get_data.rlmerMod <- function(x, effects = c("all", "fixed", "random"), ...) {
@@ -210,6 +226,9 @@ get_data.rlmerMod <- function(x, effects = c("all", "fixed", "random"), ...) {
   .get_data_from_modelframe(x, stats::model.frame(x), effects)
 }
 
+#' @rdname get_data
+#' @export
+get_data.clmm <- get_data.rlmerMod
 
 #' @rdname get_data
 #' @export
@@ -218,13 +237,6 @@ get_data.mixed <- function(x, effects = c("all", "fixed", "random"), ...) {
   .get_data_from_modelframe(x, x$data, effects)
 }
 
-
-#' @rdname get_data
-#' @export
-get_data.clmm <- function(x, effects = c("all", "fixed", "random"), ...) {
-  effects <- match.arg(effects)
-  .get_data_from_modelframe(x, stats::model.frame(x), effects)
-}
 
 
 #' @rdname get_data
@@ -242,6 +254,7 @@ get_data.lme <- function(x, effects = c("all", "fixed", "random"), ...) {
 
   stats::na.omit(.get_data_from_modelframe(x, dat, effects))
 }
+
 
 
 #' @rdname get_data
@@ -279,6 +292,7 @@ get_data.MixMod <- function(x, effects = c("all", "fixed", "random"), component 
 }
 
 
+
 #' @export
 get_data.BBmm <- function(x, effects = c("all", "fixed", "random"), ...) {
   effects <- match.arg(effects)
@@ -299,6 +313,7 @@ get_data.BBmm <- function(x, effects = c("all", "fixed", "random"), ...) {
 
   .prepare_get_data(x, stats::na.omit(mf))
 }
+
 
 
 #' @export
@@ -419,7 +434,7 @@ get_data.feis <- function(x, effects = c("all", "fixed", "random"), ...) {
   effects <- match.arg(effects)
   mf <- tryCatch(
     {
-      get(.safe_deparse(x$call$data), envir = parent.frame())[, find_variables(x, flatten = TRUE), drop = FALSE]
+      .get_data_from_env(x)
     },
     error = function(x) {
       stats::model.frame(x)
@@ -427,6 +442,13 @@ get_data.feis <- function(x, effects = c("all", "fixed", "random"), ...) {
   )
 
   .get_data_from_modelframe(x, mf, effects)
+}
+
+
+#' @export
+get_data.fixest <- function(x, ...) {
+  mf <- .get_data_from_env(x)
+  .get_data_from_modelframe(x, mf, effects = "all")
 }
 
 
@@ -502,31 +524,9 @@ get_data.ivreg <- function(x, ...) {
   .prepare_get_data(x, stats::na.omit(final_mf))
 }
 
-
 #' @export
-get_data.iv_robust <- function(x, ...) {
-  mf <- stats::model.frame(x)
-  cn <- clean_names(colnames(mf))
-  ft <- find_variables(x, flatten = TRUE)
+get_data.iv_robust <- get_data.ivreg
 
-  remain <- setdiff(ft, cn)
-
-  if (.is_empty_object(remain)) {
-    final_mf <- mf
-  } else {
-    final_mf <- tryCatch(
-      {
-        dat <- .get_data_from_env(x)
-        cbind(mf, dat[, remain, drop = FALSE])
-      },
-      error = function(x) {
-        NULL
-      }
-    )
-  }
-
-  .prepare_get_data(x, stats::na.omit(final_mf))
-}
 
 
 
@@ -535,6 +535,7 @@ get_data.iv_robust <- function(x, ...) {
 
 
 # Bayesian regression ---------------------------------------------------
+
 
 #' @rdname get_data
 #' @export
@@ -562,6 +563,7 @@ get_data.brmsfit <- function(x, effects = c("all", "fixed", "random"), component
 }
 
 
+
 #' @rdname get_data
 #' @export
 get_data.stanreg <- function(x, effects = c("all", "fixed", "random"), ...) {
@@ -581,10 +583,12 @@ get_data.stanreg <- function(x, effects = c("all", "fixed", "random"), ...) {
 }
 
 
+
 #' @export
 get_data.BFBayesFactor <- function(x, ...) {
   x@data
 }
+
 
 
 #' @rdname get_data
@@ -621,6 +625,7 @@ get_data.MCMCglmm <- function(x, effects = c("all", "fixed", "random"), ...) {
 }
 
 
+
 #' @export
 get_data.stanmvreg <- function(x, ...) {
   mf <- tryCatch(
@@ -642,7 +647,11 @@ get_data.stanmvreg <- function(x, ...) {
 
 
 
+
+
+
 # other models ------------------------------------------------------
+
 
 #' @export
 get_data.vglm <- function(x, ...) {
@@ -668,52 +677,15 @@ get_data.vglm <- function(x, ...) {
 }
 
 
-#' @rdname get_data
-#' @export
-get_data.rqss <- function(x, effects = c("all", "fixed", "random"), ...) {
-  mf <- tryCatch(
-    {
-      .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
-    },
-    error = function(x) {
-      NULL
-    }
-  )
-
-  .prepare_get_data(x, stats::na.omit(mf))
-}
-
-
-#' @rdname get_data
-#' @export
-get_data.nlrq <- function(x, ...) {
-  mf <- tryCatch(
-    {
-      dat <- .get_data_from_env(x)
-      data_columns <- intersect(colnames(dat), find_variables(x, flatten = TRUE))
-      dat[, data_columns, drop = FALSE]
-    },
-    error = function(x) {
-      NULL
-    }
-  )
-
-  .prepare_get_data(x, stats::na.omit(mf))
-}
-
-
 #' @export
 get_data.biglm <- function(x, ...) {
   mf <- stats::model.frame(x)
   .prepare_get_data(x, mf)
 }
 
-
 #' @export
-get_data.bigglm <- function(x, ...) {
-  mf <- stats::model.frame(x)
-  .prepare_get_data(x, mf)
-}
+get_data.bigglm <- get_data.biglm
+
 
 
 #' @export
@@ -738,6 +710,7 @@ get_data.LORgee <- function(x, effects = c("all", "fixed", "random"), ...) {
 }
 
 
+
 #' @export
 get_data.gmnl <- function(x, ...) {
   mf <- tryCatch(
@@ -751,6 +724,7 @@ get_data.gmnl <- function(x, ...) {
 
   .prepare_get_data(x, mf)
 }
+
 
 
 #' @export
@@ -768,6 +742,7 @@ get_data.gbm <- function(x, ...) {
 }
 
 
+
 #' @export
 get_data.tobit <- function(x, ...) {
   dat <- .get_data_from_env(x)
@@ -776,6 +751,7 @@ get_data.tobit <- function(x, ...) {
 
   .prepare_get_data(x, stats::na.omit(dat[, remain, drop = FALSE]))
 }
+
 
 
 #' @export

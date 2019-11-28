@@ -311,6 +311,25 @@ get_statistic.vglm <- function(x, ...) {
 
 
 
+#' @export
+get_statistic.vgam <- function(x, ...) {
+  params <- get_parameters(x)
+  out <- data.frame(
+    Parameter = params$Parameter,
+    Statistic = as.vector(params$Estimate / sqrt(diag(get_varcov(x)))),
+    Component = params$Component,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  out <- .remove_backticks_from_parameter_names(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+
+
 
 
 # Survival models ------------------------------------------
@@ -431,9 +450,9 @@ get_statistic.multinom <- function(x, ...) {
   out
 }
 
-
 #' @export
 get_statistic.brmultinom <- get_statistic.multinom
+
 
 #' @export
 get_statistic.bracl <- function(x, ...) {
@@ -494,9 +513,9 @@ get_statistic.wbm <- function(x, ...) {
   out
 }
 
-
 #' @export
 get_statistic.wbgee <- get_statistic.wbm
+
 
 
 #' @export
@@ -532,6 +551,7 @@ get_statistic.crq <- get_statistic.rq
 get_statistic.nlrq <- get_statistic.rq
 
 
+
 #' @export
 get_statistic.bigglm <- function(x, ...) {
   parms <- get_parameters(x)
@@ -548,6 +568,7 @@ get_statistic.bigglm <- function(x, ...) {
   attr(out, "statistic") <- find_statistic(x)
   out
 }
+
 
 
 #' @export
@@ -568,12 +589,14 @@ get_statistic.biglm <- function(x, ...) {
 }
 
 
+
 #' @export
 get_statistic.LORgee <- function(x, ...) {
   out <- get_statistic.default(x)
   attr(out, "statistic") <- find_statistic(x)
   out
 }
+
 
 
 #' @export
@@ -593,6 +616,25 @@ get_statistic.crch <- function(x, ...) {
 }
 
 
+
+#' @export
+get_statistic.fixest <- function(x, ...) {
+  cs <- summary(x)$coeftable
+  params <- get_parameters(x)
+
+  out <- data.frame(
+    Parameter = params$Parameter,
+    Statistic = as.vector(cs[, 3]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+
 #' @importFrom stats coef
 #' @export
 get_statistic.gee <- function(x, ...) {
@@ -602,6 +644,24 @@ get_statistic.gee <- function(x, ...) {
   out <- data.frame(
     Parameter = parms$Parameter,
     Statistic = as.vector(cs[, "Naive z"]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+
+#' @export
+get_statistic.complmrob <- function(x, ...) {
+  parms <- get_parameters(x)
+  stat <- summary(x)$stats
+
+  out <- data.frame(
+    Parameter = parms$Parameter,
+    Statistic = as.vector(stat[, "t value"]),
     stringsAsFactors = FALSE,
     row.names = NULL
   )
@@ -652,8 +712,6 @@ get_statistic.svyglm.nb <- function(x, ...) {
   attr(out, "statistic") <- find_statistic(x)
   out
 }
-
-
 
 #' @export
 get_statistic.svyglm.zip <- get_statistic.svyglm.nb
@@ -720,14 +778,11 @@ get_statistic.lrm <- function(x, ...) {
   out
 }
 
-
 #' @export
 get_statistic.ols <- get_statistic.lrm
 
-
 #' @export
 get_statistic.rms <- get_statistic.lrm
-
 
 #' @export
 get_statistic.psm <- get_statistic.lrm
@@ -749,5 +804,3 @@ get_statistic.rma <- function(x, ...) {
   attr(out, "statistic") <- find_statistic(x)
   out
 }
-
-

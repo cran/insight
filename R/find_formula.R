@@ -359,6 +359,30 @@ find_formula.felm <- function(x, ...) {
 
 
 #' @export
+find_formula.fixest <- function(x, ...) {
+  f <- .safe_deparse(stats::formula(x))
+  f_parts <- unlist(strsplit(f, "(?<!\\()\\|(?![\\w\\s\\+\\(~]*[\\)])", perl = TRUE))
+
+  f.cond <- .trim(f_parts[1])
+
+  if (length(f_parts) > 1) {
+    f.clus <- paste0("~", .trim(f_parts[2]))
+  } else {
+    f.clus <- parse(text = deparse(x$call))[[1]]$fixef
+    if (!is.null(f.clus)) {
+      f.clus <- paste("~", paste(eval(f.clus), collapse = " + "))
+    }
+  }
+
+  .compact_list(list(
+    conditional = stats::as.formula(f.cond),
+    cluster = stats::as.formula(f.clus)
+  ))
+}
+
+
+
+#' @export
 find_formula.feis <- function(x, ...) {
   f <- .safe_deparse(stats::formula(x))
   f_parts <- unlist(strsplit(f, "(?<!\\()\\|(?![\\w\\s\\+\\(~]*[\\)])", perl = TRUE))
@@ -689,6 +713,22 @@ find_formula.clmm <- function(x, ...) {
   f.cond <- stats::as.formula(.get_fixed_effects(f.cond))
 
   .compact_list(list(conditional = f.cond, random = f.random))
+}
+
+
+#' @export
+find_formula.mmclogit <- function(x, ...) {
+  tryCatch(
+    {
+      list(
+        conditional = stats::formula(x),
+        random = as.formula(parse(text = .safe_deparse(x$call))[[1]]$random)
+      )
+    },
+    error = function(x) {
+      NULL
+    }
+  )
 }
 
 
