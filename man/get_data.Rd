@@ -7,6 +7,7 @@
 \alias{get_data.hurdle}
 \alias{get_data.glmmTMB}
 \alias{get_data.merMod}
+\alias{get_data.glmmadmb}
 \alias{get_data.rlmerMod}
 \alias{get_data.clmm}
 \alias{get_data.mixed}
@@ -21,7 +22,7 @@ get_data(x, ...)
 
 \method{get_data}{gee}(x, effects = c("all", "fixed", "random"), ...)
 
-\method{get_data}{rqss}(x, effects = c("all", "fixed", "random"), ...)
+\method{get_data}{rqss}(x, component = c("all", "conditional", "smooth_terms"), ...)
 
 \method{get_data}{hurdle}(
   x,
@@ -37,6 +38,8 @@ get_data(x, ...)
 )
 
 \method{get_data}{merMod}(x, effects = c("all", "fixed", "random"), ...)
+
+\method{get_data}{glmmadmb}(x, effects = c("all", "fixed", "random"), ...)
 
 \method{get_data}{rlmerMod}(x, effects = c("all", "fixed", "random"), ...)
 
@@ -73,10 +76,12 @@ get_data(x, ...)
 or both be returned? Only applies to mixed models.}
 
 \item{component}{Should all predictor variables, predictor variables for the
-conditional model, the zero-inflated part of the model, the dispersion
-term or the instrumental variables be returned? Applies to models
-with zero-inflated and/or dispersion formula, or to models with instrumental
-variable (so called fixed-effects regressions). May be abbreviated.}
+ conditional model, the zero-inflated part of the model, the dispersion
+ term or the instrumental variables be returned? Applies to models
+ with zero-inflated and/or dispersion formula, or to models with instrumental
+ variable (so called fixed-effects regressions). May be abbreviated. Note that the
+\emph{conditional} component is also called \emph{count} or \emph{mean}
+component, depending on the model.}
 }
 \value{
 The data that was used to fit the model.

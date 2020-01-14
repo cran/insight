@@ -6,6 +6,7 @@
 \alias{find_parameters.merMod}
 \alias{find_parameters.zeroinfl}
 \alias{find_parameters.hurdle}
+\alias{find_parameters.BFBayesFactor}
 \alias{find_parameters.brmsfit}
 \alias{find_parameters.bayesx}
 \alias{find_parameters.stanreg}
@@ -34,6 +35,14 @@ find_parameters(x, ...)
 \method{find_parameters}{hurdle}(
   x,
   component = c("all", "conditional", "zi", "zero_inflated"),
+  flatten = FALSE,
+  ...
+)
+
+\method{find_parameters}{BFBayesFactor}(
+  x,
+  effects = c("all", "fixed", "random"),
+  component = c("all", "extra"),
   flatten = FALSE,
   ...
 )
@@ -87,10 +96,12 @@ find_parameters(x, ...)
 \item{...}{Currently not used.}
 
 \item{component}{Should all parameters, parameters for the
-conditional model, the zero-inflated part of the model, the dispersion
-term or the instrumental variables be returned? Applies to models
-with zero-inflated and/or dispersion formula, or to models with instrumental
-variable (so called fixed-effects regressions). May be abbreviated.}
+ conditional model, the zero-inflated part of the model, the dispersion
+ term or the instrumental variables be returned? Applies to models
+ with zero-inflated and/or dispersion formula, or to models with instrumental
+ variable (so called fixed-effects regressions). May be abbreviated. Note that the
+\emph{conditional} component is also called \emph{count} or \emph{mean}
+component, depending on the model.}
 
 \item{flatten}{Logical, if \code{TRUE}, the values are returned
 as character vector, not as list. Duplicated values are removed.}

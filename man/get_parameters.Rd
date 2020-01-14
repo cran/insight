@@ -3,11 +3,13 @@
 \name{get_parameters}
 \alias{get_parameters}
 \alias{get_parameters.rqss}
+\alias{get_parameters.cgam}
+\alias{get_parameters.betareg}
+\alias{get_parameters.clm2}
 \alias{get_parameters.coxme}
 \alias{get_parameters.merMod}
-\alias{get_parameters.rlmerMod}
-\alias{get_parameters.mixed}
 \alias{get_parameters.lme}
+\alias{get_parameters.mixed}
 \alias{get_parameters.MixMod}
 \alias{get_parameters.glmmTMB}
 \alias{get_parameters.BBmm}
@@ -30,15 +32,19 @@ get_parameters(x, ...)
 
 \method{get_parameters}{rqss}(x, component = c("all", "conditional", "smooth_terms"), ...)
 
+\method{get_parameters}{cgam}(x, component = c("all", "conditional", "smooth_terms"), ...)
+
+\method{get_parameters}{betareg}(x, component = c("all", "conditional", "precision"), ...)
+
+\method{get_parameters}{clm2}(x, component = c("all", "conditional", "scale"), ...)
+
 \method{get_parameters}{coxme}(x, effects = c("fixed", "random"), ...)
 
 \method{get_parameters}{merMod}(x, effects = c("fixed", "random"), ...)
 
-\method{get_parameters}{rlmerMod}(x, effects = c("fixed", "random"), ...)
+\method{get_parameters}{lme}(x, effects = c("fixed", "random"), ...)
 
 \method{get_parameters}{mixed}(x, effects = c("fixed", "random"), ...)
-
-\method{get_parameters}{lme}(x, effects = c("fixed", "random"), ...)
 
 \method{get_parameters}{MixMod}(
   x,
@@ -76,7 +82,14 @@ get_parameters(x, ...)
 
 \method{get_parameters}{MCMCglmm}(x, effects = c("fixed", "random", "all"), ...)
 
-\method{get_parameters}{BFBayesFactor}(x, iterations = 4000, progress = FALSE, ...)
+\method{get_parameters}{BFBayesFactor}(
+  x,
+  effects = c("all", "fixed", "random"),
+  component = c("all", "extra"),
+  iterations = 4000,
+  progress = FALSE,
+  ...
+)
 
 \method{get_parameters}{stanmvreg}(
   x,
@@ -114,10 +127,12 @@ get_parameters(x, ...)
 \item{...}{Currently not used.}
 
 \item{component}{Should all parameters, parameters for the
-conditional model, the zero-inflated part of the model, the dispersion
-term or the instrumental variables be returned? Applies to models
-with zero-inflated and/or dispersion formula, or to models with instrumental
-variable (so called fixed-effects regressions). May be abbreviated.}
+ conditional model, the zero-inflated part of the model, the dispersion
+ term or the instrumental variables be returned? Applies to models
+ with zero-inflated and/or dispersion formula, or to models with instrumental
+ variable (so called fixed-effects regressions). May be abbreviated. Note that the
+\emph{conditional} component is also called \emph{count} or \emph{mean}
+component, depending on the model.}
 
 \item{effects}{Should parameters for fixed effects, random effects
 or both be returned? Only applies to mixed models. May be abbreviated.}

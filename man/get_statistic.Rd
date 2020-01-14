@@ -4,6 +4,9 @@
 \alias{get_statistic}
 \alias{get_statistic.default}
 \alias{get_statistic.glmmTMB}
+\alias{get_statistic.clm2}
+\alias{get_statistic.gee}
+\alias{get_statistic.betareg}
 \title{Get statistic associated with estimates}
 \usage{
 get_statistic(x, ...)
@@ -15,6 +18,12 @@ get_statistic(x, ...)
   component = c("all", "conditional", "zi", "zero_inflated"),
   ...
 )
+
+\method{get_statistic}{clm2}(x, component = c("all", "conditional", "scale"), ...)
+
+\method{get_statistic}{gee}(x, robust = FALSE, ...)
+
+\method{get_statistic}{betareg}(x, component = c("all", "conditional", "precision"), ...)
 }
 \arguments{
 \item{x}{A model.}
@@ -31,7 +40,13 @@ default statistic column for most models' summary-output.}
 or for the zero-inflated part of the model be returned? Applies to models
 with zero-inflated component. \code{component} may be one of
 \code{"conditional"}, \code{"zi"}, \code{"zero-inflated"} or \code{"all"}
-(default). May be abbreviated.}
+(default). For models with smooth terms, \code{component = "smooth_terms"}
+is also possible. May be abbreviated. Note that the \emph{conditional}
+component is also called \emph{count} or \emph{mean} component, depending
+on the model.}
+
+\item{robust}{Logical, if \code{TRUE}, test statistic based on robust standard
+errors is returned.}
 }
 \value{
 A data frame with the model's parameter names and the related test statistic.

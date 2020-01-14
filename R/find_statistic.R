@@ -33,15 +33,16 @@ find_statistic <- function(x, ...) {
     c(
       "BBreg",
       "BBmm",
+      "bcplm",
       "biglm",
       "bglmerMod",
       "blmerMod",
       "cch",
       "censReg",
-      "cgam",
-      "cgamm",
       "coeftest",
       "complmrob",
+      "cpglm",
+      "cpglmm",
       "crq",
       "drc",
       "feis",
@@ -71,12 +72,14 @@ find_statistic <- function(x, ...) {
       "rlm",
       "rlmerMod",
       "rq",
+      "rqss",
       "speedlm",
       "svyglm",
       "svyolr",
       "truncreg",
       "wbm",
-      "wblm"
+      "wblm",
+      "zcpglm"
     )
 
   # z-value objects ----------------------------------------------------------
@@ -86,8 +89,10 @@ find_statistic <- function(x, ...) {
       "aareg",
       "betareg",
       "bracl",
+      "brglm",
       "brglmFit",
       "brmultinom",
+      "cglm",
       "clm",
       "clm2",
       "clmm",
@@ -96,6 +101,7 @@ find_statistic <- function(x, ...) {
       "coxph",
       "crch",
       "ergm",
+      "feglm",
       "fixest",
       "flexsurvreg",
       "gee",
@@ -103,18 +109,21 @@ find_statistic <- function(x, ...) {
       "glmmadmb",
       "glmmLasso",
       "glmmTMB",
+      "glmx",
       "gmnl",
       "hurdle",
       "lavaan",
       "loggammacenslmrob",
       "LORgee",
       "lrm",
+      "mixor",
       "MixMod",
       "mjoint",
       "mle2",
       "mlogit",
       "mclogit",
       "mmclogit",
+      "mvmeta",
       "negbin",
       "nlreg",
       "objectiveML",
@@ -127,13 +136,15 @@ find_statistic <- function(x, ...) {
       "tobit",
       "vglm",
       "wbgee",
-      "zeroinfl"
+      "zeroinfl",
+      "zerotrunc"
     )
 
   # F-value objects ----------------------------------------------------------
 
   f.mods <-
     c(
+      "Anova.mlm",
       "aov",
       "aovlist",
       "anova",
@@ -147,6 +158,8 @@ find_statistic <- function(x, ...) {
     c(
       "geeglm",
       "logistf",
+      "MANOVA",
+      "RM",
       "vgam"
     )
 
@@ -157,6 +170,8 @@ find_statistic <- function(x, ...) {
   g.mods <-
     c(
       "bigglm",
+      "cgam",
+      "cgamm",
       "gam",
       "glm",
       "glmc",
@@ -203,6 +218,22 @@ find_statistic <- function(x, ...) {
       "survfit"
     )
 
+  # edge cases ---------------------------------------------------------------
+
+  # tweedie-check needs to come first, because glm can also have tweedie
+  # family, so this exception needs to be caught before checking for g.mods
+
+  tryCatch(
+    {
+      suppressWarnings(
+        if (!is_multivariate(x) && model_info(x)$is_tweedie) {
+          return("t-statistic")
+        }
+      )
+    },
+    error = function(e) {}
+  )
+
   # statistic check -----------------------------------------------------------
 
   if (class(x)[[1]] %in% unsupported.mods) {
@@ -233,6 +264,8 @@ find_statistic <- function(x, ...) {
     }
   }
 
+  # ambiguous cases -----------------------------------------------------------
+
   if (class(x)[[1]] %in% unclear.mods) {
     col_names <- colnames(as.data.frame(summary(x)$coefficients))
     t_names <-
@@ -257,8 +290,7 @@ find_statistic <- function(x, ...) {
         "Wald Z"
       )
     f_names <- c("F", "F-value", "F value", "F.value")
-    chi_names <-
-      c("Chisq", "chi-sq", "chi.sq", "Wald", "W", "Pr(>|W|)")
+    chi_names <- c("Chisq", "chi-sq", "chi.sq", "Wald", "W", "Pr(>|W|)")
 
     if (length(colnames(as.data.frame(summary(x)$coefficients))) == 0L) {
       return(NULL)

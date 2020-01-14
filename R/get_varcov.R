@@ -11,7 +11,12 @@
 #'   zero-inflated model parts)? Applies to models with zero-inflated component,
 #'   or models with precision (e.g. \code{betareg}) component. \code{component}
 #'   may be one of \code{"conditional"}, \code{"zi"}, \code{"zero-inflated"},
-#'   \code{"precision"}, or \code{"all"}. May be abbreviated.
+#'   \code{"precision"}, or \code{"all"}. May be abbreviated. Note that the
+#'   \emph{conditional} component is also called \emph{count} or \emph{mean}
+#'   component, depending on the model.
+#' @param effects Should the complete variance-covariance matrix of the model
+#'   be returned, or only for specific model parameters only? Currently only
+#'   applies to models of class \code{mixor}.
 #' @param ... Currently not used.
 #'
 #' @note \code{get_varcov()} tries to return the nearest positive definite matrix
@@ -62,6 +67,54 @@ get_varcov.betareg <- function(x, component = c("conditional", "precision", "all
     "precision" = stats::vcov(object = x, model = "precision"),
     stats::vcov(object = x)
   )
+
+  if (.is_negativ_matrix(vc)) {
+    vc <- .fix_negative_matrix(vc)
+  }
+
+  .remove_backticks_from_matrix_names(as.matrix(vc))
+}
+
+
+#' @rdname get_varcov
+#' @export
+get_varcov.clm2 <- function(x, component = c("all", "conditional", "scale"), ...) {
+  component <- match.arg(component)
+
+  n_intercepts <- length(x$xi)
+  n_location <- length(x$beta)
+  n_scale <- length(x$zeta)
+
+  vc <- stats::vcov(x)
+
+  if (.is_negativ_matrix(vc)) {
+    vc <- .fix_negative_matrix(vc)
+  }
+
+  range <- switch(
+    component,
+    "all" = 1:(n_scale + n_intercepts + n_location),
+    "conditional" = 1:(n_intercepts + n_location),
+    "scale" = (1 + n_intercepts + n_location):(n_scale + n_intercepts + n_location)
+  )
+
+  vc <- vc[range, range]
+  .remove_backticks_from_matrix_names(as.matrix(vc))
+}
+
+#' @export
+get_varcov.clmm2 <- get_varcov.clm2
+
+
+#' @export
+get_varcov.glmx <- function(x, component = c("all", "conditional", "extra"), ...) {
+  component <- match.arg(component)
+  vc <- stats::vcov(object = x)
+
+  if (component != "all") {
+    keep <- match(insight::find_parameters(x)[[component]], rownames(vc))
+    vc <- vc[keep, keep]
+  }
 
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
@@ -257,6 +310,37 @@ get_varcov.flexsurvreg <- function(x, ...) {
 #' @export
 get_varcov.mixed <- function(x, ...) {
   vc <- as.matrix(stats::vcov(x$full_model))
+
+  if (.is_negativ_matrix(vc)) {
+    vc <- .fix_negative_matrix(vc)
+  }
+
+  .remove_backticks_from_matrix_names(as.matrix(vc))
+}
+
+
+#' @export
+get_varcov.cpglmm <- function(x, ...) {
+  vc <- as.matrix(x@vcov)
+
+  if (.is_negativ_matrix(vc)) {
+    vc <- .fix_negative_matrix(vc)
+  }
+
+  .remove_backticks_from_matrix_names(as.matrix(vc))
+}
+
+#' @export
+get_varcov.cpglm <- get_varcov.cpglmm
+
+
+
+#' @rdname get_varcov
+#' @export
+get_varcov.mixor <- function(x, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+  params <- find_parameters(x, effects = effects, flatten = TRUE)
+  vc <- as.matrix(stats::vcov(x))[params, params]
 
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)

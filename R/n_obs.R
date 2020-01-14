@@ -99,18 +99,40 @@ n_obs.LORgee <- function(x, ...) {
 
 
 #' @export
-n_obs.biglm <- function(x, ...) {
-  x$n
+n_obs.mcmc <- function(x, ...) {
+  nrow(as.data.frame(x))
 }
 
 
 
 #' @export
-n_obs.bigglm <- function(x, ...) {
+n_obs.biglm <- function(x, ...) {
   x$n
 }
 
+#' @export
+n_obs.bigglm <- n_obs.biglm
 
+#' @export
+n_obs.rqss <- n_obs.biglm
+
+#' @export
+n_obs.hurdle <- n_obs.biglm
+
+#' @export
+n_obs.zerotrunc <- n_obs.biglm
+
+#' @export
+n_obs.zeroinfl <- n_obs.biglm
+
+
+
+
+
+#' @export
+n_obs.cgam <- function(x, ...) {
+  nrow(get_data(x))
+}
 
 #' @export
 n_obs.gbm <- function(x, ...) {
@@ -148,6 +170,20 @@ n_obs.multinom <- function(x, ...) {
 
 
 #' @export
+n_obs.cpglmm <- function(x, ...) {
+  nrow(x@frame)
+}
+
+
+
+#' @export
+n_obs.cpglm <- function(x, ...) {
+  nrow(x$model.frame)
+}
+
+
+
+#' @export
 n_obs.rq <- function(x, ...) {
   length(x$fitted.values)
 }
@@ -159,12 +195,8 @@ n_obs.BBreg <- function(x, ...) {
   x$nObs
 }
 
-
-
 #' @export
-n_obs.BBmm <- function(x, ...) {
-  x$nObs
-}
+n_obs.BBmm <- n_obs.BBreg
 
 
 
@@ -176,6 +208,16 @@ n_obs.crq <- function(x, ...) {
   }
   n
 }
+
+
+
+#' @export
+n_obs.MANOVA <- function(x, ...) {
+  nrow(x$input$data)
+}
+
+#' @export
+n_obs.RM <- n_obs.MANOVA
 
 
 
@@ -206,19 +248,12 @@ n_obs.aareg <- function(x, ...) {
   max(x$n)
 }
 
+#' @export
+n_obs.coxph <- n_obs.aareg
 
 
 #' @export
-n_obs.coxph <- function(x, ...) {
-  max(x$n)
-}
-
-
-
-#' @export
-n_obs.coxme <- function(x, ...) {
-  max(x$n)
-}
+n_obs.coxme <- n_obs.aareg
 
 
 
@@ -244,10 +279,13 @@ n_obs.fixest <- function(x, ...) {
 
 
 #' @export
-n_obs.complmrob <- function(x, ...) {
-  nrow(get_data(x))
+n_obs.feglm <- function(x, ...) {
+  x$nobs["nobs"]
 }
 
+
+#' @export
+n_obs.complmrob <- n_obs.cgam
 
 
 #' @export
@@ -278,27 +316,6 @@ n_obs.stanmvreg <- function(x, select = NULL, ...) {
 #' @export
 n_obs.mlogit <- function(x, ...) {
   nrow(x$model)
-}
-
-
-
-#' @export
-n_obs.hurdle <- function(x, ...) {
-  x$n
-}
-
-
-
-#' @export
-n_obs.zerotrunc <- function(x, ...) {
-  x$n
-}
-
-
-
-#' @export
-n_obs.zeroinfl <- function(x, ...) {
-  x$n
 }
 
 

@@ -89,10 +89,10 @@
 #'   }
 #'
 #' @note This function supports models of class \code{merMod} (including models
-#'   from \pkg{blme}), \code{clmm}, \code{glmmTMB}, \code{MixMod}, \code{lme},
-#'   \code{mixed}, \code{rlmerMod}, \code{stanreg} or \code{wbm}. Support for
-#'   objects of class \code{MixMod} (\pkg{GLMMadaptiv}) or \code{lme} (\pkg{nlme})
-#'   is experimental and may not work for all models.
+#'   from \pkg{blme}), \code{clmm}, \code{cpglmm}, \code{glmmadmb}, \code{glmmTMB},
+#'   \code{MixMod}, \code{lme}, \code{mixed}, \code{rlmerMod}, \code{stanreg} or
+#'   \code{wbm}. Support for objects of class \code{MixMod} (\pkg{GLMMadaptiv}) or
+#'   \code{lme} (\pkg{nlme}) is experimental and may not work for all models.
 #'
 #' @references \itemize{
 #'  \item Johnson, P. C. D. (2014). Extension of Nakagawa & Schielzeth’s R2 GLMM to random slopes models. Methods in Ecology and Evolution, 5(9), 944–946. \doi{10.1111/2041-210X.12225}
@@ -110,7 +110,6 @@
 #' get_variance_fixed(m)
 #' get_variance_residual(m)
 #' }
-#'
 #' @export
 get_variance <- function(x, component = c("all", "fixed", "random", "residual", "distribution", "dispersion", "intercept", "slope", "rho01"), verbose = TRUE, ...) {
   UseMethod("get_variance")
@@ -141,30 +140,29 @@ get_variance.merMod <- function(x, component = c("all", "fixed", "random", "resi
 #' @export
 get_variance.rlmerMod <- get_variance.merMod
 
+#' @export
+get_variance.cpglmm <- get_variance.merMod
 
 #' @export
 get_variance.glmmTMB <- get_variance.merMod
 
+#' @export
+get_variance.glmmadmb <- get_variance.merMod
 
 #' @export
 get_variance.stanreg <- get_variance.merMod
 
-
 #' @export
 get_variance.MixMod <- get_variance.merMod
-
 
 #' @export
 get_variance.clmm <- get_variance.merMod
 
-
 #' @export
 get_variance.wbm <- get_variance.merMod
 
-
 #' @export
 get_variance.wblm <- get_variance.merMod
-
 
 #' @export
 get_variance.lme <- get_variance.merMod

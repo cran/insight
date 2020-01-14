@@ -3,17 +3,21 @@
 \name{get_varcov}
 \alias{get_varcov}
 \alias{get_varcov.betareg}
+\alias{get_varcov.clm2}
 \alias{get_varcov.truncreg}
 \alias{get_varcov.gamlss}
 \alias{get_varcov.hurdle}
 \alias{get_varcov.MixMod}
 \alias{get_varcov.glmmTMB}
 \alias{get_varcov.brmsfit}
+\alias{get_varcov.mixor}
 \title{Get variance-covariance matrix from models}
 \usage{
 get_varcov(x, ...)
 
 \method{get_varcov}{betareg}(x, component = c("conditional", "precision", "all"), ...)
+
+\method{get_varcov}{clm2}(x, component = c("all", "conditional", "scale"), ...)
 
 \method{get_varcov}{truncreg}(x, component = c("conditional", "all"), ...)
 
@@ -26,6 +30,8 @@ get_varcov(x, ...)
 \method{get_varcov}{glmmTMB}(x, component = c("conditional", "zero_inflated", "zi", "all"), ...)
 
 \method{get_varcov}{brmsfit}(x, component = c("conditional", "zero_inflated", "zi", "all"), ...)
+
+\method{get_varcov}{mixor}(x, effects = c("all", "fixed", "random"), ...)
 }
 \arguments{
 \item{x}{A model.}
@@ -37,7 +43,13 @@ be returned, or only for specific model components only (like count or
 zero-inflated model parts)? Applies to models with zero-inflated component,
 or models with precision (e.g. \code{betareg}) component. \code{component}
 may be one of \code{"conditional"}, \code{"zi"}, \code{"zero-inflated"},
-\code{"precision"}, or \code{"all"}. May be abbreviated.}
+\code{"precision"}, or \code{"all"}. May be abbreviated. Note that the
+\emph{conditional} component is also called \emph{count} or \emph{mean}
+component, depending on the model.}
+
+\item{effects}{Should the complete variance-covariance matrix of the model
+be returned, or only for specific model parameters only? Currently only
+applies to models of class \code{mixor}.}
 }
 \value{
 The variance-covariance matrix, as \code{matrix}-object.

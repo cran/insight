@@ -95,6 +95,9 @@ link_function.gls <- link_function.lm
 link_function.rq <- link_function.lm
 
 #' @export
+link_function.rqss <- link_function.lm
+
+#' @export
 link_function.crq <- link_function.lm
 
 #' @export
@@ -133,6 +136,12 @@ link_function.ivreg <- link_function.lm
 #' @export
 link_function.plm <- link_function.lm
 
+#' @export
+link_function.MANOVA <- link_function.lm
+
+#' @export
+link_function.RM <- link_function.lm
+
 
 
 
@@ -142,13 +151,19 @@ link_function.plm <- link_function.lm
 # General family ---------------------------------
 
 #' @export
-link_function.speedglm <- function(x, ...) {
-  stats::family(x)$linkfun
-}
+link_function.glm <- link_function.default
 
 #' @export
-link_function.bigglm <- link_function.speedglm
+link_function.speedglm <- link_function.default
 
+#' @export
+link_function.bigglm <- link_function.default
+
+#' @export
+link_function.brglm <- link_function.default
+
+#' @export
+link_function.cgam <- link_function.default
 
 
 
@@ -231,7 +246,6 @@ link_function.survreg <- link_function.tobit
 #' @export
 link_function.psm <- link_function.tobit
 
-
 #' @export
 link_function.flexsurvreg <- function(x, ...) {
   dist <- parse(text = .safe_deparse(x$call))[[1]]$dist
@@ -258,6 +272,8 @@ link_function.clm2 <- link_function.clm
 #' @export
 link_function.clmm <- link_function.clm
 
+#' @export
+link_function.mixor <- link_function.clm
 
 
 
@@ -282,6 +298,25 @@ link_function.fixest <- function(x, ...) {
     stats::make.link(link)$linkfun
   }
 }
+
+#' @export
+link_function.feglm <- link_function.fixest
+
+
+#' @export
+link_function.glmx <- function(x, ...) {
+  x$family$glm$linkfun
+}
+
+
+#' @export
+link_function.cpglmm <- function(x, ...) {
+  f <- .get_cplm_family(x)
+  f$linkfun
+}
+
+#' @export
+link_function.cpglm <- link_function.cpglmm
 
 
 #' @export
@@ -327,6 +362,13 @@ link_function.gam <- function(x, ...) {
 #' @export
 link_function.glimML <- function(x, ...) {
   stats::make.link(link = x@link)$linkfun
+}
+
+
+
+#' @export
+link_function.glmmadmb <- function(x, ...) {
+  x$linkfun
 }
 
 

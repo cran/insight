@@ -164,7 +164,19 @@ model_info.mixed <- model_info.mmclogit
 model_info.plm <- model_info.mmclogit
 
 #' @export
+model_info.mcmc <- model_info.mmclogit
+
+#' @export
 model_info.gls <- model_info.mmclogit
+
+#' @export
+model_info.nls <- model_info.mmclogit
+
+#' @export
+model_info.MANOVA <- model_info.mmclogit
+
+#' @export
+model_info.RM <- model_info.mmclogit
 
 #' @export
 model_info.truncreg <- model_info.mmclogit
@@ -265,6 +277,9 @@ model_info.clm2 <- model_info.clm
 
 #' @export
 model_info.clmm <- model_info.clm
+
+#' @export
+model_info.mixor <- model_info.clm
 
 
 
@@ -373,6 +388,19 @@ model_info.glmmPQL <- model_info.MixMod
 
 
 #' @export
+model_info.glmx <- function(x, ...) {
+  faminfo <- x$family$glm
+  .make_family(
+    x = x,
+    fitfam = faminfo$family,
+    logit.link = faminfo$link == "logit",
+    link.fun = faminfo$link,
+    ...
+  )
+}
+
+
+#' @export
 model_info.fixest <- function(x, ...) {
   faminfo <- x$family
 
@@ -410,7 +438,8 @@ model_info.fixest <- function(x, ...) {
   }
 }
 
-
+#' @export
+model_info.feglm <- model_info.fixest
 
 
 
@@ -558,6 +587,19 @@ model_info.stanmvreg <- function(x, ...) {
 
 
 #' @export
+model_info.cgam <- function(x, ...) {
+  faminfo <- x$family
+  .make_family(
+    x = x,
+    fitfam = faminfo$family,
+    logit.link = faminfo$link == "logit",
+    link.fun = faminfo$link,
+    ...
+  )
+}
+
+
+#' @export
 model_info.gamm <- function(x, ...) {
   x <- x$gam
   class(x) <- c(class(x), c("glm", "lm"))
@@ -609,6 +651,38 @@ model_info.BBreg <- function(x, ...) {
 #' @export
 model_info.BBmm <- model_info.BBreg
 
+
+
+#' @export
+model_info.glmmadmb <- function(x, ...) {
+  .make_family(
+    x = x,
+    fitfam = x$family,
+    logit.link = x$link == "logit",
+    multi.var = FALSE,
+    zero.inf = x$zeroInflation,
+    link.fun = x$link,
+    ...
+  )
+}
+
+
+#' @export
+model_info.cpglmm <- function(x, ...) {
+  link <- parse(text = .safe_deparse(x@call))[[1]]$link
+  if (is.numeric(link)) link <- "tweedie"
+  .make_family(
+    x = x,
+    fitfam = "poisson",
+    logit.link = FALSE,
+    multi.var = FALSE,
+    link.fun = link,
+    ...
+  )
+}
+
+#' @export
+model_info.cpglm <- model_info.cpglmm
 
 
 #' @export

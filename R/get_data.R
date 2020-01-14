@@ -39,25 +39,29 @@ get_data.default <- function(x, ...) {
     class(x) <- c(class(x), c("glm", "lm"))
   }
 
-  mf <- tryCatch({
-    if (inherits(x, "Zelig-relogit")) {
-      .get_zelig_relogit_frame(x)
-    } else {
-      stats::model.frame(x)
-    }
-  },
-  error = function(x) {
-    NULL
-  })
-
-  if (is.null(mf)) {
-    mf <- tryCatch({
-      .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
+  mf <- tryCatch(
+    {
+      if (inherits(x, "Zelig-relogit")) {
+        .get_zelig_relogit_frame(x)
+      } else {
+        stats::model.frame(x)
+      }
     },
     error = function(x) {
       NULL
     }
-  )}
+  )
+
+  if (is.null(mf)) {
+    mf <- tryCatch(
+      {
+        .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
+      },
+      error = function(x) {
+        NULL
+      }
+    )
+  }
 
   .prepare_get_data(x, mf)
 }
@@ -100,7 +104,22 @@ get_data.gee <- function(x, effects = c("all", "fixed", "random"), ...) {
 
 #' @rdname get_data
 #' @export
-get_data.rqss <- get_data.gee
+get_data.rqss <- function(x, component = c("all", "conditional", "smooth_terms"), ...) {
+  component <- match.arg(component)
+  mf <- tryCatch(
+    {
+      dat <- .get_data_from_env(x)
+      dat[, find_variables(x, effects = "all", component = component, flatten = TRUE), drop = FALSE]
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+
+  .prepare_get_data(x, stats::na.omit(mf))
+}
+
+
 
 
 
@@ -154,7 +173,7 @@ get_data.hurdle <- function(x, component = c("all", "conditional", "zi", "zero_i
 get_data.zeroinfl <- get_data.hurdle
 
 #' @export
-get_data.zerotrunc <- get_data.hurdle
+get_data.zerotrunc <- get_data.default
 
 
 
@@ -207,6 +226,109 @@ get_data.merMod <- function(x, effects = c("all", "fixed", "random"), ...) {
         fixed = stats::model.frame(x, fixed.only = TRUE),
         all = stats::model.frame(x, fixed.only = FALSE),
         random = stats::model.frame(x, fixed.only = FALSE)[, find_random(x, split_nested = TRUE, flatten = TRUE), drop = FALSE]
+      )
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+
+  .prepare_get_data(x, mf, effects)
+}
+
+
+
+#' @export
+get_data.MANOVA <- function(x, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+
+  mf <- tryCatch(
+    {
+      switch(
+        effects,
+        fixed = .remove_column(x$input$data, x$input$subject),
+        all = x$input$data,
+        random = x$input$data[, x$input$subject, drop = FALSE]
+      )
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+
+  .prepare_get_data(x, mf, effects)
+}
+
+#' @export
+get_data.RM <- get_data.MANOVA
+
+
+
+#' @export
+get_data.cpglmm <- function(x, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+  dat <- stats::model.frame(x)
+
+  mf <- tryCatch(
+    {
+      switch(
+        effects,
+        fixed = dat[, find_predictors(x, effects = "fixed", flatten = TRUE), drop = FALSE],
+        all = dat,
+        random = dat[, find_random(x, split_nested = TRUE, flatten = TRUE), drop = FALSE]
+      )
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+
+  .prepare_get_data(x, mf, effects)
+}
+
+
+
+#' @export
+get_data.mixor <- function(x, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+
+  mf <- tryCatch(
+    {
+      switch(
+        effects,
+        fixed = stats::model.frame(x),
+        all = cbind(stats::model.frame(x), x$id),
+        random = data.frame(x$id)
+      )
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+
+  fix_cn <- which(colnames(mf) %in% c("x.id", "x$id"))
+  colnames(mf)[fix_cn] <- deparse(x$call$id)
+
+  .prepare_get_data(x, mf, effects)
+}
+
+
+
+#' @rdname get_data
+#' @export
+get_data.glmmadmb <- function(x, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+
+  fixed_data <- x$frame
+  random_data <- .get_data_from_env(x)[, find_random(x, split_nested = TRUE, flatten = TRUE), drop = FALSE]
+
+  mf <- tryCatch(
+    {
+      switch(
+        effects,
+        fixed = fixed_data,
+        all = cbind(fixed_data, random_data),
+        random = random_data
       )
     },
     error = function(x) {
@@ -448,6 +570,13 @@ get_data.feis <- function(x, effects = c("all", "fixed", "random"), ...) {
 #' @export
 get_data.fixest <- function(x, ...) {
   mf <- .get_data_from_env(x)
+  .get_data_from_modelframe(x, mf, effects = "all")
+}
+
+
+#' @export
+get_data.feglm <- function(x, ...) {
+  mf <- as.data.frame(x$data)
   .get_data_from_modelframe(x, mf, effects = "all")
 }
 
@@ -758,7 +887,15 @@ get_data.tobit <- function(x, ...) {
 get_data.clm2 <- function(x, ...) {
   mf <- tryCatch(
     {
-      x$location
+      data_complete <- x$location
+      data_scale <- x$scale
+
+      if (!is.null(data_scale)) {
+        remain <- setdiff(colnames(data_scale), colnames(data_complete))
+        if (length(remain)) data_complete <- cbind(data_complete, data_scale[, remain, drop = FALSE])
+      }
+
+      data_complete
     },
     error = function(x) {
       NULL

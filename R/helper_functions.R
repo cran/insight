@@ -176,7 +176,7 @@
 
 # extract random effects from formula
 .get_model_random <- function(f, split_nested = FALSE, model) {
-  is_special <- inherits(model, c("MCMCglmm", "gee", "LORgee", "clmm2", "felm", "feis", "BFBayesFactor", "BBmm", "glimML"))
+  is_special <- inherits(model, c("MCMCglmm", "gee", "LORgee", "mixor", "clmm2", "felm", "feis", "BFBayesFactor", "BBmm", "glimML", "MANOVA", "RM"))
 
   if (!requireNamespace("lme4", quietly = TRUE)) {
     stop("To use this function, please install package 'lme4'.")
@@ -269,12 +269,12 @@
 # to reduce redundant code, I extract this part which is used several
 # times accross this package
 .get_elements <- function(effects, component) {
-  elements <- c("conditional", "nonlinear", "random", "zero_inflated", "zero_inflated_random", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes", "cluster")
+  elements <- c("conditional", "nonlinear", "random", "zero_inflated", "zero_inflated_random", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes", "cluster", "extra", "scale")
 
   elements <- switch(
     effects,
     all = elements,
-    fixed = elements[elements %in% c("conditional", "zero_inflated", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "correlation", "slopes", "sigma", "nonlinear", "cluster")],
+    fixed = elements[elements %in% c("conditional", "zero_inflated", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "correlation", "slopes", "sigma", "nonlinear", "cluster", "extra", "scale")],
     random = elements[elements %in% c("random", "zero_inflated_random")]
   )
 
@@ -293,7 +293,9 @@
     correlation = elements[elements == "correlation"],
     cluster = elements[elements == "cluster"],
     nonlinear = elements[elements == "nonlinear"],
-    slopes = elements[elements == "slopes"]
+    slopes = elements[elements == "slopes"],
+    extra = elements[elements == "extra"],
+    scale = elements[elements == "scale"]
   )
 
   elements
@@ -311,7 +313,7 @@
 
   tryCatch(
     {
-      if (inherits(x, c("glmmTMB", "clmm"))) {
+      if (inherits(x, c("glmmTMB", "clmm", "cpglmm"))) {
         is_si <- any(sapply(vals$vc, function(.x) any(abs(diag(.x)) < tolerance)))
       } else if (inherits(x, "merMod")) {
         theta <- lme4::getME(x, "theta")

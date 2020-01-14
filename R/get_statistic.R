@@ -13,7 +13,12 @@
 #'   or for the zero-inflated part of the model be returned? Applies to models
 #'   with zero-inflated component. \code{component} may be one of
 #'   \code{"conditional"}, \code{"zi"}, \code{"zero-inflated"} or \code{"all"}
-#'   (default). May be abbreviated.
+#'   (default). For models with smooth terms, \code{component = "smooth_terms"}
+#'   is also possible. May be abbreviated. Note that the \emph{conditional}
+#'   component is also called \emph{count} or \emph{mean} component, depending
+#'   on the model.
+#' @param robust Logical, if \code{TRUE}, test statistic based on robust standard
+#'   errors is returned.
 #' @param ... Currently not used.
 #'
 #' @return A data frame with the model's parameter names and the related test statistic.
@@ -80,6 +85,10 @@ get_statistic.lme <- function(x, ...) {
 
 #' @export
 get_statistic.plm <- get_statistic.default
+
+
+#' @export
+get_statistic.glmmadmb <- get_statistic.default
 
 
 #' @export
@@ -329,6 +338,36 @@ get_statistic.vgam <- function(x, ...) {
 
 
 
+#' @export
+get_statistic.cgam <- function(x, component = c("all", "conditional", "smooth_terms"), ...) {
+  component <- match.arg(component)
+
+  sc <- summary(x)
+  stat <- as.vector(sc$coefficients[, 3])
+  if (!is.null(sc$coefficients2)) stat <- c(stat, rep(NA, nrow(sc$coefficients2)))
+
+  params <- get_parameters(x, component = "all")
+
+  out <- data.frame(
+    Parameter = params$Parameter,
+    Statistic = stat,
+    Component = params$Component,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  if (component != "all") {
+    out <- out[out$Component == component, ]
+  }
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+
+
+
 
 
 
@@ -423,6 +462,56 @@ get_statistic.aareg <- function(x, ...) {
 
 # Ordinal models --------------------------------------------------
 
+
+#' @rdname get_statistic
+#' @export
+get_statistic.clm2 <- function(x, component = c("all", "conditional", "scale"), ...) {
+  component <- match.arg(component)
+
+  stats <- stats::coef(summary(x))
+  n_intercepts <- length(x$xi)
+  n_location <- length(x$beta)
+  n_scale <- length(x$zeta)
+
+  out <- data.frame(
+    Parameter = rownames(stats),
+    Statistic = unname(stats[, "z value"]),
+    Component = c(rep("conditional", times = n_intercepts + n_location), rep("scale", times = n_scale)),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  if (component != "all") {
+    out <- out[out$Component == component, ]
+  }
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
+get_statistic.clmm2 <- get_statistic.clm2
+
+
+#' @export
+get_statistic.mixor <- function(x, effects = c("all", "fixed", "random"), ...) {
+  stats <- x$Model[, "z value"]
+  effects <- match.arg(effects)
+
+  parms <- get_parameters(x, effects = effects)
+
+  out <- data.frame(
+    Parameter = parms$Parameter,
+    Statistic = stats[parms$Parameter],
+    Effects = parms$Effects,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
 
 #' @export
 get_statistic.multinom <- function(x, ...) {
@@ -519,6 +608,70 @@ get_statistic.wbgee <- get_statistic.wbm
 
 
 #' @export
+get_statistic.cpglmm <- function(x, ...) {
+  if (!requireNamespace("cplm", quietly = TRUE)) {
+    stop("To use this function, please install package 'cplm'.")
+  }
+
+  stats <- cplm::summary(x)$coefs
+  params <- get_parameters(x)
+
+  out <- data.frame(
+    Parameter = params$Parameter,
+    Statistic = as.vector(stats[, "t value"]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @importFrom utils capture.output
+#' @export
+get_statistic.cpglm <- function(x, ...) {
+  if (!requireNamespace("cplm", quietly = TRUE)) {
+    stop("To use this function, please install package 'cplm'.")
+  }
+
+  junk <- utils::capture.output(stats <- cplm::summary(x)$coefficients)
+  params <- get_parameters(x)
+
+  out <- data.frame(
+    Parameter = params$Parameter,
+    Statistic = as.vector(stats[, "t value"]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+
+#' @export
+get_statistic.MANOVA <- function(x, ...) {
+  stats <- as.data.frame(x$WTS)
+
+  out <- data.frame(
+    Parameter = rownames(stats),
+    Statistic = as.vector(stats[[1]]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+#' @export
+get_statistic.RM <- get_statistic.MANOVA
+
+
+
+#' @export
 get_statistic.rq <- function(x, ...) {
   stat <- tryCatch(
     {
@@ -550,6 +703,32 @@ get_statistic.crq <- get_statistic.rq
 #' @export
 get_statistic.nlrq <- get_statistic.rq
 
+
+
+#' @export
+get_statistic.rqss <- function(x, component = c("all", "conditional", "smooth_terms"), ...) {
+  component <- match.arg(component)
+
+  cs <- summary(x)
+  stat <- c(as.vector(cs$coef[, "t value"]), as.vector(cs$qsstab[, "F value"]))
+
+  params <- get_parameters(x)
+
+  out <- data.frame(
+    Parameter = params$Parameter,
+    Statistic = unname(stat),
+    Component = params$Component,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  if (component != "all") {
+    out <- out[out$Component == component, ]
+  }
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
 
 
 #' @export
@@ -635,15 +814,54 @@ get_statistic.fixest <- function(x, ...) {
 
 
 
+#' @export
+get_statistic.glmx <- function(x, component = c("all", "conditional", "extra"), ...) {
+  component <- match.arg(component)
+  cf <- stats::coef(summary(x))
+  parms <- get_parameters(x)
+
+  out <- rbind(
+    data.frame(
+      Parameter = parms$Parameter[parms$Component == "conditional"],
+      Statistic = unname(cf$glm[, 3]),
+      Component = "conditional",
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    ),
+    data.frame(
+      Parameter = parms$Parameter[parms$Component == "extra"],
+      Statistic = cf$extra[, 3],
+      Component = "extra",
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  )
+
+  if (component != "all") {
+    out <- out[out$Component == component, ]
+  }
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @rdname get_statistic
 #' @importFrom stats coef
 #' @export
-get_statistic.gee <- function(x, ...) {
+get_statistic.gee <- function(x, robust = FALSE, ...) {
   parms <- get_parameters(x)
   cs <- stats::coef(summary(x))
 
+  if (isTRUE(robust)) {
+    stats <- as.vector(cs[, "Robust z"])
+  } else {
+    stats <- as.vector(cs[, "Naive z"])
+  }
+
   out <- data.frame(
     Parameter = parms$Parameter,
-    Statistic = as.vector(cs[, "Naive z"]),
+    Statistic = stats,
     stringsAsFactors = FALSE,
     row.names = NULL
   )
@@ -718,9 +936,11 @@ get_statistic.svyglm.zip <- get_statistic.svyglm.nb
 
 
 
+#' @rdname get_statistic
 #' @importFrom stats coef
 #' @export
-get_statistic.betareg <- function(x, ...) {
+get_statistic.betareg <- function(x, component = c("all", "conditional", "precision"), ...) {
+  component <- match.arg(component)
   parms <- get_parameters(x)
   cs <- do.call(rbind, stats::coef(summary(x)))
   se <- as.vector(cs[, 2])
@@ -728,9 +948,14 @@ get_statistic.betareg <- function(x, ...) {
   out <- data.frame(
     Parameter = parms$Parameter,
     Statistic = parms$Estimate / se,
+    Component = parms$Component,
     stringsAsFactors = FALSE,
     row.names = NULL
   )
+
+  if (component != "all") {
+    out <- out[out$Component == component, ]
+  }
 
   attr(out, "statistic") <- find_statistic(x)
   out

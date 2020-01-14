@@ -62,6 +62,10 @@ clean_parameters.default <- function(x, ...) {
       "nonlinear"
     } else if (grepl("instruments", i, fixed = TRUE)) {
       "instruments"
+    } else if (grepl("extra", i, fixed = TRUE)) {
+      "extra"
+    } else if (grepl("scale", i, fixed = TRUE)) {
+      "scale"
     } else {
       "conditional"
     }
@@ -98,6 +102,40 @@ clean_parameters.default <- function(x, ...) {
         row.names = NULL
       )
     }
+  })
+
+  out <- .remove_backticks_from_parameter_names(do.call(rbind, l))
+  out <- .remove_empty_columns_from_pars(out)
+  .fix_random_effect_smooth(x, out)
+}
+
+
+
+#' @export
+clean_parameters.BFBayesFactor <- function(x, ...) {
+  pars <- find_parameters(x, effects = "all", component = "all", flatten = FALSE)
+
+  l <- lapply(names(pars), function(i) {
+    eff <- if (grepl("random", i, fixed = TRUE)) {
+      "random"
+    } else {
+      "fixed"
+    }
+
+    com <- if (grepl("extra", i, fixed = TRUE)) {
+      "extra"
+    } else {
+      "conditional"
+    }
+
+    data.frame(
+      Parameter = pars[[i]],
+      Effects = eff,
+      Component = com,
+      Cleaned_Parameter = pars[[i]],
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
   })
 
   out <- .remove_backticks_from_parameter_names(do.call(rbind, l))

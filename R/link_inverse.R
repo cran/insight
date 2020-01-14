@@ -143,11 +143,15 @@ link_inverse.iv_robust <- link_inverse.lm
 
 #' @export
 link_inverse.mixed <- link_inverse.lm
+
 #' @export
 link_inverse.lme <- link_inverse.lm
 
 #' @export
 link_inverse.rq <- link_inverse.lm
+
+#' @export
+link_inverse.rqss <- link_inverse.lm
 
 #' @export
 link_inverse.crq <- link_inverse.lm
@@ -175,6 +179,12 @@ link_inverse.gls <- link_inverse.lm
 
 #' @export
 link_inverse.lmRob <- link_inverse.lm
+
+#' @export
+link_inverse.MANOVA <- link_inverse.lm
+
+#' @export
+link_inverse.RM <- link_inverse.lm
 
 #' @export
 link_inverse.lmrob <- link_inverse.lm
@@ -272,6 +282,8 @@ link_inverse.clmm <- link_inverse.clm
 #' @export
 link_inverse.clm2 <- link_inverse.clm
 
+#' @export
+link_inverse.mixor <- link_inverse.clm
 
 
 
@@ -280,6 +292,16 @@ link_inverse.clm2 <- link_inverse.clm
 
 
 # Other models ----------------------------
+
+
+#' @export
+link_inverse.cpglmm <- function(x, ...) {
+  f <- .get_cplm_family(x)
+  f$linkinv
+}
+
+#' @export
+link_inverse.cpglm <- link_inverse.cpglmm
 
 
 #' @export
@@ -296,6 +318,21 @@ link_inverse.fixest <- function(x, ...) {
     )
     stats::make.link(link)$linkinv
   }
+}
+
+#' @export
+link_inverse.feglm <- link_inverse.fixest
+
+
+#' @export
+link_inverse.glmx <- function(x, ...) {
+  x$family$glm$linkinv
+}
+
+
+#' @export
+link_inverse.glmmadmb <- function(x, ...) {
+  x$ilinkfun
 }
 
 
@@ -436,11 +473,13 @@ link_inverse.glmmPQL <- function(x, ...) {
   x$family$linkinv
 }
 
+#' @export
+link_inverse.MixMod <- link_inverse.glmmPQL
 
 #' @export
-link_inverse.MixMod <- function(x, ...) {
-  x$family$linkinv
-}
+link_inverse.cgam <- link_inverse.glmmPQL
+
+
 
 
 #' @export
@@ -448,11 +487,8 @@ link_inverse.vgam <- function(x, ...) {
   x@family@linkinv
 }
 
-
 #' @export
-link_inverse.vglm <- function(x, ...) {
-  x@family@linkinv
-}
+link_inverse.vglm <- link_inverse.vgam
 
 
 #' @export
@@ -504,4 +540,19 @@ link_inverse.gam <- function(x, ...) {
   }
 
   il
+}
+
+
+#' @importFrom stats poisson
+.get_cplm_family <- function(x) {
+  link <- parse(text = .safe_deparse(x@call))[[1]]$link
+
+  if (!is.numeric(link)) {
+    stats::poisson(link = link)
+  } else {
+    if (!requireNamespace("statmod", quietly = TRUE)) {
+      stop("Package 'statmod' required. Please install it.")
+    }
+    statmod::tweedie(link.power = link)
+  }
 }

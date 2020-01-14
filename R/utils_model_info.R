@@ -2,33 +2,33 @@
   # create logical for family
   binom_fam <-
     fitfam %in% c("bernoulli", "binomial", "quasibinomial", "binomialff") |
-    grepl("\\Qbinomial\\E", fitfam, ignore.case = TRUE)
+      grepl("\\Qbinomial\\E", fitfam, ignore.case = TRUE)
 
   poisson_fam <-
     fitfam %in% c("poisson", "quasipoisson", "genpois", "ziplss") |
-    grepl("\\Qpoisson\\E", fitfam, ignore.case = TRUE)
+      grepl("\\Qpoisson\\E", fitfam, ignore.case = TRUE)
 
   neg_bin_fam <-
     grepl("\\Qnegative binomial\\E", fitfam, ignore.case = TRUE) |
-    grepl("\\Qnbinom\\E", fitfam, ignore.case = TRUE) |
-    grepl("\\Qnegbin\\E", fitfam, ignore.case = TRUE) |
-    grepl("\\Qnzbinom\\E", fitfam, ignore.case = TRUE) |
-    grepl("\\Qgenpois\\E", fitfam, ignore.case = TRUE) |
-    grepl("\\Qnegbinomial\\E", fitfam, ignore.case = TRUE) |
-    grepl("\\Qneg_binomial\\E", fitfam, ignore.case = TRUE) |
-    fitfam %in% c("ztnbinom", "nbinom")
+      grepl("\\Qnbinom\\E", fitfam, ignore.case = TRUE) |
+      grepl("\\Qnegbin\\E", fitfam, ignore.case = TRUE) |
+      grepl("\\Qnzbinom\\E", fitfam, ignore.case = TRUE) |
+      grepl("\\Qgenpois\\E", fitfam, ignore.case = TRUE) |
+      grepl("\\Qnegbinomial\\E", fitfam, ignore.case = TRUE) |
+      grepl("\\Qneg_binomial\\E", fitfam, ignore.case = TRUE) |
+      fitfam %in% c("ztnbinom", "nbinom")
 
   beta_fam <-
     inherits(x, "betareg") |
-    fitfam %in% c(
-      "beta",
-      "Beta",
-      "betabinomial",
-      "Beta Inflated",
-      "Zero Inflated Beta",
-      "Beta Inflated zero",
-      "Beta Inflated one"
-    )
+      fitfam %in% c(
+        "beta",
+        "Beta",
+        "betabinomial",
+        "Beta Inflated",
+        "Zero Inflated Beta",
+        "Beta Inflated zero",
+        "Beta Inflated one"
+      )
 
   betabin_fam <- inherits(x, "BBreg") | fitfam %in% "betabinomial"
 
@@ -40,7 +40,8 @@
   linear_model <- (!binom_fam & !exponential_fam & !poisson_fam & !neg_bin_fam & !logit.link) ||
     fitfam %in% c("Student's-t", "t Family", "gaussian", "Gaussian") || grepl("(\\st)$", fitfam)
 
-  tweedie_model <- linear_model && grepl("tweedie", fitfam, fixed = TRUE)
+  tweedie_fam <- grepl("^(tweedie|Tweedie)", fitfam)
+  tweedie_model <- (linear_model && tweedie_fam) || inherits(x, c("cpglm", "cpglmm"))
 
   zero.inf <- zero.inf | fitfam == "ziplss" |
     grepl("\\Qzero_inflated\\E", fitfam, ignore.case = TRUE) |
@@ -54,18 +55,19 @@
     grepl("\\Qhurdle\\E", fitfam, ignore.case = TRUE) |
     grepl("^hu", fitfam, perl = TRUE) |
     grepl("^truncated", fitfam, perl = TRUE) |
-    fitfam == "ztnbinom"
+    fitfam == "ztnbinom" |
+    fitfam %in% c("truncpoiss", "truncnbinom", "truncnbinom1")
 
   is.ordinal <-
-    inherits(x, c("svyolr", "polr", "clm", "clm2", "clmm", "gmnl", "mlogit", "multinom", "LORgee", "brmultinom")) |
-    fitfam %in% c("cumulative", "cratio", "sratio", "acat", "ordinal", "multinomial")
+    inherits(x, c("svyolr", "polr", "clm", "clm2", "clmm", "gmnl", "mixor", "mlogit", "multinom", "LORgee", "brmultinom")) |
+      fitfam %in% c("cumulative", "cratio", "sratio", "acat", "ordinal", "multinomial")
 
   is.categorical <- fitfam == "categorical"
 
   is.bayes <- inherits(x, c(
     "brmsfit", "stanfit", "MCMCglmm", "stanreg",
     "stanmvreg", "bmerMod", "BFBayesFactor", "bamlss",
-    "bayesx"
+    "bayesx", "mcmc"
   ))
 
   is.survival <- inherits(x, c("aareg", "survreg", "survfit", "survPresmooth", "flexsurvreg", "coxph", "coxme"))
@@ -111,14 +113,18 @@
   if (.obj_has_name(dots, "no_terms") && isTRUE(dots$no_terms)) {
     model_terms <- NULL
   } else {
-    model_terms <- tryCatch(
-      {
-        find_variables(x, effects = "all", component = "all", flatten = FALSE)
-      },
-      error = function(x) {
-        NULL
-      }
-    )
+    if (inherits(x, "mcmc")) {
+      model_terms <- find_parameters(x)
+    } else {
+      model_terms <- tryCatch(
+        {
+          find_variables(x, effects = "all", component = "all", flatten = FALSE)
+        },
+        error = function(x) {
+          NULL
+        }
+      )
+    }
   }
 
   if (inherits(x, "htest")) {
@@ -181,7 +187,7 @@
     is_multivariate = multi.var,
     is_trial = is.trial,
     is_bayesian = is.bayes,
-    is_anova = inherits(x, c("aov", "aovlist")),
+    is_anova = inherits(x, c("aov", "aovlist", "MANOVA", "RM")),
     is_ttest = is_ttest,
     is_correlation = is_correlation,
     is_meta = is_meta,

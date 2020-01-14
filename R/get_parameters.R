@@ -126,6 +126,7 @@ get_parameters.crq <- function(x, ...) {
 }
 
 
+#' @importFrom stats setNames
 #' @rdname get_parameters
 #' @export
 get_parameters.rqss <- function(x, component = c("all", "conditional", "smooth_terms"), ...) {
@@ -136,12 +137,31 @@ get_parameters.rqss <- function(x, component = c("all", "conditional", "smooth_t
   names(smooth_terms) <- rownames(sc$qsstab)
 
   .return_smooth_parms(
-    conditional = sc$coef[, 1],
+    conditional = stats::setNames(sc$coef[, 1], rownames(sc$coef)),
     smooth_terms = smooth_terms,
     component = component
   )
 }
 
+
+#' @importFrom stats setNames
+#' @rdname get_parameters
+#' @export
+get_parameters.cgam <- function(x, component = c("all", "conditional", "smooth_terms"), ...) {
+  component <- match.arg(component)
+  sc <- summary(x)
+
+  estimates <- sc$coefficients
+  smooth_terms <- sc$coefficients2
+
+  if (!is.null(smooth_terms)) smooth_terms <- stats::setNames(smooth_terms[, 1], rownames(smooth_terms))
+
+  .return_smooth_parms(
+    conditional = stats::setNames(estimates[, 1], rownames(estimates)),
+    smooth_terms = smooth_terms,
+    component = component
+  )
+}
 
 
 
@@ -207,6 +227,37 @@ get_parameters.brmultinom <- get_parameters.multinom
 
 
 #' @export
+get_parameters.glmx <- function(x, component = c("all", "conditional", "extra"), ...) {
+  component <- match.arg(component)
+  cf <- stats::coef(summary(x))
+
+  params <- rbind(
+    data.frame(
+      Parameter = names(cf$glm[, 1]),
+      Estimate = unname(cf$glm[, 1]),
+      Component = "conditional",
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    ),
+    data.frame(
+      Parameter = rownames(cf$extra),
+      Estimate = cf$extra[, 1],
+      Component = "extra",
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  )
+
+  if (component != "all") {
+    params <- params[params$Component == component, ]
+  }
+
+  .remove_backticks_from_parameter_names(params)
+}
+
+
+
+#' @export
 get_parameters.mlm <- function(x, ...) {
   cs <- stats::coef(summary(x))
 
@@ -236,6 +287,28 @@ get_parameters.gbm <- function(x, ...) {
     stringsAsFactors = FALSE,
     row.names = NULL
   )
+
+  .remove_backticks_from_parameter_names(params)
+}
+
+
+#' @rdname get_parameters
+#' @export
+get_parameters.betareg <- function(x, component = c("all", "conditional", "precision"), ...) {
+  component <- match.arg(component)
+  cf <- stats::coef(x)
+
+  params <- data.frame(
+    Parameter = names(cf),
+    Estimate = unname(cf),
+    Component = c(rep("conditional", length(x$coefficients$mean)), rep("precision", length(x$coefficients$precision))),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  if (component != "all") {
+    params <- params[params$Component == component, ]
+  }
 
   .remove_backticks_from_parameter_names(params)
 }
@@ -368,12 +441,41 @@ get_parameters.bracl <- function(x, ...) {
 }
 
 
+#' @rdname get_parameters
+#' @export
+get_parameters.clm2 <- function(x, component = c("all", "conditional", "scale"), ...) {
+  component <- match.arg(component)
+
+  cf <- stats::coef(summary(x))
+  n_intercepts <- length(x$xi)
+  n_location <- length(x$beta)
+  n_scale <- length(x$zeta)
+
+  params <- data.frame(
+    Parameter = rownames(cf),
+    Estimate = unname(cf[, "Estimate"]),
+    Component = c(rep("conditional", times = n_intercepts + n_location), rep("scale", times = n_scale)),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  if (component != "all") {
+    params <- params[params$Component == component, ]
+  }
+
+  .remove_backticks_from_parameter_names(params)
+}
+
+
 
 
 
 
 # Mixed models ---------------------------------------------
 
+
+#' @export
+get_parameters.clmm2 <- get_parameters.clm2
 
 #' @rdname get_parameters
 #' @export
@@ -522,20 +624,29 @@ get_parameters.merMod <- function(x, effects = c("fixed", "random"), ...) {
   }
 }
 
+#' @export
+get_parameters.rlmerMod <- get_parameters.merMod
 
+#' @export
+get_parameters.glmmadmb <- get_parameters.merMod
 
 #' @rdname get_parameters
 #' @export
-get_parameters.rlmerMod <- function(x, effects = c("fixed", "random"), ...) {
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("To use this function, please install package 'lme4'.")
+get_parameters.lme <- get_parameters.merMod
+
+
+
+#' @export
+get_parameters.cpglmm <- function(x, effects = c("fixed", "random"), ...) {
+  if (!requireNamespace("cplm", quietly = TRUE)) {
+    stop("To use this function, please install package 'cplm'.")
   }
 
   effects <- match.arg(effects)
 
   l <- .compact_list(list(
-    conditional = lme4::fixef(x),
-    random = lme4::ranef(x)
+    conditional = cplm::fixef(x),
+    random = cplm::ranef(x)
   ))
 
   fixed <- data.frame(
@@ -550,7 +661,6 @@ get_parameters.rlmerMod <- function(x, effects = c("fixed", "random"), ...) {
     l$random
   }
 }
-
 
 
 #' @rdname get_parameters
@@ -565,35 +675,6 @@ get_parameters.mixed <- function(x, effects = c("fixed", "random"), ...) {
   l <- .compact_list(list(
     conditional = lme4::fixef(x$full_model),
     random = lme4::ranef(x$full_model)
-  ))
-
-  fixed <- data.frame(
-    Parameter = names(l$conditional),
-    Estimate = unname(l$conditional),
-    stringsAsFactors = FALSE
-  )
-
-  if (effects == "fixed") {
-    .remove_backticks_from_parameter_names(fixed)
-  } else {
-    l$random
-  }
-}
-
-
-
-#' @rdname get_parameters
-#' @export
-get_parameters.lme <- function(x, effects = c("fixed", "random"), ...) {
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("To use this function, please install package 'lme4'.")
-  }
-
-  effects <- match.arg(effects)
-
-  l <- .compact_list(list(
-    conditional = lme4::fixef(x),
-    random = lme4::ranef(x)
   ))
 
   fixed <- data.frame(
@@ -743,6 +824,37 @@ get_parameters.glmmTMB <- function(x, effects = c("fixed", "random"), component 
       zero_inflated = l$zero_inflated_random
     )
   }
+}
+
+
+
+#' @export
+get_parameters.mixor <- function(x, effects = c("all", "fixed", "random"), ...) {
+  coefs <- stats::coef(x)
+  effects <- match.arg(effects)
+
+  params <- find_parameters(x, effects = "fixed", flatten = TRUE)
+  fixed <- data.frame(
+    Parameter = params,
+    Estimate = unname(coefs[params]),
+    Effects = "fixed",
+    stringsAsFactors = FALSE
+  )
+
+  params <- find_parameters(x, effects = "random", flatten = TRUE)
+  random <- data.frame(
+    Parameter = params,
+    Estimate = unname(coefs[params]),
+    Effects = "random",
+    stringsAsFactors = FALSE
+  )
+
+  switch(
+    effects,
+    "all" = rbind(fixed, random),
+    "fixed" = fixed,
+    "random" = random
+  )
 }
 
 
@@ -935,13 +1047,13 @@ get_parameters.zeroinfl <- function(x, component = c("all", "conditional", "zi",
   .return_zeroinf_parms(x, component)
 }
 
-
-#' @export
-get_parameters.zerotrunc <- get_parameters.zeroinfl
-
-
 #' @export
 get_parameters.hurdle <- get_parameters.zeroinfl
+
+#' @export
+get_parameters.zerotrunc <- get_parameters.default
+
+
 
 
 
@@ -1052,29 +1164,31 @@ get_parameters.MCMCglmm <- function(x, effects = c("fixed", "random", "all"), ..
 
 #' @rdname get_parameters
 #' @export
-get_parameters.BFBayesFactor <- function(x, iterations = 4000, progress = FALSE, ...) {
+get_parameters.BFBayesFactor <- function(x, effects = c("all", "fixed", "random"), component = c("all", "extra"), iterations = 4000, progress = FALSE, ...) {
   if (!requireNamespace("BayesFactor", quietly = TRUE)) {
     stop("This function requires package `BayesFactor` to work. Please install it.")
   }
 
-  if (.classify_BFBayesFactor(x) == "correlation") {
+  effects <- match.arg(effects)
+  component <- match.arg(component)
+  bf_type <- .classify_BFBayesFactor(x)
+
+  params <- find_parameters(x, effects = effects, component = component, flatten = TRUE)
+
+  if (bf_type %in% c("correlation", "ttest", "meta", "linear")) {
     posteriors <-
       as.data.frame(suppressMessages(
-        BayesFactor::posterior(x, iterations = iterations, progress = progress, ...)
+        BayesFactor::posterior(x, iterations = iterations, progress = progress, index = 1, ...)
       ))
-    data.frame("rho" = as.numeric(posteriors$rho))
-  } else if (.classify_BFBayesFactor(x) == "ttest") {
-    posteriors <-
-      as.data.frame(suppressMessages(
-        BayesFactor::posterior(x, iterations = iterations, progress = progress, ...)
-      ))
-    data.frame("Difference" = as.numeric(posteriors[, 2]))
-  } else if (.classify_BFBayesFactor(x) == "meta") {
-    posteriors <-
-      as.data.frame(suppressMessages(
-        BayesFactor::posterior(x, iterations = iterations, progress = progress, ...)
-      ))
-    data.frame("Effect" = as.numeric(posteriors$delta))
+
+    switch(
+      bf_type,
+      "correlation" = data.frame("rho" = as.numeric(posteriors$rho)),
+      "ttest" = data.frame("Difference" = as.numeric(posteriors[, 2])),
+      "meta" = data.frame("Effect" = as.numeric(posteriors$delta)),
+      "linear" = .get_bf_posteriors(posteriors, params),
+      NULL
+    )
   } else {
     NULL
   }
@@ -1113,9 +1227,11 @@ get_parameters.brmsfit <- function(x, effects = c("fixed", "random", "all"), com
   if (is_multivariate(x)) {
     parms <- find_parameters(x, flatten = FALSE, parameters = parameters)
     elements <- .get_elements(effects, component)
-    as.data.frame(x)[unlist(lapply(parms, function(i) i[elements]))]
+    ## TODO remove "optional = FALSE" in a future update
+    as.data.frame(x, optional = FALSE)[unlist(lapply(parms, function(i) i[elements]))]
   } else {
-    as.data.frame(x)[.get_parms_data(x, effects, component, parameters)]
+    ## TODO remove "optional = FALSE" in a future update
+    as.data.frame(x, optional = FALSE)[.get_parms_data(x, effects, component, parameters)]
   }
 }
 
@@ -1184,6 +1300,13 @@ get_parameters.sim <- function(x, parameters = NULL, ...) {
 }
 
 
+#' @export
+get_parameters.mcmc <- function(x, parameters = NULL, ...) {
+  as.data.frame(x)[.get_parms_data(x, "all", "all", parameters)]
+}
+
+
+
 
 
 
@@ -1246,13 +1369,17 @@ get_parameters.sim <- function(x, parameters = NULL, ...) {
     row.names = NULL
   )
 
-  smooth <- data.frame(
-    Parameter = names(smooth_terms),
-    Estimate = smooth_terms,
-    Component = "smooth_terms",
-    stringsAsFactors = FALSE,
-    row.names = NULL
-  )
+  if (!is.null(smooth_terms)) {
+    smooth <- data.frame(
+      Parameter = names(smooth_terms),
+      Estimate = smooth_terms,
+      Component = "smooth_terms",
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  } else {
+    smooth <- NULL
+  }
 
   pars <- switch(
     component,
@@ -1302,4 +1429,11 @@ get_parameters.sim <- function(x, parameters = NULL, ...) {
   }
 
   dat
+}
+
+
+
+.get_bf_posteriors <- function(posteriors, params) {
+  cn <- intersect(colnames(posteriors), params)
+  posteriors[, cn, drop = FALSE]
 }
