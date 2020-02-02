@@ -4,7 +4,8 @@
 #' @description Returns the link-inverse function from a model object.
 #'
 #' @param what For \code{gamlss} models, indicates for which distribution
-#'   parameter the link (inverse) function should be returned.
+#'   parameter the link (inverse) function should be returned; for \code{betareg}
+#'   or \code{DirichletRegModel}, can be \code{"mean"} or \code{"precision"}.
 #' @inheritParams find_predictors
 #' @inheritParams find_formula
 #'
@@ -157,6 +158,9 @@ link_inverse.rqss <- link_inverse.lm
 link_inverse.crq <- link_inverse.lm
 
 #' @export
+link_inverse.crqs <- link_inverse.lm
+
+#' @export
 link_inverse.censReg <- link_inverse.lm
 
 #' @export
@@ -197,11 +201,33 @@ link_inverse.speedlm <- link_inverse.lm
 
 
 
+#' @rdname link_inverse
 #' @export
-link_inverse.betareg <- function(x, ...) {
-  x$link$mean$linkinv
+link_inverse.betareg <- function(x, what = c("mean", "precision"), ...) {
+  what <- match.arg(what)
+  switch(
+    what,
+    "mean" = x$link$mean$linkinv,
+    "precision" = x$link$precision$linkinv
+  )
 }
 
+
+
+#' @rdname link_inverse
+#' @export
+link_inverse.DirichletRegModel <- function(x, what = c("mean", "precision"), ...) {
+  what <- match.arg(what)
+  if (x$parametrization == "common") {
+    stats::make.link("logit")$linkinv
+  } else {
+    switch(
+      what,
+      "mean" = stats::make.link("logit")$linkinv,
+      "precision" = stats::make.link("log")$linkinv
+    )
+  }
+}
 
 
 
@@ -295,6 +321,19 @@ link_inverse.mixor <- link_inverse.clm
 
 
 #' @export
+link_function.cglm <- function(x, ...) {
+  link <- parse(text = .safe_deparse(x$call))[[1]]$link
+  method <- parse(text = .safe_deparse(x$call))[[1]]$method
+
+  if (!is.null(method) && method == "clm") {
+    link <- "identiy"
+  }
+  stats::make.link(link = link)$linkinv
+}
+
+
+
+#' @export
 link_inverse.cpglmm <- function(x, ...) {
   f <- .get_cplm_family(x)
   f$linkinv
@@ -306,7 +345,11 @@ link_inverse.cpglm <- link_inverse.cpglmm
 
 #' @export
 link_inverse.fixest <- function(x, ...) {
-  if (inherits(x$family, "family")) {
+  if (is.null(x$family)) {
+    if (!is.null(x$method) && x$method == "feols") {
+      stats::gaussian(link = "identity")$linkinv
+    }
+  } else if (inherits(x$family, "family")) {
     x$family$linkinv
   } else {
     link <- switch(

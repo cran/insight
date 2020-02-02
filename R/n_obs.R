@@ -41,6 +41,9 @@ n_obs.default <- function(x, ...) {
 }
 
 
+#' @export
+n_obs.censReg <- n_obs.default
+
 
 #' @rdname n_obs
 #' @export
@@ -135,6 +138,11 @@ n_obs.cgam <- function(x, ...) {
 }
 
 #' @export
+n_obs.cglm <- n_obs.cgam
+
+
+
+#' @export
 n_obs.gbm <- function(x, ...) {
   length(x$fit)
 }
@@ -209,6 +217,8 @@ n_obs.crq <- function(x, ...) {
   n
 }
 
+#' @export
+n_obs.crqs <- n_obs.crq
 
 
 #' @export
@@ -318,6 +328,9 @@ n_obs.mlogit <- function(x, ...) {
   nrow(x$model)
 }
 
+
+#' @export
+n_obs.maxLik <- n_obs.mlogit
 
 
 #' @export

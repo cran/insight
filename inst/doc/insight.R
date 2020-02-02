@@ -3,6 +3,9 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+if (!requireNamespace("lme4", quietly = TRUE)) {
+  knitr::opts_chunk$set(eval = FALSE)
+}
 
 ## ----out.width="100%", echo=FALSE---------------------------------------------
 knitr::include_graphics("insight_design_1.png", dpi = 72)

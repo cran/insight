@@ -32,6 +32,8 @@
 
   betabin_fam <- inherits(x, "BBreg") | fitfam %in% "betabinomial"
 
+  dirichlet_fam <- inherits(x, "DirichletRegModel") | fitfam %in% "dirichlet"
+
   ## TODO beta-binomial = binomial?
   if (betabin_fam) binom_fam <- TRUE
 
@@ -59,8 +61,12 @@
     fitfam %in% c("truncpoiss", "truncnbinom", "truncnbinom1")
 
   is.ordinal <-
-    inherits(x, c("svyolr", "polr", "clm", "clm2", "clmm", "gmnl", "mixor", "mlogit", "multinom", "LORgee", "brmultinom")) |
-      fitfam %in% c("cumulative", "cratio", "sratio", "acat", "ordinal", "multinomial")
+    inherits(x, c("svyolr", "polr", "clm", "clm2", "clmm", "gmnl", "mixor", "mlogit", "DirichletRegModel", "multinom", "LORgee", "brmultinom")) |
+      fitfam %in% c("cumulative", "cratio", "sratio", "acat", "ordinal", "multinomial", "dirichlet")
+
+  is.multinomial <-
+    inherits(x, c("gmnl", "mlogit", "DirichletRegModel", "multinom", "brmultinom")) |
+    fitfam %in% c("cratio", "sratio", "acat", "multinomial", "dirichlet")
 
   is.categorical <- fitfam == "categorical"
 
@@ -169,6 +175,7 @@
     is_negbin = neg_bin_fam,
     is_beta = beta_fam,
     is_betabinomial = betabin_fam,
+    is_dirichlet = dirichlet_fam,
     is_exponential = exponential_fam,
     is_logit = logit.link,
     is_probit = link.fun == "probit",
@@ -182,6 +189,7 @@
     is_hurdle = hurdle,
     is_ordinal = is.ordinal,
     is_cumulative = is.ordinal,
+    is_multinomial = is.multinomial | is.categorical,
     is_categorical = is.categorical,
     is_mixed = !is.null(find_random(x)),
     is_multivariate = multi.var,

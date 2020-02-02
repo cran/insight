@@ -50,6 +50,9 @@ get_varcov.default <- function(x, ...) {
 }
 
 
+#' @export
+get_varcov.maxLik <- get_varcov.default
+
 
 
 
@@ -67,6 +70,34 @@ get_varcov.betareg <- function(x, component = c("conditional", "precision", "all
     "precision" = stats::vcov(object = x, model = "precision"),
     stats::vcov(object = x)
   )
+
+  if (.is_negativ_matrix(vc)) {
+    vc <- .fix_negative_matrix(vc)
+  }
+
+  .remove_backticks_from_matrix_names(as.matrix(vc))
+}
+
+
+#' @rdname get_varcov
+#' @export
+get_varcov.DirichletRegModel <- function(x, component = c("conditional", "precision", "all"), ...) {
+  component <- match.arg(component)
+  if (x$parametrization == "common") {
+    vc <- stats::vcov(x)
+  } else {
+    if (component == "conditional") {
+      vc <- stats::vcov(x)
+      keep <- grepl("^(?!\\(phi\\))", rownames(vc), perl = TRUE)
+      vc <- vc[keep, keep]
+    } else if (component == "precision") {
+      vc <- stats::vcov(x)
+      keep <- grepl("^\\(phi\\)", rownames(vc), perl = TRUE)
+      vc <- vc[keep, keep]
+    } else {
+      vc <- stats::vcov(x)
+    }
+  }
 
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
@@ -335,6 +366,19 @@ get_varcov.cpglm <- get_varcov.cpglmm
 
 
 
+#' @export
+get_varcov.cglm <- function(x, ...) {
+  vc <- as.matrix(x$var)
+
+  if (.is_negativ_matrix(vc)) {
+    vc <- .fix_negative_matrix(vc)
+  }
+
+  .remove_backticks_from_matrix_names(as.matrix(vc))
+}
+
+
+
 #' @rdname get_varcov
 #' @export
 get_varcov.mixor <- function(x, effects = c("all", "fixed", "random"), ...) {
@@ -514,9 +558,14 @@ get_varcov.LORgee <- get_varcov.gee
 
 .is_negativ_matrix <- function(x) {
   if (is.matrix(x) && (nrow(x) == ncol(x))) {
-    eigenvalues <- eigen(x, only.values = TRUE)$values
-    eigenvalues[abs(eigenvalues) < 1e-07] <- 0
-    rv <- any(eigenvalues <= 0)
+    rv <- tryCatch(
+      {
+        eigenvalues <- eigen(x, only.values = TRUE)$values
+        eigenvalues[abs(eigenvalues) < 1e-07] <- 0
+        any(eigenvalues <= 0)
+      },
+      error = function(e) { FALSE }
+    )
   } else {
     rv <- FALSE
   }

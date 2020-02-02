@@ -20,13 +20,15 @@
 #'      \item \code{is_count}: model is a count model (i.e. family is either poisson or negative binomial)
 #'      \item \code{is_beta}: family is beta
 #'      \item \code{is_betabinomial}: family is beta-binomial
+#'      \item \code{is_dirichlet}: family is dirichlet
 #'      \item \code{is_exponential}: family is exponential (e.g. Gamma or Weibull)
 #'      \item \code{is_logit}: model has logit link
 #'      \item \code{is_progit}: model has probit link
 #'      \item \code{is_linear}: family is gaussian
 #'      \item \code{is_tweedie}: family is tweedie
-#'      \item \code{is_ordinal}: family is ordinal or cumulative link
-#'      \item \code{is_cumulative}: family is ordinal or cumulative link
+#'      \item \code{is_ordinal}: family is ordinal, multinomial, or cumulative link
+#'      \item \code{is_cumulative}: family is ordinal, multinomial, or cumulative link
+#'      \item \code{is_multinomial}: family is multinomial or categorical link
 #'      \item \code{is_categorical}: family is categorical link
 #'      \item \code{is_censored}: model is a censored model (has a censored response, including survival models)
 #'      \item \code{is_truncated}: model is a truncated model (has a truncated response)
@@ -131,6 +133,9 @@ model_info.mmclogit <- function(x, ...) {
 }
 
 #' @export
+model_info.maxLik <- model_info.mmclogit
+
+#' @export
 model_info.censReg <- model_info.mmclogit
 
 #' @export
@@ -150,6 +155,9 @@ model_info.rq <- model_info.mmclogit
 
 #' @export
 model_info.crq <- model_info.mmclogit
+
+#' @export
+model_info.crqs <- model_info.mmclogit
 
 #' @export
 model_info.nlrq <- model_info.mmclogit
@@ -404,7 +412,11 @@ model_info.glmx <- function(x, ...) {
 model_info.fixest <- function(x, ...) {
   faminfo <- x$family
 
-  if (inherits(faminfo, "family")) {
+  if (is.null(faminfo)) {
+    if (!is.null(x$method) && x$method == "feols") {
+      .make_family(x, ...)
+    }
+  } else if (inherits(faminfo, "family")) {
     .make_family(
       x = x,
       fitfam = faminfo$family,
@@ -587,6 +599,26 @@ model_info.stanmvreg <- function(x, ...) {
 
 
 #' @export
+model_info.cglm <- function(x, ...) {
+  link <- parse(text = .safe_deparse(x$call))[[1]]$link
+  method <- parse(text = .safe_deparse(x$call))[[1]]$method
+
+  if (!is.null(method) && method == "clm") {
+    .make_family(x, ...)
+  } else if (!is.null(link)) {
+    .make_family(
+      x,
+      logit.link = link == "logit",
+      link.fun = link,
+      ...
+    )
+  } else {
+    .make_family(x, ...)
+  }
+}
+
+
+#' @export
 model_info.cgam <- function(x, ...) {
   faminfo <- x$family
   .make_family(
@@ -622,13 +654,16 @@ model_info.LORgee <- function(x, ...) {
     link <- "logit"
   }
 
-  faminfo <- stats::binomial(link = link)
+  if (x$link == "Cumulative logit")
+    family <- "ordinal"
+  else
+    family <- "multinomial"
 
   .make_family(
     x = x,
-    fitfam = faminfo$family,
-    logit.link = faminfo$link == "logit",
-    link.fun = faminfo$link,
+    fitfam = family,
+    logit.link = link == "logit",
+    link.fun = link,
     ...
   )
 }
@@ -772,6 +807,19 @@ model_info.betareg <- function(x, ...) {
     fitfam = "beta",
     logit.link = x$link$mean$name == "logit",
     link.fun = x$link$mean$name,
+    ...
+  )
+}
+
+
+
+#' @export
+model_info.DirichletRegModel <- function(x, ...) {
+  .make_family(
+    x = x,
+    fitfam = "dirichlet",
+    logit.link = TRUE,
+    link.fun = "logit",
     ...
   )
 }

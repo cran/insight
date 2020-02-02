@@ -88,6 +88,10 @@ get_statistic.plm <- get_statistic.default
 
 
 #' @export
+get_statistic.maxLik <- get_statistic.default
+
+
+#' @export
 get_statistic.glmmadmb <- get_statistic.default
 
 
@@ -530,10 +534,13 @@ get_statistic.multinom <- function(x, ...) {
   out <- data.frame(
     Parameter = parms$Parameter,
     Statistic = parms$Estimate / se,
-    Response = parms$Response,
     stringsAsFactors = FALSE,
     row.names = NULL
   )
+
+  if ("Response" %in% colnames(parms)) {
+    out$Response <- parms$Response
+  }
 
   attr(out, "statistic") <- find_statistic(x)
   out
@@ -952,6 +959,39 @@ get_statistic.betareg <- function(x, component = c("all", "conditional", "precis
     stringsAsFactors = FALSE,
     row.names = NULL
   )
+
+  if (component != "all") {
+    out <- out[out$Component == component, ]
+  }
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+
+#' @rdname get_statistic
+#' @importFrom stats coef
+#' @importFrom utils capture.output
+#' @export
+get_statistic.DirichletRegModel <- function(x, component = c("all", "conditional", "precision"), ...) {
+  component <- match.arg(component)
+  parms <- get_parameters(x)
+  junk <- utils::capture.output(cs <- summary(x)$coef.mat)
+
+  out <- data.frame(
+    Parameter = parms$Parameter,
+    Statistic = unname(cs[, "z value"]),
+    Response = parms$Response,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  if (!is.null(parms$Component)) {
+    out$Component <- parms$Component
+  } else {
+    component <- "all"
+  }
 
   if (component != "all") {
     out <- out[out$Component == component, ]

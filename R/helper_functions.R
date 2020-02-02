@@ -176,7 +176,7 @@
 
 # extract random effects from formula
 .get_model_random <- function(f, split_nested = FALSE, model) {
-  is_special <- inherits(model, c("MCMCglmm", "gee", "LORgee", "mixor", "clmm2", "felm", "feis", "BFBayesFactor", "BBmm", "glimML", "MANOVA", "RM"))
+  is_special <- inherits(model, c("MCMCglmm", "gee", "LORgee", "mixor", "clmm2", "felm", "feis", "BFBayesFactor", "BBmm", "glimML", "MANOVA", "RM", "cglm"))
 
   if (!requireNamespace("lme4", quietly = TRUE)) {
     stop("To use this function, please install package 'lme4'.")
@@ -269,19 +269,19 @@
 # to reduce redundant code, I extract this part which is used several
 # times accross this package
 .get_elements <- function(effects, component) {
-  elements <- c("conditional", "nonlinear", "random", "zero_inflated", "zero_inflated_random", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes", "cluster", "extra", "scale")
+  elements <- c("conditional", "conditional2", "conditional3", "precision", "nonlinear", "random", "zero_inflated", "zero_inflated_random", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes", "cluster", "extra", "scale")
 
   elements <- switch(
     effects,
     all = elements,
-    fixed = elements[elements %in% c("conditional", "zero_inflated", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "correlation", "slopes", "sigma", "nonlinear", "cluster", "extra", "scale")],
+    fixed = elements[elements %in% c("conditional", "conditional2", "conditional3", "precision", "zero_inflated", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "correlation", "slopes", "sigma", "nonlinear", "cluster", "extra", "scale")],
     random = elements[elements %in% c("random", "zero_inflated_random")]
   )
 
   elements <- switch(
     component,
     all = elements,
-    conditional = elements[elements %in% c("conditional", "nonlinear", "random", "slopes")],
+    conditional = elements[elements %in% c("conditional", "conditional2", "conditional3", "precision", "nonlinear", "random", "slopes")],
     zi = ,
     zero_inflated = elements[elements %in% c("zero_inflated", "zero_inflated_random")],
     dispersion = elements[elements == "dispersion"],
@@ -295,7 +295,8 @@
     nonlinear = elements[elements == "nonlinear"],
     slopes = elements[elements == "slopes"],
     extra = elements[elements == "extra"],
-    scale = elements[elements == "scale"]
+    scale = elements[elements == "scale"],
+    precision = elements[elements == "precision"]
   )
 
   elements
@@ -534,4 +535,29 @@
     rownames(x) <- gsub("`", "", colnames(x), fixed = TRUE)
   }
   x
+}
+
+
+
+
+
+#' @importFrom stats reshape
+#' @keywords internal
+.gather <- function(x, names_to = "key", values_to = "value", columns = colnames(x)) {
+  if (is.numeric(columns)) columns <- colnames(x)[columns]
+  dat <- stats::reshape(
+    x,
+    idvar = "id",
+    ids = row.names(x),
+    times = columns,
+    timevar = names_to,
+    v.names = values_to,
+    varying = list(columns),
+    direction = "long"
+  )
+
+  if (is.factor(dat[[values_to]]))
+    dat[[values_to]] <- as.character(dat[[values_to]])
+
+  dat[, 1:(ncol(dat) - 1), drop = FALSE]
 }

@@ -1,3 +1,26 @@
+# insight 0.8.1
+
+## New supported model classes
+
+* `cglm` (*cglm*), `DirichletRegModel` (*DirichletReg*).
+
+## General
+
+* Improved efficiency of `find_parameters()` and `get_parameters()` for mixed models with large samples and many random effects, and only fixed effects where requested.
+
+## Changes to functions
+
+* `model_info()` now returns `$is_multinomial` for multinomial (but not ordinal or cumulative) link models.
+* `format_value()` gets an `as_percent` argument to format values as percentages.
+
+## Bug fixes
+
+* Fixed issue in `get_data()` for *clmm2*-models.
+* Fixed issue in `get_data()` for models that used the `lspline()`-function.
+* Fixed issue in `get_statistic()` for *multinom* models.
+* Fixed issue in `get_priors()` for *stanreg*  models with flat intercept priors.
+* Fixed tests that failed due to latest **fixest** update.
+
 # insight 0.8.0
 
 ## New supported model classes

@@ -115,15 +115,34 @@ get_parameters.aareg <- function(x, ...) {
 get_parameters.crq <- function(x, ...) {
   sc <- summary(x)
 
-  params <- data.frame(
-    Parameter = names(sc$coefficients[, 1]),
-    Estimate = unname(sc$coefficients[, 1]),
-    stringsAsFactors = FALSE,
-    row.names = NULL
-  )
+  if (all(lapply(sc, is.list))) {
+    list_sc <- lapply(sc, function(i) {
+      .x <- as.data.frame(i)
+      .x$Parameter <- rownames(.x)
+      .x
+    })
+    out <- do.call(rbind, list_sc)
+    params <- data.frame(
+      Parameter = out$Parameter,
+      Estimate = out$coefficients.Value,
+      Component = sprintf("tau (%g)", out$tau),
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  } else {
+    params <- data.frame(
+      Parameter = names(sc$coefficients[, 1]),
+      Estimate = unname(sc$coefficients[, 1]),
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  }
 
   .remove_backticks_from_parameter_names(params)
 }
+
+#' @export
+get_parameters.crqs <- get_parameters.crq
 
 
 #' @importFrom stats setNames
@@ -314,6 +333,45 @@ get_parameters.betareg <- function(x, component = c("all", "conditional", "preci
 }
 
 
+#' @rdname get_parameters
+#' @export
+get_parameters.DirichletRegModel <- function(x, component = c("all", "conditional", "precision"), ...) {
+  component <- match.arg(component)
+  cf <- stats::coef(x)
+
+  if (x$parametrization == "common") {
+    component <- "all"
+    n_comp <- lapply(cf, length)
+    pattern <- paste0("(", paste(x$varnames, collapse = "|"), ")\\.(.*)")
+    p_names <- gsub(pattern, "\\2", names(unlist(cf)))
+
+    params <- data.frame(
+      Parameter = p_names,
+      Estimate = unname(unlist(cf)),
+      Response = rep(names(n_comp), sapply(n_comp, function(i) i)),
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  } else {
+    out1 <- .gather(data.frame(do.call(cbind, cf$beta)), names_to = "Response", values_to = "Estimate")
+    out2 <- .gather(data.frame(do.call(cbind, cf$gamma)), names_to = "Component", values_to = "Estimate")
+    out1$Component <- "conditional"
+    out2$Component <- "precision"
+    out2$Response <- NA
+    params <- merge(out1, out2, all = TRUE, sort = FALSE)
+    params$Parameter <- gsub("(.*)\\.(.*)\\.(.*)", "\\3", names(unlist(cf)))
+    params <- params[c("Parameter", "Estimate", "Component", "Response")]
+  }
+
+  if (component != "all") {
+    params <- params[params$Component == component, ]
+  }
+
+  .remove_backticks_from_parameter_names(params)
+}
+
+
+
 #' @export
 get_parameters.BBreg <- function(x, ...) {
   pars <- summary(x)$coefficients
@@ -486,10 +544,14 @@ get_parameters.coxme <- function(x, effects = c("fixed", "random"), ...) {
 
   effects <- match.arg(effects)
 
-  l <- .compact_list(list(
-    conditional = lme4::fixef(x),
-    random = lme4::ranef(x)
-  ))
+  if (effects == "fixed") {
+    l <- list(conditional = lme4::fixef(x))
+  } else {
+    l <- .compact_list(list(
+      conditional = lme4::fixef(x),
+      random = lme4::ranef(x)
+    ))
+  }
 
   fixed <- data.frame(
     Parameter = names(l$conditional),
@@ -569,11 +631,19 @@ get_parameters.nlmerMod <- function(x, effects = c("fixed", "random"), ...) {
   startvectors <- .get_startvector_from_env(x)
   fx <- lme4::fixef(x)
 
-  l <- .compact_list(list(
-    conditional = fx[setdiff(names(fx), startvectors)],
-    nonlinear = fx[startvectors],
-    random = lapply(lme4::ranef(x), colnames)
-  ))
+  if (effects == "fixed") {
+    l <- .compact_list(list(
+      conditional = fx[setdiff(names(fx), startvectors)],
+      nonlinear = fx[startvectors]
+    ))
+  } else {
+    l <- .compact_list(list(
+      conditional = fx[setdiff(names(fx), startvectors)],
+      nonlinear = fx[startvectors],
+      random = lapply(lme4::ranef(x), colnames)
+    ))
+  }
+
 
   fixed <- data.frame(
     Parameter = c(
@@ -606,10 +676,14 @@ get_parameters.merMod <- function(x, effects = c("fixed", "random"), ...) {
 
   effects <- match.arg(effects)
 
-  l <- .compact_list(list(
-    conditional = lme4::fixef(x),
-    random = lme4::ranef(x)
-  ))
+  if (effects == "fixed") {
+    l <- list(conditional = lme4::fixef(x))
+  } else {
+    l <- .compact_list(list(
+      conditional = lme4::fixef(x),
+      random = lme4::ranef(x)
+    ))
+  }
 
   fixed <- data.frame(
     Parameter = names(l$conditional),
@@ -644,10 +718,14 @@ get_parameters.cpglmm <- function(x, effects = c("fixed", "random"), ...) {
 
   effects <- match.arg(effects)
 
-  l <- .compact_list(list(
-    conditional = cplm::fixef(x),
-    random = cplm::ranef(x)
-  ))
+  if (effects == "fixed") {
+    l <- list(conditional = cplm::fixef(x))
+  } else {
+    l <- .compact_list(list(
+      conditional = cplm::fixef(x),
+      random = cplm::ranef(x)
+    ))
+  }
 
   fixed <- data.frame(
     Parameter = names(l$conditional),
@@ -672,10 +750,14 @@ get_parameters.mixed <- function(x, effects = c("fixed", "random"), ...) {
 
   effects <- match.arg(effects)
 
-  l <- .compact_list(list(
-    conditional = lme4::fixef(x$full_model),
-    random = lme4::ranef(x$full_model)
-  ))
+  if (effects == "fixed") {
+    l <- list(conditional = lme4::fixef(x$full_model))
+  } else {
+    l <- .compact_list(list(
+      conditional = lme4::fixef(x$full_model),
+      random = lme4::ranef(x$full_model)
+    ))
+  }
 
   fixed <- data.frame(
     Parameter = names(l$conditional),
@@ -780,13 +862,21 @@ get_parameters.glmmTMB <- function(x, effects = c("fixed", "random"), component 
   effects <- match.arg(effects)
   component <- match.arg(component)
 
-  l <- .compact_list(list(
-    conditional = lme4::fixef(x)$cond,
-    random = lme4::ranef(x)$cond,
-    zero_inflated = lme4::fixef(x)$zi,
-    zero_inflated_random = lme4::ranef(x)$zi,
-    dispersion = lme4::fixef(x)$disp
-  ))
+  if (effects == "fixed") {
+    l <- .compact_list(list(
+      conditional = lme4::fixef(x)$cond,
+      zero_inflated = lme4::fixef(x)$zi,
+      dispersion = lme4::fixef(x)$disp
+    ))
+  } else {
+    l <- .compact_list(list(
+      conditional = lme4::fixef(x)$cond,
+      random = lme4::ranef(x)$cond,
+      zero_inflated = lme4::fixef(x)$zi,
+      zero_inflated_random = lme4::ranef(x)$zi,
+      dispersion = lme4::fixef(x)$disp
+    ))
+  }
 
   fixed <- data.frame(
     Parameter = names(l$conditional),
@@ -841,13 +931,17 @@ get_parameters.mixor <- function(x, effects = c("all", "fixed", "random"), ...) 
     stringsAsFactors = FALSE
   )
 
-  params <- find_parameters(x, effects = "random", flatten = TRUE)
-  random <- data.frame(
-    Parameter = params,
-    Estimate = unname(coefs[params]),
-    Effects = "random",
-    stringsAsFactors = FALSE
-  )
+  if (effects != "fixed") {
+    params <- find_parameters(x, effects = "random", flatten = TRUE)
+    random <- data.frame(
+      Parameter = params,
+      Estimate = unname(coefs[params]),
+      Effects = "random",
+      stringsAsFactors = FALSE
+    )
+  } else {
+    random <- NULL
+  }
 
   switch(
     effects,

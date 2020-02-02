@@ -783,6 +783,14 @@ get_data.stanmvreg <- function(x, ...) {
 
 
 #' @export
+get_data.DirichletRegModel <- function(x, ...) {
+  mf <- x$data
+  resp <- sapply(x$data, inherits, "DirichletRegData")
+  .prepare_get_data(x, mf[!resp])
+}
+
+
+#' @export
 get_data.vglm <- function(x, ...) {
   mf <- tryCatch(
     {
@@ -881,6 +889,32 @@ get_data.tobit <- function(x, ...) {
   .prepare_get_data(x, stats::na.omit(dat[, remain, drop = FALSE]))
 }
 
+
+
+#' @export
+get_data.clmm2 <- function(x, ...) {
+  mf <- tryCatch(
+    {
+      data_complete <- x$location
+      data_scale <- x$scale
+
+      if (!is.null(data_scale)) {
+        remain <- setdiff(colnames(data_scale), colnames(data_complete))
+        if (length(remain)) data_complete <- cbind(data_complete, data_scale[, remain, drop = FALSE])
+      }
+
+      data_complete <- cbind(data_complete, x$grFac)
+      colnames(data_complete)[ncol(data_complete)] <- unlist(.find_random_effects(x, f = find_formula(x), split_nested = TRUE))
+
+      data_complete
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+
+  .prepare_get_data(x, mf)
+}
 
 
 #' @export
