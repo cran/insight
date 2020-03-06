@@ -632,6 +632,22 @@ find_parameters.hurdle <- find_parameters.zeroinfl
 find_parameters.zerotrunc <- find_parameters.default
 
 
+#' @rdname find_parameters
+#' @export
+find_parameters.zcpglm <- function(x, component = c("all", "conditional", "zi", "zero_inflated"), flatten = FALSE, ...) {
+  cf <- stats::coef(x)
+  component <- match.arg(component)
+
+  l <- .compact_list(list(
+    conditional = names(cf$tweedie),
+    zero_inflated = names(cf$zero)
+  ))
+
+  .filter_parameters(l, effects = "all", component = component, flatten = flatten, recursive = FALSE)
+}
+
+
+
 
 
 
@@ -717,14 +733,14 @@ find_parameters.MCMCglmm <- function(x, effects = c("all", "fixed", "random"), f
 #' @rdname find_parameters
 #' @export
 find_parameters.brmsfit <- function(x, effects = c("all", "fixed", "random"), component = c("all", "conditional", "zi", "zero_inflated", "dispersion", "simplex", "sigma", "smooth_terms"), flatten = FALSE, parameters = NULL, ...) {
-  ## TODO remove "make.names()" in a future update
-  fe <- make.names(colnames(as.data.frame(x)))
+  ## TODO remove "optional = FALSE" in a future update
+  fe <- colnames(as.data.frame(x, optional = FALSE))
   is_mv <- NULL
 
-  cond <- fe[grepl(pattern = "(b_|bs_|bsp_|bcs_)(?!zi_)(.*)", fe, perl = TRUE)]
-  zi <- fe[grepl(pattern = "(b_zi_|bs_zi_|bsp_zi_|bcs_zi_)", fe, perl = TRUE)]
+  cond <- fe[grepl(pattern = "^(b_|bs_|bsp_|bcs_)(?!zi_)(.*)", fe, perl = TRUE)]
+  zi <- fe[grepl(pattern = "^(b_zi_|bs_zi_|bsp_zi_|bcs_zi_)", fe, perl = TRUE)]
   rand <- fe[grepl(pattern = "(?!.*__zi)(?=.*r_)", fe, perl = TRUE) & !grepl(pattern = "^prior_", fe, perl = TRUE)]
-  randzi <- fe[grepl(pattern = "r_(.*__zi)", fe, perl = TRUE)]
+  randzi <- fe[grepl(pattern = "^r_(.*__zi)", fe, perl = TRUE)]
   simo <- fe[grepl(pattern = "^simo_", fe, perl = TRUE)]
   smooth_terms <- fe[grepl(pattern = "^sds_", fe, perl = TRUE)]
   priors <- fe[grepl(pattern = "^prior_", fe, perl = TRUE)]
@@ -878,6 +894,18 @@ find_parameters.stanreg <- function(x, effects = c("all", "fixed", "random"), co
   elements <- .get_elements(effects, component)
   l <- .compact_list(l[elements])
 
+  if (flatten) {
+    unique(unlist(l))
+  } else {
+    l
+  }
+}
+
+
+
+#' @export
+find_parameters.bcplm <- function(x, flatten = FALSE, parameters = NULL, ...) {
+  l <- .filter_pars(list(conditional = dimnames(x$sims.list[[1]])[[2]]), parameters)
   if (flatten) {
     unique(unlist(l))
   } else {

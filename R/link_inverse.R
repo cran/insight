@@ -294,6 +294,7 @@ link_inverse.zerotrunc <- link_inverse.zeroinfl
 
 
 
+
 # Ordinal models -----------------------------------
 
 
@@ -321,7 +322,7 @@ link_inverse.mixor <- link_inverse.clm
 
 
 #' @export
-link_function.cglm <- function(x, ...) {
+link_inverse.cglm <- function(x, ...) {
   link <- parse(text = .safe_deparse(x$call))[[1]]$link
   method <- parse(text = .safe_deparse(x$call))[[1]]$method
 
@@ -341,6 +342,12 @@ link_inverse.cpglmm <- function(x, ...) {
 
 #' @export
 link_inverse.cpglm <- link_inverse.cpglmm
+
+#' @export
+link_inverse.zcpglm <- link_inverse.cpglmm
+
+#' @export
+link_inverse.bcplm <- link_inverse.cpglmm
 
 
 #' @export
@@ -370,6 +377,12 @@ link_inverse.feglm <- link_inverse.fixest
 #' @export
 link_inverse.glmx <- function(x, ...) {
   x$family$glm$linkinv
+}
+
+
+#' @export
+link_inverse.bife <- function(x, ...) {
+  x$family$linkinv
 }
 
 
@@ -589,6 +602,8 @@ link_inverse.gam <- function(x, ...) {
 #' @importFrom stats poisson
 .get_cplm_family <- function(x) {
   link <- parse(text = .safe_deparse(x@call))[[1]]$link
+
+  if (is.null(link)) link <- "log"
 
   if (!is.numeric(link)) {
     stats::poisson(link = link)

@@ -1,3 +1,27 @@
+# insight 0.8.2
+
+## Breaking changes
+
+* `model_info()` now only returns `TRUE` for `$is_ordinal`, when model is an ordinal or cumulative link model. In past versions, `$is_ordinal` was also `TRUE` for multinomial models.
+
+## New supported model classes
+
+* `bife` (*bife*), `bcplm` and `zcpglm` (*cplm*)
+ 
+## General
+
+* Improved support for `clogit`-models.
+
+## Bug fixes
+
+* Fixed issue in `find_weights()` for `merMod` models.
+* Fixed issue in `get_data()` for models with weights, when weights also contained missing data.
+* Fixed issue in `get_data()` for mixed models with complex offset-terms.
+* Fixed issue in `get_statistic()` for *zeroinfl*  models with theta-coefficients.
+* Fixed issue in `get_statistic()` for *lmerModLmerTest*  models with.
+* Fixed issue in `find_parameters()` for *brmsfit*  models for rare situations where a specific pattern of variables names, when used as random effects, did not properly separate fixed from random effects in the return value.
+* Fixed issue related to CRAN checks.
+
 # insight 0.8.1
 
 ## New supported model classes

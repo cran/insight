@@ -26,8 +26,8 @@
 #'      \item \code{is_progit}: model has probit link
 #'      \item \code{is_linear}: family is gaussian
 #'      \item \code{is_tweedie}: family is tweedie
-#'      \item \code{is_ordinal}: family is ordinal, multinomial, or cumulative link
-#'      \item \code{is_cumulative}: family is ordinal, multinomial, or cumulative link
+#'      \item \code{is_ordinal}: family is ordinal or cumulative link
+#'      \item \code{is_cumulative}: family is ordinal or cumulative link
 #'      \item \code{is_multinomial}: family is multinomial or categorical link
 #'      \item \code{is_categorical}: family is categorical link
 #'      \item \code{is_censored}: model is a censored model (has a censored response, including survival models)
@@ -394,6 +394,9 @@ model_info.MixMod <- function(x, ...) {
 #' @export
 model_info.glmmPQL <- model_info.MixMod
 
+#' @export
+model_info.bife <- model_info.MixMod
+
 
 #' @export
 model_info.glmx <- function(x, ...) {
@@ -595,6 +598,7 @@ model_info.stanmvreg <- function(x, ...) {
 
 
 
+
 # Other models ----------------------------
 
 
@@ -705,6 +709,7 @@ model_info.glmmadmb <- function(x, ...) {
 #' @export
 model_info.cpglmm <- function(x, ...) {
   link <- parse(text = .safe_deparse(x@call))[[1]]$link
+  if (is.null(link)) link <- "log"
   if (is.numeric(link)) link <- "tweedie"
   .make_family(
     x = x,
@@ -717,7 +722,26 @@ model_info.cpglmm <- function(x, ...) {
 }
 
 #' @export
+model_info.zcpglm <- function(x, ...) {
+  link <- parse(text = .safe_deparse(x@call))[[1]]$link
+  if (is.null(link)) link <- "log"
+  if (is.numeric(link)) link <- "tweedie"
+  .make_family(
+    x = x,
+    fitfam = "poisson",
+    logit.link = FALSE,
+    multi.var = FALSE,
+    link.fun = link,
+    zero.inf = TRUE,
+    ...
+  )
+}
+
+#' @export
 model_info.cpglm <- model_info.cpglmm
+
+#' @export
+model_info.bcplm <- model_info.cpglmm
 
 
 #' @export

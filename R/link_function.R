@@ -331,6 +331,12 @@ link_function.glmx <- function(x, ...) {
 
 
 #' @export
+link_function.bife <- function(x, ...) {
+  x$family$linkfun
+}
+
+
+#' @export
 link_function.cpglmm <- function(x, ...) {
   f <- .get_cplm_family(x)
   f$linkfun
@@ -338,6 +344,12 @@ link_function.cpglmm <- function(x, ...) {
 
 #' @export
 link_function.cpglm <- link_function.cpglmm
+
+#' @export
+link_function.zcpglm <- link_function.cpglmm
+
+#' @export
+link_function.bcplm <- link_function.cpglmm
 
 
 #' @export

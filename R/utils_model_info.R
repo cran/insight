@@ -42,8 +42,8 @@
   linear_model <- (!binom_fam & !exponential_fam & !poisson_fam & !neg_bin_fam & !logit.link) ||
     fitfam %in% c("Student's-t", "t Family", "gaussian", "Gaussian") || grepl("(\\st)$", fitfam)
 
-  tweedie_fam <- grepl("^(tweedie|Tweedie)", fitfam)
-  tweedie_model <- (linear_model && tweedie_fam) || inherits(x, c("cpglm", "cpglmm"))
+  tweedie_fam <- grepl("^(tweedie|Tweedie)", fitfam) | grepl("^(tweedie|Tweedie)", link.fun)
+  tweedie_model <- (linear_model && tweedie_fam) || inherits(x, c("bcplm", "cpglm", "cpglmm", "zcpglm"))
 
   zero.inf <- zero.inf | fitfam == "ziplss" |
     grepl("\\Qzero_inflated\\E", fitfam, ignore.case = TRUE) |
@@ -61,8 +61,8 @@
     fitfam %in% c("truncpoiss", "truncnbinom", "truncnbinom1")
 
   is.ordinal <-
-    inherits(x, c("svyolr", "polr", "clm", "clm2", "clmm", "gmnl", "mixor", "mlogit", "DirichletRegModel", "multinom", "LORgee", "brmultinom")) |
-      fitfam %in% c("cumulative", "cratio", "sratio", "acat", "ordinal", "multinomial", "dirichlet")
+    inherits(x, c("svyolr", "polr", "clm", "clm2", "clmm", "mixor", "LORgee")) |
+      fitfam %in% c("cumulative", "ordinal")
 
   is.multinomial <-
     inherits(x, c("gmnl", "mlogit", "DirichletRegModel", "multinom", "brmultinom")) |
@@ -73,7 +73,7 @@
   is.bayes <- inherits(x, c(
     "brmsfit", "stanfit", "MCMCglmm", "stanreg",
     "stanmvreg", "bmerMod", "BFBayesFactor", "bamlss",
-    "bayesx", "mcmc"
+    "bayesx", "mcmc", "bcplm"
   ))
 
   is.survival <- inherits(x, c("aareg", "survreg", "survfit", "survPresmooth", "flexsurvreg", "coxph", "coxme"))

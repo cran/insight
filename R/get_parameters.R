@@ -1147,6 +1147,44 @@ get_parameters.hurdle <- get_parameters.zeroinfl
 #' @export
 get_parameters.zerotrunc <- get_parameters.default
 
+#' @rdname get_parameters
+#' @export
+get_parameters.zcpglm <- function(x, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
+  component <- match.arg(component)
+  cf <- stats::coef(x)
+
+  cond <- data.frame(
+    Parameter = names(cf$tweedie),
+    Estimate = unname(cf$tweedie),
+    Component = "conditional",
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  zi <- data.frame(
+    Parameter = names(cf$zero),
+    Estimate = unname(cf$zero),
+    Component = "zero_inflated",
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  pars <- switch(
+    component,
+    all = rbind(cond, zi),
+    conditional = cond,
+    zi = ,
+    zero_inflated = zi
+  )
+
+  if (component != "all") {
+    pars <- .remove_column(pars, "Component")
+  }
+
+  .remove_backticks_from_parameter_names(pars)
+}
+
+
 
 
 
@@ -1336,6 +1374,16 @@ get_parameters.brmsfit <- function(x, effects = c("fixed", "random", "all"), com
 get_parameters.stanreg <- function(x, effects = c("fixed", "random", "all"), parameters = NULL, ...) {
   effects <- match.arg(effects)
   as.data.frame(x)[.get_parms_data(x, effects, "all", parameters)]
+}
+
+
+#' @export
+get_parameters.bcplm <- function(x, parameters = NULL, ...) {
+  samples <- as.data.frame(do.call(rbind, x$sims.list))
+  if (!is.null(parameters)) {
+    samples <- samples[grepl(pattern = parameters, x = colnames(samples), perl = TRUE)]
+  }
+  samples
 }
 
 

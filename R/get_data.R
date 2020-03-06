@@ -99,8 +99,10 @@ get_data.gee <- function(x, effects = c("all", "fixed", "random"), ...) {
     }
   )
 
-  .prepare_get_data(x, stats::na.omit(mf))
+  .prepare_get_data(x, stats::na.omit(mf), effects = effects)
 }
+
+
 
 #' @rdname get_data
 #' @export
@@ -176,6 +178,38 @@ get_data.zeroinfl <- get_data.hurdle
 get_data.zerotrunc <- get_data.default
 
 
+#' @rdname get_data
+#' @export
+get_data.zcpglm <- function(x, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
+  component <- match.arg(component)
+
+  mf <- stats::model.frame(x)
+  mf_zero <- mf$zero
+  mf_tweedie <- mf$tweedie
+
+  # zcpglm saves variables twice, once in the model frame for zero-inflated
+  # model and once for the tweedie-model. we now need to remove duplicates
+  cn <- setdiff(colnames(mf$zero), colnames(mf$tweedie))
+
+  if (length(cn)) {
+    mf_zero <- mf_zero[cn]
+  } else {
+    mf_zero <- NULL
+  }
+
+  mf <- switch(
+    component,
+    "all" = do.call(cbind, .compact_list(list(mf_tweedie, mf_zero))),
+    "conditional" = mf_tweedie,
+    "zi" = ,
+    "zero_inflated" = mf_zero
+  )
+
+  .prepare_get_data(x, stats::na.omit(mf))
+}
+
+
+
 
 
 
@@ -202,7 +236,7 @@ get_data.glmmTMB <- function(x, effects = c("all", "fixed", "random"), component
     }
   )
 
-  mf <- .prepare_get_data(x, mf)
+  mf <- .prepare_get_data(x, mf, effects)
 
   # add variables from other model components
   mf <- .add_zeroinf_data(x, mf, model.terms$dispersion)
@@ -402,7 +436,7 @@ get_data.MixMod <- function(x, effects = c("all", "fixed", "random"), component 
       colnames(fitfram)[ncol(fitfram)] <- x$id_name[1]
 
       # test...
-      fitfram <- .prepare_get_data(x, fitfram)
+      fitfram <- .prepare_get_data(x, fitfram, effects)
 
       model.terms <- find_variables(x, effects = "all", component = "all", flatten = FALSE)
       .return_data(x, mf = fitfram, effects, component, model.terms)
@@ -433,7 +467,7 @@ get_data.BBmm <- function(x, effects = c("all", "fixed", "random"), ...) {
     }
   )
 
-  .prepare_get_data(x, stats::na.omit(mf))
+  .prepare_get_data(x, stats::na.omit(mf), effects)
 }
 
 
@@ -449,7 +483,7 @@ get_data.glimML <- function(x, effects = c("all", "fixed", "random"), ...) {
     random = dat[, find_random(x, flatten = TRUE), drop = FALSE]
   )
 
-  .prepare_get_data(x, stats::na.omit(mf))
+  .prepare_get_data(x, stats::na.omit(mf), effects)
 }
 
 
@@ -620,7 +654,7 @@ get_data.wbm <- function(x, effects = c("all", "fixed", "random"), ...) {
   resp.col <- which(colnames(mf) == find_response(x))
   mf <- mf[, c(resp.col, (1:ncol(mf))[-resp.col])]
 
-  .prepare_get_data(x, stats::na.omit(mf))
+  .prepare_get_data(x, stats::na.omit(mf), effects)
 }
 
 
@@ -655,6 +689,22 @@ get_data.ivreg <- function(x, ...) {
 
 #' @export
 get_data.iv_robust <- get_data.ivreg
+
+
+#' @export
+get_data.bife <- function(x, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+  mf <- as.data.frame(x$data)
+
+  if (effects == "random") {
+    return(stats::na.omit(mf[, unique(find_random(x, split_nested = TRUE, flatten = TRUE)), drop = FALSE]))
+  } else if (effects == "fixed") {
+    mf <- mf[, setdiff(colnames(mf), unique(find_random(x, split_nested = TRUE, flatten = TRUE))), drop = FALSE]
+  }
+
+  .prepare_get_data(x, stats::na.omit(mf), effects)
+}
+
 
 
 
@@ -843,7 +893,7 @@ get_data.LORgee <- function(x, effects = c("all", "fixed", "random"), ...) {
     }
   )
 
-  .prepare_get_data(x, stats::na.omit(mf))
+  .prepare_get_data(x, stats::na.omit(mf), effects = effects)
 }
 
 

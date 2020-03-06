@@ -352,8 +352,10 @@ clean_parameters.stanmvreg <- function(x, ...) {
 
   # clean fixed effects, conditional and zero-inflated
 
-  out$Cleaned_Parameter <- gsub(pattern = "(b_|bs_|bsp_|bcs_)(?!zi_)(.*)", "\\2", out$Cleaned_Parameter, perl = TRUE)
-  out$Cleaned_Parameter <- gsub(pattern = "(b_zi_|bs_zi_|bsp_zi_|bcs_zi_)(.*)", "\\2", out$Cleaned_Parameter, perl = TRUE)
+  out$Cleaned_Parameter <- gsub(pattern = "^b_(?!zi_)(.*)\\.(\\d)\\.$", "\\1[\\2]", out$Cleaned_Parameter, perl = TRUE)
+  out$Cleaned_Parameter <- gsub(pattern = "^b_zi_(.*)\\.(\\d)\\.$", "\\1[\\2]", out$Cleaned_Parameter, perl = TRUE)
+  out$Cleaned_Parameter <- gsub(pattern = "^(b_|bs_|bsp_|bcs_)(?!zi_)(.*)", "\\2", out$Cleaned_Parameter, perl = TRUE)
+  out$Cleaned_Parameter <- gsub(pattern = "^(b_zi_|bs_zi_|bsp_zi_|bcs_zi_)(.*)", "\\2", out$Cleaned_Parameter, perl = TRUE)
 
   # correlation and sd
 
@@ -365,10 +367,10 @@ clean_parameters.stanmvreg <- function(x, ...) {
 
   # extract group-names from random effects and clean random effects
 
-  rand_eff <- grepl("r_(.*)\\.(.*)\\.", out$Cleaned_Parameter)
+  rand_eff <- grepl("^r_(.*)\\.(.*)\\.", out$Cleaned_Parameter)
   if (any(rand_eff)) {
-    r_pars <- gsub("r_(.*)\\.(.*)\\.", "\\1", out$Cleaned_Parameter[rand_eff])
-    r_grps <- gsub("r_(.*)\\.(.*)\\.", "\\2", out$Cleaned_Parameter[rand_eff])
+    r_pars <- gsub("^r_(.*)\\.(.*)\\.", "\\1", out$Cleaned_Parameter[rand_eff])
+    r_grps <- gsub("^r_(.*)\\.(.*)\\.", "\\2", out$Cleaned_Parameter[rand_eff])
     r_pars <- gsub("__zi", "", r_pars)
     r_grps <- sprintf("%s: %s", r_grps, gsub("(.*)\\.(.*)", "\\1", r_pars))
 
@@ -386,7 +388,7 @@ clean_parameters.stanmvreg <- function(x, ...) {
 
   simplex <- grepl("^simo_", out$Cleaned_Parameter)
   if (length(simplex)) {
-    out$Cleaned_Parameter <- gsub("^simo_", "", out$Cleaned_Parameter)
+    out$Cleaned_Parameter[simplex] <- gsub("^(simo_|simo_mo)(.*)\\.(\\d)\\.$", "\\2[\\3]", out$Cleaned_Parameter[simplex])
     out$Component[simplex] <- "simplex"
   }
 

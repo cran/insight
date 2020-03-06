@@ -9,12 +9,15 @@ bamlss
 BayesFactor
 bayestestR
 BayesX
+bife
 biglm
 blavaan
 brglm
 brms
 brmsfit
 censReg
+cgam
+cglm
 clmm
 colour
 coloured
@@ -23,6 +26,8 @@ comparator
 complmrob
 cplm
 crch
+dirichlet
+DirichletReg
 doi
 DOI
 easystats
@@ -53,6 +58,7 @@ joss
 JOSS
 lavaan
 lfe
+lmerModLmerTest
 logloss
 mclogit
 MCSE
@@ -97,4 +103,5 @@ variates
 VGAM
 warmup
 warmups
+zeroinfl
 Zuur

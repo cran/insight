@@ -59,6 +59,7 @@ find_statistic <- function(x, ...) {
       "lm.beta",
       "lme",
       "lmerMod",
+      "lmerModLmerTest",
       "lmRob",
       "lmrob",
       "maxLik",
@@ -79,8 +80,7 @@ find_statistic <- function(x, ...) {
       "svyolr",
       "truncreg",
       "wbm",
-      "wblm",
-      "zcpglm"
+      "wblm"
     )
 
   # z-value objects ----------------------------------------------------------
@@ -89,6 +89,7 @@ find_statistic <- function(x, ...) {
     c(
       "aareg",
       "betareg",
+      "bife",
       "bracl",
       "brglm",
       "brglmFit",
@@ -98,6 +99,7 @@ find_statistic <- function(x, ...) {
       "clm2",
       "clmm",
       "clmm2",
+      "clogit",
       "coxme",
       "coxph",
       "crch",
@@ -138,6 +140,7 @@ find_statistic <- function(x, ...) {
       "tobit",
       "vglm",
       "wbgee",
+      "zcpglm",
       "zeroinfl",
       "zerotrunc"
     )
@@ -217,6 +220,7 @@ find_statistic <- function(x, ...) {
       "gbm",
       "list",
       "MCMCglmm",
+      "bcplm",
       "survfit"
     )
 
