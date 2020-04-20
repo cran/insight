@@ -1,7 +1,6 @@
 if (require("testthat") &&
   require("insight") &&
   require("MCMCglmm")) {
-  context("insight, model_info")
 
   data(PlodiaPO)
   m1 <- MCMCglmm(
@@ -48,7 +47,7 @@ if (require("testthat") &&
   })
 
   test_that("link_inverse", {
-    expect_null(link_inverse(m1))
+    expect_equal(link_inverse(m1)(.5), .5, tolerance = 1e-1)
   })
 
   test_that("get_data", {
@@ -84,7 +83,7 @@ if (require("testthat") &&
   })
 
   test_that("linkfun", {
-    expect_null(link_function(m1))
+    expect_equal(link_function(m1)(.5), .5, tolerance = 1e-1)
   })
 
   test_that("find_parameters", {

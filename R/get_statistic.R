@@ -374,7 +374,7 @@ get_statistic.cgam <- function(x, component = c("all", "conditional", "smooth_te
   )
 
   if (component != "all") {
-    out <- out[out$Component == component, ]
+    out <- out[out$Component == component, , drop = FALSE]
   }
 
   attr(out, "statistic") <- find_statistic(x)
@@ -428,6 +428,24 @@ get_statistic.survreg <- function(x, ...) {
   out <- data.frame(
     Parameter = parms$Parameter,
     Statistic = s$table[, 3],
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+
+#' @export
+get_statistic.BBmm <- function(x, ...) {
+  parms <- get_parameters(x)
+  s <- summary(x)
+
+  out <- data.frame(
+    Parameter = parms$Parameter,
+    Statistic = s$fixed.coefficients[, 3],
     stringsAsFactors = FALSE,
     row.names = NULL
   )
@@ -499,7 +517,7 @@ get_statistic.clm2 <- function(x, component = c("all", "conditional", "scale"), 
   )
 
   if (component != "all") {
-    out <- out[out$Component == component, ]
+    out <- out[out$Component == component, , drop = FALSE]
   }
 
   attr(out, "statistic") <- find_statistic(x)
@@ -580,12 +598,92 @@ get_statistic.bracl <- function(x, ...) {
 }
 
 
+#' @export
+get_statistic.mlogit <- function(x, ...) {
+  if (requireNamespace("mlogit", quietly = TRUE)) {
+    cs <- stats::coef(summary(x))
+
+    out <- data.frame(
+      Parameter = rownames(cs),
+      Statistic = as.vector(cs[, 3]),
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+
+    out <- .remove_backticks_from_parameter_names(out)
+    attr(out, "statistic") <- find_statistic(x)
+    out
+  } else {
+    NULL
+  }
+}
+
+
+
+
 
 
 
 
 
 # Other models -------------------------------------------------------
+
+
+#' @export
+get_statistic.averaging <- function(x, component = c("conditional", "full"), ...) {
+  component <- match.arg(component)
+  params <- get_parameters(x, component = component)
+  if (component == "full") {
+    s <- summary(x)$coefmat.full
+  } else {
+    s <- summary(x)$coefmat.subset
+  }
+
+  out <- data.frame(
+    Parameter = params$Parameter,
+    Statistic = s[, 4],
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  out <- .remove_backticks_from_parameter_names(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+
+#' @importFrom stats coef
+#' @rdname find_parameters
+#' @export
+get_statistic.bayesx <- function(x, ...) {
+  out <- data.frame(
+    Parameter = find_parameters(x, component = "conditional", flatten = TRUE),
+    Statistic = x$fixed.effects[, 3],
+    stringsAsFactors = FALSE
+  )
+
+  out <- .remove_backticks_from_parameter_names(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
+get_statistic.Arima <- function(x, ...) {
+  params <- get_parameters(x)
+  out <- data.frame(
+    Parameter = params$Parameter,
+    Statistic = as.vector(params$Estimate / sqrt(diag(get_varcov(x)))),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  out <- .remove_backticks_from_parameter_names(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
 
 
 #' @export
@@ -779,7 +877,7 @@ get_statistic.rqss <- function(x, component = c("all", "conditional", "smooth_te
   )
 
   if (component != "all") {
-    out <- out[out$Component == component, ]
+    out <- out[out$Component == component, , drop = FALSE]
   }
 
   attr(out, "statistic") <- find_statistic(x)
@@ -894,7 +992,7 @@ get_statistic.glmx <- function(x, component = c("all", "conditional", "extra"), 
   )
 
   if (component != "all") {
-    out <- out[out$Component == component, ]
+    out <- out[out$Component == component, , drop = FALSE]
   }
 
   attr(out, "statistic") <- find_statistic(x)
@@ -1010,7 +1108,7 @@ get_statistic.betareg <- function(x, component = c("all", "conditional", "precis
   )
 
   if (component != "all") {
-    out <- out[out$Component == component, ]
+    out <- out[out$Component == component, , drop = FALSE]
   }
 
   attr(out, "statistic") <- find_statistic(x)
@@ -1043,7 +1141,7 @@ get_statistic.DirichletRegModel <- function(x, component = c("all", "conditional
   }
 
   if (component != "all") {
-    out <- out[out$Component == component, ]
+    out <- out[out$Component == component, , drop = FALSE]
   }
 
   attr(out, "statistic") <- find_statistic(x)

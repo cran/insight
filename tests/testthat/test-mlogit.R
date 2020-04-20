@@ -1,8 +1,6 @@
 if (require("testthat") &&
   require("insight") &&
   require("mlogit")) {
-  context("insight, polr")
-
   data("Fishing")
   Fish <-
     mlogit.data(Fishing,
@@ -39,7 +37,7 @@ if (require("testthat") &&
   })
 
   test_that("get_response", {
-    expect_equal(get_response(m1), Fish$mode)
+    expect_equal(get_response(m1), as.vector(Fish$mode))
   })
 
   test_that("link_inverse", {
@@ -50,21 +48,41 @@ if (require("testthat") &&
   test_that("get_data", {
     expect_equal(nrow(get_data(m1)), 4728)
     expect_equal(nrow(get_data(m2)), 4728)
-    expect_equal(
-      colnames(get_data(m1)),
-      c("mode", "price", "catch", "probabilities", "linpred")
-    )
-    expect_equal(
-      colnames(get_data(m2)),
-      c(
-        "mode",
-        "price",
-        "catch",
-        "income",
-        "probabilities",
-        "linpred"
+
+    if (packageVersion("mlogit") <= "1.0-3.1") {
+      expect_equal(
+        colnames(get_data(m1)),
+        c("mode", "price", "catch", "probabilities", "linpred")
       )
-    )
+      expect_equal(
+        colnames(get_data(m2)),
+        c(
+          "mode",
+          "price",
+          "catch",
+          "income",
+          "probabilities",
+          "linpred"
+        )
+      )
+    } else {
+      expect_equal(
+        colnames(get_data(m1)),
+        c("mode", "price", "catch", "idx", "probabilities", "linpred")
+      )
+      expect_equal(
+        colnames(get_data(m2)),
+        c(
+          "mode",
+          "price",
+          "catch",
+          "income",
+          "idx",
+          "probabilities",
+          "linpred"
+        )
+      )
+    }
   })
 
   test_that("find_formula", {

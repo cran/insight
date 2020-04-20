@@ -3,6 +3,7 @@
 #'
 #' @description Retrieve information from model objects.
 #'
+#' @param verbose Toggle off warnings.
 #' @inheritParams find_predictors
 #' @inheritParams link_inverse
 #' @inheritParams find_formula
@@ -23,7 +24,7 @@
 #'      \item \code{is_dirichlet}: family is dirichlet
 #'      \item \code{is_exponential}: family is exponential (e.g. Gamma or Weibull)
 #'      \item \code{is_logit}: model has logit link
-#'      \item \code{is_progit}: model has probit link
+#'      \item \code{is_probit}: model has probit link
 #'      \item \code{is_linear}: family is gaussian
 #'      \item \code{is_tweedie}: family is tweedie
 #'      \item \code{is_ordinal}: family is ordinal or cumulative link
@@ -87,8 +88,9 @@ model_info.data.frame <- function(x, ...) {
 
 
 #' @importFrom stats family
+#' @rdname model_info
 #' @export
-model_info.default <- function(x, ...) {
+model_info.default <- function(x, verbose = TRUE, ...) {
   if (inherits(x, "list") && .obj_has_name(x, "gam")) {
     x <- x$gam
     class(x) <- c(class(x), c("glm", "lm"))
@@ -116,7 +118,10 @@ model_info.default <- function(x, ...) {
       ...
     )
   } else {
-    warning("Could not access model information.", call. = FALSE)
+    if (isTRUE(verbose)) {
+      warning("Could not access model information.", call. = FALSE)
+    }
+    NULL
   }
 }
 
@@ -600,6 +605,22 @@ model_info.stanmvreg <- function(x, ...) {
 
 
 # Other models ----------------------------
+
+
+#' @export
+model_info.Arima <- function(x, ...) {
+  .make_family(x, ...)
+}
+
+
+#' @export
+model_info.averaging <- function(x, ...) {
+  if (is.null(attributes(x)$modelList)) {
+    warning("Can't calculate covariance matrix. Please use 'fit = TRUE' in 'model.avg()'.", call. = FALSE)
+    return(NULL)
+  }
+  model_info.default(x = attributes(x)$modelList[[1]])
+}
 
 
 #' @export

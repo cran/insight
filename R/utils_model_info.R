@@ -66,7 +66,7 @@
 
   is.multinomial <-
     inherits(x, c("gmnl", "mlogit", "DirichletRegModel", "multinom", "brmultinom")) |
-    fitfam %in% c("cratio", "sratio", "acat", "multinomial", "dirichlet")
+    fitfam %in% c("cratio", "sratio", "acat", "multinomial", "multinomial2", "dirichlet")
 
   is.categorical <- fitfam == "categorical"
 
@@ -196,6 +196,7 @@
     is_trial = is.trial,
     is_bayesian = is.bayes,
     is_anova = inherits(x, c("aov", "aovlist", "MANOVA", "RM")),
+    is_timeseries = inherits(x, c("Arima")),
     is_ttest = is_ttest,
     is_correlation = is_correlation,
     is_meta = is_meta,

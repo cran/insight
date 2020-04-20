@@ -1,3 +1,27 @@
+# insight 0.8.3
+
+## General
+
+* The function to calculate null-models for mixed effects models is now exported (`null_model()`.)
+
+## New supported model classes
+
+* `arima` (*stats*), `averaging` (*MuMIn*)
+
+## Changes to functions
+
+* Improve family detection in `model_info()`, `link_inverse()` and `link_function()` for *MCMCglmm*.
+* Minor revisions to meet changes in *mlogit* package.
+* Improve support for *bayesx* and *BBmm* models.
+
+## Bug fixes
+
+* Fixed issue in `find_parameters()` and `clean_parameters()` for *brmsfit* models with specific variable name patterns.
+* Fixed issue in `format_ci()` when confidence interval only contained `NA`s and `width` was set to `"auto"`.
+* Fixed issue in `find_formula()` for mixed models when formula contained parentheses in the non-random parts, around a certain set of predictors.
+* Fixed issue in `get_priors.BFBayesFactor()` for `BFMetat` class.
+* Fixed issue in `clean_parameters.BFBayesFactor()` when model contained interaction terms and these were assigned to the "extra" component.
+
 # insight 0.8.2
 
 ## Breaking changes

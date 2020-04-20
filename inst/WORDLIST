@@ -8,7 +8,9 @@ apaca
 bamlss
 BayesFactor
 bayestestR
+bayesx
 BayesX
+BBmm
 bife
 biglm
 blavaan
@@ -66,10 +68,13 @@ metafor
 mgcv
 MixMod
 mixor
+MCMCglmm
+mlogit
 modelling
 monotic
 multgee
 multinom
+MuMIn
 Nakagawa
 Newburgh
 nnet

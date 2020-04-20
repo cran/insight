@@ -190,6 +190,23 @@ get_parameters.cgam <- function(x, component = c("all", "conditional", "smooth_t
 # Special models ---------------------------------------------
 
 
+#' @rdname get_parameters
+#' @export
+get_parameters.averaging <- function(x, component = c("conditional", "full"), ...) {
+  component <- match.arg(component)
+  cf <- stats::coef(x, full = component == "full")
+
+  params <- data.frame(
+    Parameter = names(cf),
+    Estimate = unname(cf),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  .remove_backticks_from_parameter_names(params)
+}
+
+
 #' @export
 get_parameters.lrm <- function(x, ...) {
   tryCatch(
@@ -268,7 +285,7 @@ get_parameters.glmx <- function(x, component = c("all", "conditional", "extra"),
   )
 
   if (component != "all") {
-    params <- params[params$Component == component, ]
+    params <- params[params$Component == component, , drop = FALSE]
   }
 
   .remove_backticks_from_parameter_names(params)
@@ -326,7 +343,7 @@ get_parameters.betareg <- function(x, component = c("all", "conditional", "preci
   )
 
   if (component != "all") {
-    params <- params[params$Component == component, ]
+    params <- params[params$Component == component, , drop = FALSE]
   }
 
   .remove_backticks_from_parameter_names(params)
@@ -364,7 +381,7 @@ get_parameters.DirichletRegModel <- function(x, component = c("all", "conditiona
   }
 
   if (component != "all") {
-    params <- params[params$Component == component, ]
+    params <- params[params$Component == component, , drop = FALSE]
   }
 
   .remove_backticks_from_parameter_names(params)
@@ -518,7 +535,7 @@ get_parameters.clm2 <- function(x, component = c("all", "conditional", "scale"),
   )
 
   if (component != "all") {
-    params <- params[params$Component == component, ]
+    params <- params[params$Component == component, , drop = FALSE]
   }
 
   .remove_backticks_from_parameter_names(params)
@@ -1241,6 +1258,26 @@ get_parameters.aovlist <- function(x, effects = c("fixed", "random", "all"), ...
 
 
 
+#' @importFrom stats na.omit coef
+#' @export
+get_parameters.manova <- function(x, ...) {
+  params <- stats::na.omit(stats::coef(x))
+  out <- .gather(as.data.frame(params), names_to = "Response", values_to = "Estimate")
+  out$Parameter <- rownames(out)
+
+  out <- out[c("Parameter", "Estimate", "Response")]
+  rownames(out) <- NULL
+
+  pattern <- paste0("(", paste0(paste0(".", unique(out$Response)), collapse = "|"), ")$")
+  out$Parameter <- gsub(pattern, "", out$Parameter)
+
+  .remove_backticks_from_parameter_names(out)
+}
+
+
+
+
+
 
 
 
@@ -1387,27 +1424,33 @@ get_parameters.bcplm <- function(x, parameters = NULL, ...) {
 }
 
 
-#' @importFrom stats coef
 #' @rdname find_parameters
 #' @export
-get_parameters.bayesx <- function(x, component = c("all", "conditional", "smooth_terms"), flatten = FALSE, parameters = NULL, ...) {
+get_parameters.bayesx <- function(x, component = c("conditional", "smooth_terms", "all"), ...) {
   component <- match.arg(component)
 
-  smooth_terms <- find_parameters(x, component = "smooth_terms", flatten = TRUE)
+  smooth_dat <- data.frame(
+    Parameter = find_parameters(x, component = "smooth_terms", flatten = TRUE),
+    Estimate = x$smooth.hyp[, 1],
+    Component = "smooth_terms",
+    stringsAsFactors = FALSE
+  )
 
-  fixed_dat <- attr(x$fixed.effects, "sample")
-  smooth_dat <- do.call(cbind, lapply(smooth_terms, function(i) {
-    dat <- data.frame(x$effects[[i]]$Mean)
-    colnames(dat) <- i
-    dat
-  }))
+  fixed_dat <- data.frame(
+    Parameter = find_parameters(x, component = "conditional", flatten = TRUE),
+    Estimate = x$fixed.effects[, 1],
+    Component = "conditional",
+    stringsAsFactors = FALSE
+  )
 
-  switch(
+  params <- switch(
     component,
-    "all" = cbind(fixed_dat, smooth_dat),
+    "all" = rbind(fixed_dat, smooth_dat),
     "conditional" = fixed_dat,
     "smooth_terms" = smooth_dat
   )
+
+  .remove_backticks_from_parameter_names(params)
 }
 
 

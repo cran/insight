@@ -833,6 +833,66 @@ get_data.stanmvreg <- function(x, ...) {
 
 
 #' @export
+get_data.averaging <- function(x, ...) {
+  ml <- attributes(x)$modelList
+  if (is.null(ml)) {
+    warning("Can't retrieve data. Please use 'fit = TRUE' in 'model.avg()'.", call. = FALSE)
+    return(NULL)
+  }
+
+  mf <- tryCatch(
+    {
+      Reduce(function(x, y) merge(x, y, all = TRUE, sort = FALSE), lapply(ml, stats::model.frame))
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+
+  if (is.null(mf)) {
+    mf <- tryCatch(
+      {
+        .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
+      },
+      error = function(x) {
+        NULL
+      }
+    )
+  }
+
+  .prepare_get_data(x, mf)
+}
+
+
+#' @export
+get_data.Arima <- function(x, ...) {
+  # first try, parent frame
+  dat <- tryCatch(
+    {
+      eval(x$call$x, envir = parent.frame())
+    },
+    error = function(e) {
+      NULL
+    }
+  )
+
+  if (is.null(dat)) {
+    # second try, global env
+    dat <- tryCatch(
+      {
+        eval(x$call$x, envir = globalenv())
+      },
+      error = function(e) {
+        NULL
+      }
+    )
+  }
+
+  dat
+}
+
+
+#' @export
 get_data.DirichletRegModel <- function(x, ...) {
   mf <- x$data
   resp <- sapply(x$data, inherits, "DirichletRegData")
@@ -995,6 +1055,22 @@ get_data.clm2 <- function(x, ...) {
 get_data.bracl <- function(x, ...) {
   mf <- stats::model.frame(x)
   suppressWarnings(.prepare_get_data(x, mf))
+}
+
+
+
+#' @export
+get_data.mlogit <- function(x, ...) {
+  mf <- tryCatch(
+    {
+      as.data.frame(stats::model.frame(x))
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+
+  .prepare_get_data(x, mf)
 }
 
 
