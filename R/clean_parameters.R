@@ -46,7 +46,7 @@ clean_parameters <- function(x, ...) {
 
 
 #' @export
-clean_parameters.default <- function(x, ...) {
+clean_parameters.default <- function(x, group = "", ...) {
   pars <- find_parameters(x, effects = "all", component = "all", flatten = FALSE)
 
   l <- lapply(names(pars), function(i) {
@@ -58,6 +58,8 @@ clean_parameters.default <- function(x, ...) {
 
     com <- if (grepl("zero_inflated", i, fixed = TRUE)) {
       "zero_inflated"
+    } else if (grepl("dispersion", i, fixed = TRUE)) {
+      "dispersion"
     } else if (grepl("nonlinear", i, fixed = TRUE)) {
       "nonlinear"
     } else if (grepl("instruments", i, fixed = TRUE)) {
@@ -95,7 +97,7 @@ clean_parameters.default <- function(x, ...) {
         Parameter = pars[[i]],
         Effects = eff,
         Component = com,
-        Group = "",
+        Group = group,
         Function = fun,
         Cleaned_Parameter = pars[[i]],
         stringsAsFactors = FALSE,
@@ -271,7 +273,27 @@ clean_parameters.stanmvreg <- function(x, ...) {
 
 
 
+#' @export
+clean_parameters.aovlist <- function(x, ...) {
+  pars <- get_parameters(x)
+  clean_parameters.default(x, group = pars$Group)
+}
 
+
+#' @export
+clean_parameters.afex_aov <- function(x, ...) {
+  if ("aov" %in% names(x)) {
+    clean_parameters(x$aov, ...)
+  } else {
+    clean_parameters(x$lm, ...)
+  }
+}
+
+
+
+
+
+# helper -------------------------
 
 
 .get_stan_params <- function(pars, response = NA) {

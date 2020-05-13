@@ -232,6 +232,16 @@ model_info.mlm <- function(x, ...) {
   .make_family(x, multi.var = TRUE, ...)
 }
 
+#' @export
+model_info.afex_aov <- function(x, ...) {
+  if ("aov" %in% names(x)) {
+    .make_family(x$aov, ...)
+  } else {
+    .make_family(x$lm, ...)
+  }
+}
+
+
 
 
 
@@ -679,10 +689,11 @@ model_info.LORgee <- function(x, ...) {
     link <- "logit"
   }
 
-  if (x$link == "Cumulative logit")
+  if (x$link == "Cumulative logit") {
     family <- "ordinal"
-  else
+  } else {
     family <- "multinomial"
+  }
 
   .make_family(
     x = x,

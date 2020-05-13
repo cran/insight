@@ -293,6 +293,7 @@ get_varcov.glmmTMB <- function(x, component = c("conditional", "zero_inflated", 
     "conditional" = stats::vcov(x)[["cond"]],
     "zi" = ,
     "zero_inflated" = stats::vcov(x)[["zi"]],
+    "dispersion" = stats::vcov(x)[["disp"]],
     stats::vcov(x, full = TRUE)
   )
 
@@ -375,6 +376,16 @@ get_varcov.flexsurvreg <- function(x, ...) {
   }
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
+}
+
+
+#' @export
+get_varcov.afex_aov <- function(x, ...) {
+  if ("lm" %in% names(x)) {
+    get_varcov(x$lm)
+  } else {
+    NULL
+  }
 }
 
 
@@ -604,7 +615,9 @@ get_varcov.LORgee <- get_varcov.gee
         eigenvalues[abs(eigenvalues) < 1e-07] <- 0
         any(eigenvalues <= 0)
       },
-      error = function(e) { FALSE }
+      error = function(e) {
+        FALSE
+      }
     )
   } else {
     rv <- FALSE

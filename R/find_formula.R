@@ -186,6 +186,16 @@ find_formula.rma <- function(x, ...) {
 
 
 #' @export
+find_formula.afex_aov <- function(x, ...) {
+  if ("aov" %in% names(x)) {
+    find_formula(x$aov)
+  } else {
+    find_formula(x$lm)
+  }
+}
+
+
+#' @export
 find_formula.gee <- function(x, ...) {
   tryCatch(
     {
@@ -224,7 +234,12 @@ find_formula.RM <- find_formula.MANOVA
 #' @export
 find_formula.gls <- function(x, ...) {
   ## TODO this is an intermediate fix to return the correlation variables from gls-objects
-  f_corr <- parse(text = .safe_deparse(x$call$correlation))[[1]]
+  fcorr <- x$call$correlation
+  if (!is.null(fcorr)) {
+    f_corr <- parse(text = .safe_deparse(x$call$correlation))[[1]]
+  } else {
+    f_corr <- NULL
+  }
   if (is.symbol(f_corr)) {
     f_corr <- paste("~", .safe_deparse(f_corr))
   } else {
@@ -821,7 +836,12 @@ find_formula.lme <- function(x, ...) {
   fm <- eval(x$call$fixed)
   fmr <- eval(x$call$random)
   ## TODO this is an intermediate fix to return the correlation variables from lme-objects
-  fc <- parse(text = .safe_deparse(x$call$correlation))[[1]]$form
+  fcorr <- x$call$correlation
+  if (!is.null(fcorr)) {
+    fc <- parse(text = .safe_deparse(x$call$correlation))[[1]]$form
+  } else {
+    fc <- NULL
+  }
 
   .compact_list(list(
     conditional = fm,

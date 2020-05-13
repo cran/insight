@@ -1186,6 +1186,16 @@ find_parameters.averaging <- function(x, component = c("conditional", "full"), f
 
 
 #' @export
+find_parameters.afex_aov <- function(x, flatten = FALSE, ...) {
+  if ("aov" %in% names(x)) {
+    find_parameters(x$aov, flatten = flatten, ...)
+  } else {
+    find_parameters(x$lm, flatten = flatten, ...)
+  }
+}
+
+
+#' @export
 find_parameters.mlm <- function(x, flatten = FALSE, ...) {
   cs <- stats::coef(summary(x))
 
@@ -1297,13 +1307,7 @@ find_parameters.glimML <- function(x, effects = c("all", "fixed", "random"), fla
 
 #' @export
 find_parameters.aovlist <- function(x, flatten = FALSE, ...) {
-  l <- lapply(stats::coef(x), names)
-  # merge "intercept" and "block" into conditional
-  # while "Within" becomes "random"
-  l <- list(unname(unlist(l[c(1, 2)])), l[[3]])
-  l <- lapply(l, .remove_backticks_from_string)
-
-  names(l) <- c("conditional", "random")
+  l <- list(conditional = unname(.remove_backticks_from_string(unlist(lapply(stats::coef(x), names)))))
 
   if (flatten) {
     unique(unlist(l))

@@ -1,3 +1,24 @@
+# insight 0.8.4
+
+## General
+
+* *HRQoL* was removed from suggested packages, as it was removed from CRAN.
+* Better support for dispersion models in *glmmTMB*.
+
+## Changes to functions
+
+* `null_model()` now also works for non-mixed models.
+* `get_variance()` now also computes variance components for models (from mixed models packages) without random effects.
+* Improved support for `afex_aov` and `aovlist` (i.e. Anova with error term).
+
+## Bug fixes
+
+* Fixed some issues with deparsings `NULL` strings under R 4.0.0.
+* Fixed accuracy in `get_variance()` for models from Gamma family.
+* Fixed edge case in `clean_names()`.
+* Fixed issues with `find_formula.lme()` under R 4.0.0.
+* Fixed issues with examples from `clean_names()` under R-devel.
+
 # insight 0.8.3
 
 ## General

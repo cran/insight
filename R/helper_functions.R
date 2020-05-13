@@ -186,15 +186,19 @@
 
 # extract random effects from formula
 .get_model_random <- function(f, split_nested = FALSE, model) {
-  is_special <- inherits(model, c("MCMCglmm", "gee", "LORgee", "mixor", "clmm2", "felm", "feis", "bife", "BFBayesFactor", "BBmm", "glimML", "MANOVA", "RM", "cglm"))
-
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("To use this function, please install package 'lme4'.")
-  }
+  is_special <- inherits(
+      model,
+      c("MCMCglmm", "gee", "LORgee", "mixor", "clmm2", "felm", "feis", "bife",
+        "BFBayesFactor", "BBmm", "glimML", "MANOVA", "RM", "cglm")
+    )
 
   if (identical(.safe_deparse(f), "~0") ||
     identical(.safe_deparse(f), "~1")) {
     return(NULL)
+  }
+
+  if (!requireNamespace("lme4", quietly = TRUE)) {
+    stop("To use this function, please install package 'lme4'.")
   }
 
   re <- sapply(lme4::findbars(f), .safe_deparse)
@@ -463,6 +467,9 @@
 
 
 .safe_deparse <- function(string) {
+  if (is.null(string)) {
+    return(NULL)
+  }
   paste0(sapply(deparse(string, width.cutoff = 500), .trim, simplify = TRUE), collapse = " ")
 }
 
@@ -566,8 +573,9 @@
     direction = "long"
   )
 
-  if (is.factor(dat[[values_to]]))
+  if (is.factor(dat[[values_to]])) {
     dat[[values_to]] <- as.character(dat[[values_to]])
+  }
 
   dat[, 1:(ncol(dat) - 1), drop = FALSE]
 }

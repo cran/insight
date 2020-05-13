@@ -10,10 +10,6 @@
 
   faminfo <- model_info(x)
 
-  if (!faminfo$is_mixed) {
-    stop("Model is not a mixed model.", call. = FALSE)
-  }
-
   if (faminfo$family %in% c("truncated_nbinom1", "truncated_nbinom2")) {
     if (verbose) {
       warning(sprintf("Truncated negative binomial families are currently not supported by `%s`.", name_fun), call. = F)
@@ -262,6 +258,9 @@
 #
 #' @importFrom stats nobs
 .compute_variance_random <- function(terms, x, vals) {
+  if (is.null(terms)) {
+    return(NULL)
+  }
   .sigma_sum <- function(Sigma) {
     rn <- rownames(Sigma)
 
@@ -321,12 +320,13 @@
         .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
       )
     } else if (faminfo$family %in% c("Gamma", "gamma")) {
-      ## TODO needs some more checking
+      ## TODO needs some more checking - should now be in line with other packages
       dist.variance <- switch(
         faminfo$link_function,
         inverse = ,
-        identity = stats::family(x)$variance(sig),
-        log = .variance_distributional(x, faminfo, sig, name = name, verbose = verbose),
+        identity = ,
+        log = stats::family(x)$variance(sig),
+        # log = .variance_distributional(x, faminfo, sig, name = name, verbose = verbose),
         .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
       )
     } else if (faminfo$family == "beta") {
@@ -415,29 +415,23 @@
     {
       vv <- switch(
         faminfo$family,
-
         # (zero-inflated) poisson
         `zero-inflated poisson` = ,
         poisson = .variance_family_poisson(x, mu, faminfo),
-
         # hurdle-poisson
         `hurdle poisson` = ,
         truncated_poisson = stats::family(x)$variance(sig),
-
         # Gamma, exponential
         Gamma = stats::family(x)$variance(sig),
-
         # (zero-inflated) negative binomial
         `zero-inflated negative binomial` = ,
         `negative binomial` = ,
         genpois = ,
         nbinom1 = ,
         nbinom2 = .variance_family_nbinom(x, mu, sig, faminfo),
-
         # other distributions
         tweedie = .variance_family_tweedie(x, mu, sig),
         beta = .variance_family_beta(x, mu, sig),
-
         # default variance for non-captured distributions
         .variance_family_default(x, mu, verbose)
       )

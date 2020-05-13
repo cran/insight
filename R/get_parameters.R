@@ -895,12 +895,16 @@ get_parameters.glmmTMB <- function(x, effects = c("fixed", "random"), component 
     ))
   }
 
+  # ---- fixed effects (conditional model)
+
   fixed <- data.frame(
     Parameter = names(l$conditional),
     Estimate = unname(l$conditional),
     Component = "conditional",
     stringsAsFactors = FALSE
   )
+
+  # ---- fixed effects (zero_inflated model)
 
   if (.obj_has_name(l, "zero_inflated")) {
     fixedzi <- data.frame(
@@ -913,13 +917,29 @@ get_parameters.glmmTMB <- function(x, effects = c("fixed", "random"), component 
     fixedzi <- NULL
   }
 
+  # ---- fixed effects (dispersion model)
+
+  if (.obj_has_name(l, "dispersion")) {
+    fixeddisp <- data.frame(
+      Parameter = names(l$dispersion),
+      Estimate = unname(l$dispersion),
+      Component = "dispersion",
+      stringsAsFactors = FALSE
+    )
+  } else {
+    fixeddisp <- NULL
+  }
+
+  # ---- build result
+
   if (effects == "fixed") {
     out <- switch(
       component,
-      all = rbind(fixed, fixedzi),
+      all = rbind(fixed, fixedzi, fixeddisp),
       conditional = fixed,
       zi = ,
-      zero_inflated = fixedzi
+      zero_inflated = fixedzi,
+      dispersion = fixeddisp
     )
     .remove_backticks_from_parameter_names(out)
   } else if (effects == "random") {
@@ -1225,35 +1245,21 @@ get_parameters.aov <- function(x, ...) {
 }
 
 
-#' @rdname get_parameters
-#' @export
-get_parameters.aovlist <- function(x, effects = c("fixed", "random", "all"), ...) {
-  effects <- match.arg(effects)
 
-  l <- lapply(stats::coef(x), function(i) {
+#' @export
+get_parameters.aovlist <- function(x, ...) {
+  cs <- stats::coef(x)
+  out <- do.call(rbind, lapply(names(cs), function(i) {
     params <- data.frame(
-      Parameter = names(i),
-      Estimate = unname(i),
+      Parameter = names(cs[[i]]),
+      Estimate = unname(cs[[i]]),
+      Group = i,
       stringsAsFactors = FALSE
     )
     .remove_backticks_from_parameter_names(params)
-  })
-
-  l <- list(rbind(l[[1]], l[[2]]), l[[3]])
-  names(l) <- c("conditional", "random")
-
-  all <- rbind(
-    cbind(l$conditional, data.frame(Effects = "fixed", stringsAsFactors = FALSE)),
-    cbind(l$random, data.frame(Effects = "random", stringsAsFactors = FALSE))
-  )
-
-  if (effects == "fixed") {
-    l$conditional
-  } else if (effects == "random") {
-    l$random
-  } else {
-    all
-  }
+  }))
+  rownames(out) <- NULL
+  out
 }
 
 
@@ -1273,6 +1279,18 @@ get_parameters.manova <- function(x, ...) {
 
   .remove_backticks_from_parameter_names(out)
 }
+
+
+#' @export
+get_parameters.afex_aov <- function(x, ...) {
+  if ("aov" %in% names(x)) {
+    get_parameters(x$aov, ...)
+  } else {
+    get_parameters(x$lm, ...)
+  }
+}
+
+
 
 
 

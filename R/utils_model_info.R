@@ -66,7 +66,7 @@
 
   is.multinomial <-
     inherits(x, c("gmnl", "mlogit", "DirichletRegModel", "multinom", "brmultinom")) |
-    fitfam %in% c("cratio", "sratio", "acat", "multinomial", "multinomial2", "dirichlet")
+      fitfam %in% c("cratio", "sratio", "acat", "multinomial", "multinomial2", "dirichlet")
 
   is.categorical <- fitfam == "categorical"
 
@@ -191,7 +191,7 @@
     is_cumulative = is.ordinal,
     is_multinomial = is.multinomial | is.categorical,
     is_categorical = is.categorical,
-    is_mixed = !is.null(find_random(x)),
+    is_mixed = .is_mixed_model(x),
     is_multivariate = multi.var,
     is_trial = is.trial,
     is_bayesian = is.bayes,
@@ -265,4 +265,10 @@
   } else {
     class(x@denominator)
   }
+}
+
+
+
+.is_mixed_model <- function(x) {
+  !is.null(find_random(x))
 }
