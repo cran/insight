@@ -19,6 +19,8 @@
 #'   on the model.
 #' @param robust Logical, if \code{TRUE}, test statistic based on robust standard
 #'   errors is returned.
+#' @param adjust Character value naming the method used to adjust p-values or confidence intervals. See \code{\link[emmeans]{summary.emmGrid}} for details.
+#' @param ci Confidence Interval (CI) level. Default to 0.95 (95\%). Currently only applies to objects of class \code{emmGrid}.
 #' @param ... Currently not used.
 #'
 #' @return A data frame with the model's parameter names and the related test statistic.
@@ -625,9 +627,178 @@ get_statistic.mlogit <- function(x, ...) {
 
 
 
+# mfx models -------------------------------------------------------
+
+
+#' @rdname get_statistic
+#' @importFrom stats coef
+#' @export
+get_statistic.betamfx <- function(x, component = c("all", "conditional", "precision", "marginal"), ...) {
+  component <- match.arg(component)
+  parms <- get_parameters(x, component = "all", ...)
+  cs <- do.call(rbind, stats::coef(summary(x$fit)))
+  stat <- c(as.vector(x$mfxest[, 3]), as.vector(cs[, 3]))
+
+  out <- data.frame(
+    Parameter = parms$Parameter,
+    Statistic = stat,
+    Component = parms$Component,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  if (component != "all") {
+    out <- out[out$Component == component, , drop = FALSE]
+  }
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
+get_statistic.betaor <- function(x, component = c("all", "conditional", "precision"), ...) {
+  component <- match.arg(component)
+  parms <- get_parameters(x, component = "all", ...)
+  cs <- do.call(rbind, stats::coef(summary(x$fit)))
+
+  out <- data.frame(
+    Parameter = parms$Parameter,
+    Statistic = as.vector(cs[, 3]),
+    Component = parms$Component,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  if (component != "all") {
+    out <- out[out$Component == component, , drop = FALSE]
+  }
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @rdname get_statistic
+#' @export
+get_statistic.logitmfx <- function(x, component = c("all", "conditional", "marginal"), ...) {
+  parms <- get_parameters(x, component = "all", ...)
+  cs <- stats::coef(summary(x$fit))
+  stat <- c(as.vector(x$mfxest[, 3]), as.vector(cs[, 3]))
+
+  out <- data.frame(
+    Parameter = parms$Parameter,
+    Statistic = stat,
+    Component = parms$Component,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  if (component != "all") {
+    out <- out[out$Component == component, , drop = FALSE]
+  }
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+#' @export
+get_statistic.poissonmfx <- get_statistic.logitmfx
+
+#' @export
+get_statistic.negbinmfx <- get_statistic.logitmfx
+
+#' @export
+get_statistic.probitmfx <- get_statistic.logitmfx
+
+#' @export
+get_statistic.logitor <- function(x, ...) {
+  get_statistic.default(x$fit)
+}
+
+#' @export
+get_statistic.poissonirr <- get_statistic.logitor
+
+#' @export
+get_statistic.negbinirr <- get_statistic.logitor
+
+
+
+
+
 
 
 # Other models -------------------------------------------------------
+
+
+#' @rdname get_statistic
+#' @export
+get_statistic.emmGrid <- function(x, ci = .95, adjust = "none", ...) {
+  s <- summary(x, level = ci, adjust = adjust)
+  estimate_pos <- which(colnames(s) == x@misc$estName)
+
+  if (length(estimate_pos)) {
+    msg <- attributes(s)$mesg
+    if (!is.null(msg)) {
+      msg <- msg[grepl("^Confidence level", msg)]
+      if (length(msg)) {
+        ci_level <- tryCatch(
+          {
+            as.numeric(trimws(gsub("Confidence level used:", "", msg, fixed = TRUE)))
+          },
+          warning = function(w) {
+            .95
+          },
+          error = function(e) {
+            .95
+          }
+        )
+      } else {
+        ci_level <- .95
+      }
+    }
+
+    fac <- stats::qt((1 + ci_level) / 2, df = s$df)
+
+    if ("asymp.LCL" %in% colnames(s)) {
+      se <- (s$asymp.UCL - s$asymp.LCL) / (2 * fac)
+    } else {
+      se <- (s$upper.CL - s$lower.CL) / (2 * fac)
+    }
+    stat <- s[[x@misc$estName]] / se
+
+    out <- data.frame(
+      s[, 1:(estimate_pos - 1), drop = FALSE],
+      Statistic = as.vector(stat),
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+
+    out <- .remove_backticks_from_parameter_names(out)
+    attr(out, "statistic") <- find_statistic(x)
+    out
+  } else {
+    return(NULL)
+  }
+}
+
+
+#' @export
+get_statistic.robmixglm <- function(x, ...) {
+  cs <- stats::coef(summary(x))
+
+  out <- data.frame(
+    Parameter = rownames(cs),
+    Statistic = as.vector(cs[, 3]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  out <- out[!is.na(out$Statistic), ]
+  out <- .remove_backticks_from_parameter_names(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
 
 
 #' @export
@@ -655,7 +826,6 @@ get_statistic.averaging <- function(x, component = c("conditional", "full"), ...
 
 
 #' @importFrom stats coef
-#' @rdname find_parameters
 #' @export
 get_statistic.bayesx <- function(x, ...) {
   out <- data.frame(

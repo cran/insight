@@ -3,17 +3,14 @@ if (require("testthat") &&
   require("gmnl") &&
   require("mlogit") &&
   require("MASS")) {
-  context("insight, polr")
-
   data(housing, package = "MASS")
 
   dat <- mlogit.data(housing, choice = "Sat", shape = "wide")
   m1 <-
-    gmnl(Sat ~ Infl + Type + Cont |
-      1,
-    data = dat,
-    model = "smnl",
-    R = 100
+    gmnl(Sat ~ Infl + Type + Cont | 1,
+      data = dat,
+      model = "smnl",
+      R = 100
     )
 
   test_that("model_info", {

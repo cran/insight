@@ -68,6 +68,8 @@ clean_parameters.default <- function(x, group = "", ...) {
       "extra"
     } else if (grepl("scale", i, fixed = TRUE)) {
       "scale"
+    } else if (grepl("marginal", i, fixed = TRUE)) {
+      "marginal"
     } else {
       "conditional"
     }
@@ -271,6 +273,9 @@ clean_parameters.stanmvreg <- function(x, ...) {
   .fix_random_effect_smooth(x, out)
 }
 
+
+#' @export
+clean_parameters.stanfit <- clean_parameters.stanreg
 
 
 #' @export

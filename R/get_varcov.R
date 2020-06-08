@@ -11,9 +11,9 @@
 #'   zero-inflated model parts)? Applies to models with zero-inflated component,
 #'   or models with precision (e.g. \code{betareg}) component. \code{component}
 #'   may be one of \code{"conditional"}, \code{"zi"}, \code{"zero-inflated"},
-#'   \code{"precision"}, or \code{"all"}. May be abbreviated. Note that the
-#'   \emph{conditional} component is also called \emph{count} or \emph{mean}
-#'   component, depending on the model.
+#'   \code{"dispersion"}, \code{"precision"}, or \code{"all"}. May be abbreviated.
+#'   Note that the \emph{conditional} component is also called \emph{count} or
+#'   \emph{mean} component, depending on the model.
 #' @param effects Should the complete variance-covariance matrix of the model
 #'   be returned, or only for specific model parameters only? Currently only
 #'   applies to models of class \code{mixor}.
@@ -46,6 +46,9 @@ get_varcov.default <- function(x, ...) {
     vc <- .fix_negative_matrix(vc)
   }
 
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
 
@@ -75,6 +78,9 @@ get_varcov.betareg <- function(x, component = c("conditional", "precision", "all
     vc <- .fix_negative_matrix(vc)
   }
 
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
 
@@ -89,11 +95,11 @@ get_varcov.DirichletRegModel <- function(x, component = c("conditional", "precis
     if (component == "conditional") {
       vc <- stats::vcov(x)
       keep <- grepl("^(?!\\(phi\\))", rownames(vc), perl = TRUE)
-      vc <- vc[keep, keep]
+      vc <- vc[keep, keep, drop = FALSE]
     } else if (component == "precision") {
       vc <- stats::vcov(x)
       keep <- grepl("^\\(phi\\)", rownames(vc), perl = TRUE)
-      vc <- vc[keep, keep]
+      vc <- vc[keep, keep, drop = FALSE]
     } else {
       vc <- stats::vcov(x)
     }
@@ -102,6 +108,9 @@ get_varcov.DirichletRegModel <- function(x, component = c("conditional", "precis
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -129,7 +138,11 @@ get_varcov.clm2 <- function(x, component = c("all", "conditional", "scale"), ...
     "scale" = (1 + n_intercepts + n_location):(n_scale + n_intercepts + n_location)
   )
 
-  vc <- vc[range, range]
+  vc <- vc[range, range, drop = FALSE]
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
 
@@ -144,12 +157,15 @@ get_varcov.glmx <- function(x, component = c("all", "conditional", "extra"), ...
 
   if (component != "all") {
     keep <- match(insight::find_parameters(x)[[component]], rownames(vc))
-    vc <- vc[keep, keep]
+    vc <- vc[keep, keep, drop = FALSE]
   }
 
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -162,12 +178,15 @@ get_varcov.truncreg <- function(x, component = c("conditional", "all"), ...) {
   vc <- stats::vcov(x)
 
   if (component == "conditional") {
-    vc <- vc[1:(nrow(vc) - 1), 1:(ncol(vc) - 1)]
+    vc <- vc[1:(nrow(vc) - 1), 1:(ncol(vc) - 1), drop = FALSE]
   }
 
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -181,12 +200,15 @@ get_varcov.gamlss <- function(x, component = c("conditional", "all"), ...) {
 
   if (component == "conditional") {
     cond_pars <- length(find_parameters(x)$conditional)
-    vc <- as.matrix(vc)[1:cond_pars, 1:cond_pars]
+    vc <- as.matrix(vc)[1:cond_pars, 1:cond_pars, drop = FALSE]
   }
 
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -216,6 +238,9 @@ get_varcov.hurdle <- function(x, component = c("conditional", "zero_inflated", "
     vc <- .fix_negative_matrix(vc)
   }
 
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
 
@@ -240,15 +265,18 @@ get_varcov.zcpglm <- function(x, component = c("conditional", "zero_inflated", "
 
   vc <- switch(
     component,
-    "conditional" = vc[tweedie, tweedie],
+    "conditional" = vc[tweedie, tweedie, drop = FALSE],
     "zi" = ,
-    "zero_inflated" = vc[zero, zero],
-    vc[c(tweedie, zero), c(tweedie, zero)]
+    "zero_inflated" = vc[zero, zero, drop = FALSE],
+    vc[c(tweedie, zero), c(tweedie, zero), drop = FALSE]
   )
 
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -279,13 +307,16 @@ get_varcov.MixMod <- function(x, component = c("conditional", "zero_inflated", "
     vc <- .fix_negative_matrix(vc)
   }
 
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
 
 
 #' @rdname get_varcov
 #' @export
-get_varcov.glmmTMB <- function(x, component = c("conditional", "zero_inflated", "zi", "all"), ...) {
+get_varcov.glmmTMB <- function(x, component = c("conditional", "zero_inflated", "zi", "dispersion", "all"), ...) {
   component <- match.arg(component)
 
   vc <- switch(
@@ -300,6 +331,9 @@ get_varcov.glmmTMB <- function(x, component = c("conditional", "zero_inflated", 
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -319,14 +353,58 @@ get_varcov.brmsfit <- function(x, component = c("conditional", "zero_inflated", 
   params <- find_parameters(x, effects = "fixed", component = component, flatten = TRUE)
   params <- gsub("^b_", "", params)
 
-  vc <- stats::vcov(x)[params, params]
+  vc <- stats::vcov(x)[params, params, drop = FALSE]
 
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
 
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
+
+
+
+
+
+
+# mfx models -------------------------------------------------------
+
+
+#' @rdname get_varcov
+#' @export
+get_varcov.betamfx <- function(x, component = c("conditional", "precision", "all"), ...) {
+  component <- match.arg(component)
+  get_varcov.betareg(x$fit, component = component, ...)
+}
+
+#' @export
+get_varcov.betaor <- get_varcov.betamfx
+
+#' @export
+get_varcov.logitmfx <- function(x, ...) {
+  get_varcov(x$fit, ...)
+}
+
+#' @export
+get_varcov.poissonmfx <- get_varcov.logitmfx
+
+#' @export
+get_varcov.negbinmfx <- get_varcov.logitmfx
+
+#' @export
+get_varcov.probitmfx <- get_varcov.logitmfx
+
+#' @export
+get_varcov.logitor <- get_varcov.logitmfx
+
+#' @export
+get_varcov.poissonirr <- get_varcov.logitmfx
+
+#' @export
+get_varcov.negbinirr <- get_varcov.logitmfx
 
 
 
@@ -343,6 +421,25 @@ get_varcov.averaging <- function(x, ...) {
   } else {
     get_varcov.default(x)
   }
+}
+
+
+#' @export
+get_varcov.robmixglm <- function(x, ...) {
+  params <- find_parameters(x, flatten = TRUE)
+  np <- length(params)
+  vc <- x$fit@vcov[1:np, 1:np, drop = FALSE]
+
+  dimnames(vc) <- list(params, params)
+
+  if (.is_negativ_matrix(vc)) {
+    vc <- .fix_negative_matrix(vc)
+  }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
+  .remove_backticks_from_matrix_names(as.matrix(vc))
 }
 
 
@@ -369,11 +466,14 @@ get_varcov.nlrq <- get_varcov.rq
 #' @export
 get_varcov.flexsurvreg <- function(x, ...) {
   pars <- find_parameters(x, flatten = TRUE)
-  vc <- as.matrix(stats::vcov(x))[pars, pars]
+  vc <- as.matrix(stats::vcov(x))[pars, pars, drop = FALSE]
 
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -397,6 +497,9 @@ get_varcov.mixed <- function(x, ...) {
     vc <- .fix_negative_matrix(vc)
   }
 
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
 
@@ -408,6 +511,9 @@ get_varcov.cpglmm <- function(x, ...) {
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -425,6 +531,9 @@ get_varcov.cglm <- function(x, ...) {
     vc <- .fix_negative_matrix(vc)
   }
 
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
 
@@ -435,11 +544,14 @@ get_varcov.cglm <- function(x, ...) {
 get_varcov.mixor <- function(x, effects = c("all", "fixed", "random"), ...) {
   effects <- match.arg(effects)
   params <- find_parameters(x, effects = effects, flatten = TRUE)
-  vc <- as.matrix(stats::vcov(x))[params, params]
+  vc <- as.matrix(stats::vcov(x))[params, params, drop = FALSE]
 
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -452,6 +564,9 @@ get_varcov.gamm <- function(x, ...) {
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -466,6 +581,9 @@ get_varcov.list <- function(x, ...) {
       vc <- .fix_negative_matrix(vc)
     }
 
+    # fix possible missings due to rank deficient model matrix
+    vc <- .fix_rank_deficiency(vc)
+
     .remove_backticks_from_matrix_names(as.matrix(vc))
   }
 }
@@ -479,6 +597,9 @@ get_varcov.BBmm <- function(x, ...) {
     vc <- .fix_negative_matrix(vc)
   }
 
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
 
@@ -491,6 +612,9 @@ get_varcov.BBreg <- function(x, ...) {
     vc <- .fix_negative_matrix(vc)
   }
 
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
 
@@ -502,6 +626,9 @@ get_varcov.feis <- function(x, ...) {
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -518,6 +645,9 @@ get_varcov.glimML <- function(x, ...) {
     vc <- .fix_negative_matrix(vc)
   }
 
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
 
@@ -532,6 +662,9 @@ get_varcov.vglm <- function(x, ...) {
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -549,6 +682,9 @@ get_varcov.geeglm <- function(x, ...) {
     vc <- .fix_negative_matrix(vc)
   }
 
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
 
@@ -556,11 +692,14 @@ get_varcov.geeglm <- function(x, ...) {
 #' @export
 get_varcov.tobit <- function(x, ...) {
   coef_names <- find_parameters(x, flatten = TRUE)
-  vc <- stats::vcov(x)[coef_names, coef_names]
+  vc <- stats::vcov(x)[coef_names, coef_names, drop = FALSE]
 
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -573,6 +712,9 @@ get_varcov.lmRob <- function(x, ...) {
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -590,6 +732,9 @@ get_varcov.gee <- function(x, ...) {
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
@@ -633,4 +778,13 @@ get_varcov.LORgee <- get_varcov.gee
   } else {
     m
   }
+}
+
+
+.fix_rank_deficiency <- function(m) {
+  if (anyNA(m)) {
+    warning("Model matrix is rank deficient. Some variance-covariance parameters are missing.", call. = FALSE)
+    m <- m[!is.na]
+  }
+  m
 }

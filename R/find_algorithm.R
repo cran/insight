@@ -288,6 +288,29 @@ find_algorithm.stanreg <- function(x, ...) {
 
 
 #' @export
+find_algorithm.stanfit <- function(x, ...) {
+  info <- x@sim
+  algorithm <- unlist(x@stan_args)
+
+  list(
+    "algorithm" = as.vector(algorithm["algorithm"]),
+    "chains" = info$chains,
+    "iterations" = info$iter,
+    "warmup" = info$warmup
+  )
+}
+
+
+#' @export
+find_algorithm.bayesQR <- function(x, ...) {
+  list(
+    "algorithm" = x[[1]]$method,
+    "iterations" = nrow(x[[1]]$betadraw)
+  )
+}
+
+
+#' @export
 find_algorithm.brmsfit <- function(x, ...) {
   info <- x$fit@sim
 

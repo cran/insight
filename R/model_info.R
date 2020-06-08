@@ -36,6 +36,7 @@
 #'      \item \code{is_survival}: model is a survival model
 #'      \item \code{is_zero_inflated}: model has zero-inflation component
 #'      \item \code{is_hurdle}: model has zero-inflation component and is a hurdle-model (truncated family distribution)
+#'      \item \code{is_dispersion}: model has dispersion component
 #'      \item \code{is_mixed}: model is a mixed effects model (with random effects)
 #'      \item \code{is_multivariate}: model is a multivariate response model (currently only works for \emph{brmsfit} objects)
 #'      \item \code{is_trial}: model response contains additional information about the trials
@@ -178,6 +179,9 @@ model_info.plm <- model_info.mmclogit
 
 #' @export
 model_info.mcmc <- model_info.mmclogit
+
+#' @export
+model_info.bayesQR <- model_info.mmclogit
 
 #' @export
 model_info.gls <- model_info.mmclogit
@@ -618,6 +622,30 @@ model_info.stanmvreg <- function(x, ...) {
 
 
 #' @export
+model_info.robmixglm <- function(x, ...) {
+  f <- switch(
+    tolower(x$family),
+    gaussian = stats::gaussian("identity"),
+    binomial = stats::binomial("logit"),
+    poisson = stats::poisson("log"),
+    gamma = stats::Gamma("inverse"),
+    truncpoisson = stats::poisson("log"),
+    stats::gaussian("identity")
+  )
+  .make_family(
+    x = x,
+    fitfam = f$family,
+    logit.link = f$link == "logit",
+    multi.var = FALSE,
+    link.fun = f$link,
+    zero.inf = x$family == "truncpoisson",
+    hurdle = x$family == "truncpoisson",
+    ...
+  )
+}
+
+
+#' @export
 model_info.Arima <- function(x, ...) {
   .make_family(x, ...)
 }
@@ -850,6 +878,7 @@ model_info.glmmTMB <- function(x, ...) {
     hurdle = grepl("truncated", faminfo$family),
     logit.link = faminfo$link == "logit",
     link.fun = faminfo$link,
+    dispersion = !.is_empty_object(lme4::fixef(x)$disp),
     ...
   )
 }
@@ -962,3 +991,41 @@ model_info.gamlss <- function(x, ...) {
     ...
   )
 }
+
+
+
+
+
+# mfx models -------------------------------
+
+
+#' @export
+model_info.betamfx <- function(x, ...) {
+  model_info.betareg(x$fit)
+}
+
+#' @export
+model_info.betaor <- model_info.betamfx
+
+#' @export
+model_info.logitmfx <- function(x, ...) {
+  model_info.default(x$fit, ...)
+}
+
+#' @export
+model_info.poissonmfx <- model_info.logitmfx
+
+#' @export
+model_info.negbinmfx <- model_info.logitmfx
+
+#' @export
+model_info.probitmfx <- model_info.logitmfx
+
+#' @export
+model_info.logitor <- model_info.logitmfx
+
+#' @export
+model_info.poissonirr <- model_info.logitmfx
+
+#' @export
+model_info.negbinirr <- model_info.logitmfx

@@ -153,7 +153,8 @@ get_data.complmrob <- get_data.gls
 #' @export
 get_data.nlrq <- get_data.gls
 
-
+#' @export
+get_data.robmixglm <- get_data.gls
 
 
 
@@ -823,6 +824,42 @@ get_data.stanmvreg <- function(x, ...) {
 
   .prepare_get_data(x, mf)
 }
+
+
+
+
+
+
+# mfx models ------------------------------------------------------
+
+#' @export
+get_data.betamfx <- function(x, ...) {
+  get_data(x$fit, ...)
+}
+
+#' @export
+get_data.betaor <- get_data.betamfx
+
+#' @export
+get_data.logitor <- get_data.betamfx
+
+#' @export
+get_data.poissonirr <- get_data.betamfx
+
+#' @export
+get_data.negbinirr <- get_data.betamfx
+
+#' @export
+get_data.logitmfx <- get_data.betamfx
+
+#' @export
+get_data.poissonmfx <- get_data.betamfx
+
+#' @export
+get_data.probitmfx <- get_data.betamfx
+
+#' @export
+get_data.negbinmfx <- get_data.betamfx
 
 
 

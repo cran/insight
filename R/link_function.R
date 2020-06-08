@@ -172,6 +172,8 @@ link_function.cgam <- link_function.default
 
 
 
+
+
 # Logit link ------------------------
 
 
@@ -283,8 +285,64 @@ link_function.mixor <- link_function.clm
 
 
 
+# mfx models ------------------------------------------------------
+
+
+#' @rdname link_function
+#' @export
+link_function.betamfx <- function(x, what = c("mean", "precision"), ...) {
+  what <- match.arg(what)
+  link_function.betareg(x$fit, what = what, ...)
+}
+
+#' @export
+link_function.betaor <- link_function.betamfx
+
+#' @export
+link_function.logitmfx <- function(x, ...) {
+  link_function(x$fit, ...)
+}
+
+#' @export
+link_function.poissonmfx <- link_function.logitmfx
+
+#' @export
+link_function.negbinmfx <- link_function.logitmfx
+
+#' @export
+link_function.probitmfx <- link_function.logitmfx
+
+#' @export
+link_function.negbinirr <- link_function.logitmfx
+
+#' @export
+link_function.poissonirr <- link_function.logitmfx
+
+#' @export
+link_function.logitor <- link_function.logitmfx
+
+
+
+
+
+
+
 # Other models -----------------------------
 
+
+
+#' @export
+link_function.robmixglm <- function(x, ...) {
+  switch(
+    tolower(x$family),
+    gaussian = stats::make.link(link = "identity")$linkfun,
+    binomial = stats::make.link(link = "logit")$linkfun,
+    gamma = stats::make.link(link = "inverse")$linkfun,
+    poisson = ,
+    truncpoisson = stats::make.link(link = "log")$linkfun,
+    stats::make.link(link = "identity")$linkfun
+  )
+}
 
 
 #' @export

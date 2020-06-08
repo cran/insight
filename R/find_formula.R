@@ -180,6 +180,21 @@ find_formula.gamm <- function(x, ...) {
 
 
 #' @export
+find_formula.betareg <- function(x, ...) {
+  f <- stats::formula(x)
+  fs <- .safe_deparse(f)
+
+  if (grepl("|", fs, fixed = TRUE)) {
+    fs <- trimws(unlist(strsplit(fs, "|", fixed = TRUE)))
+    list(conditional = stats::as.formula(fs[1]),
+         precision = stats::as.formula(paste0("~", fs[2])))
+  } else {
+    list(conditional = f)
+  }
+}
+
+
+#' @export
 find_formula.rma <- function(x, ...) {
   NULL
 }
@@ -306,6 +321,46 @@ find_formula.cglm <- function(x, ...) {
     }
   )
 }
+
+
+
+
+
+
+
+# mfx models ---------------------------------------
+
+
+#' @export
+find_formula.betamfx <- find_formula.betareg
+
+#' @export
+find_formula.betaor <- find_formula.betareg
+
+#' @export
+find_formula.logitmfx <- function(x, ...) {
+  find_formula.default(x$fit, ...)
+}
+
+#' @export
+find_formula.poissonmfx <- find_formula.logitmfx
+
+#' @export
+find_formula.negbinmfx <- find_formula.logitmfx
+
+#' @export
+find_formula.logitor <- find_formula.logitmfx
+
+#' @export
+find_formula.negbinirr <- find_formula.logitmfx
+
+#' @export
+find_formula.poissonirr <- find_formula.logitmfx
+
+#' @export
+find_formula.probitmfx <- find_formula.logitmfx
+
+
 
 
 

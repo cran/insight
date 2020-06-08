@@ -12,9 +12,10 @@
 #'    or both be returned? Only applies to mixed models. May be abbreviated.
 #' @param component Should all parameters, parameters for the
 #'    conditional model, the zero-inflated part of the model, the dispersion
-#'    term or the instrumental variables be returned? Applies to models
-#'    with zero-inflated and/or dispersion formula, or to models with instrumental
-#'    variable (so called fixed-effects regressions). May be abbreviated. Note that the
+#'    term, the instrumental variables or marginal effects be returned? Applies
+#'    to models with zero-inflated and/or dispersion formula, or to models with
+#'    instrumental variables (so called fixed-effects regressions), or models
+#'    with marginal effects from \pkg{mfx}. May be abbreviated. Note that the
 #'   \emph{conditional} component is also called \emph{count} or \emph{mean}
 #'   component, depending on the model.
 #' @param ... Currently not used.
@@ -31,6 +32,7 @@
 #'      \item \code{dispersion}, the dispersion parameters
 #'      \item \code{simplex}, simplex parameters of monotonic effects (\pkg{brms} only)
 #'      \item \code{smooth_terms}, the smooth parameters
+#'      \item \code{marginal}, the marginal effects (for models from \pkg{mfx})
 #'    }
 #'
 #' @details In most cases when models either return different "effects" (fixed,
@@ -91,6 +93,101 @@ find_parameters.default <- function(x, flatten = FALSE, ...) {
 find_parameters.data.frame <- function(x, flatten = FALSE, ...) {
   stop("A data frame is no valid object for this function.")
 }
+
+
+
+
+
+
+
+# mfx -----------------------------------------------
+
+
+#' @rdname find_parameters
+#' @export
+find_parameters.betamfx <- function(x, component = c("all", "conditional", "precision", "marginal"), flatten = FALSE, ...) {
+
+  pars <- list(
+    marginal = .remove_backticks_from_string(rownames(x$mfxest)),
+    conditional = .remove_backticks_from_string(names(x$fit$coefficients$mean)),
+    precision = .remove_backticks_from_string(names(x$fit$coefficients$precision))
+  )
+
+  component <- match.arg(component)
+  elements <- .get_elements(effects = "all", component = component)
+  pars <- .compact_list(pars[elements])
+
+  if (flatten) {
+    unique(unlist(pars))
+  } else {
+    pars
+  }
+}
+
+
+
+#' @export
+find_parameters.betaor <- function(x, component = c("all", "conditional", "precision"), flatten = FALSE, ...) {
+  pars <- list(
+    conditional = .remove_backticks_from_string(names(x$fit$coefficients$mean)),
+    precision = .remove_backticks_from_string(names(x$fit$coefficients$precision))
+  )
+
+  component <- match.arg(component)
+  elements <- .get_elements(effects = "all", component = component)
+  pars <- .compact_list(pars[elements])
+
+  if (flatten) {
+    unique(unlist(pars))
+  } else {
+    pars
+  }
+}
+
+
+#' @rdname find_parameters
+#' @export
+find_parameters.logitmfx <- function(x, component = c("all", "conditional", "marginal"), flatten = FALSE, ...) {
+  p <- .remove_backticks_from_string(names(stats::coef(x$fit)))
+  pars <- list(marginal = .remove_backticks_from_string(rownames(x$mfxest)), conditional = p)
+
+  component <- match.arg(component)
+  elements <- .get_elements(effects = "all", component = component)
+  pars <- .compact_list(pars[elements])
+
+  if (flatten) {
+    unique(unlist(pars))
+  } else {
+    pars
+  }
+}
+
+#' @export
+find_parameters.poissonmfx <- find_parameters.logitmfx
+
+#' @export
+find_parameters.negbinmfx <- find_parameters.logitmfx
+
+#' @export
+find_parameters.probitmfx <- find_parameters.logitmfx
+
+#' @export
+find_parameters.logitor <- function(x, flatten = FALSE, ...) {
+  pars <- list(conditional = .remove_backticks_from_string(names(stats::coef(x$fit))))
+
+  if (flatten) {
+    unique(unlist(pars))
+  } else {
+    pars
+  }
+}
+
+#' @export
+find_parameters.poissonirr <- find_parameters.logitor
+
+#' @export
+find_parameters.negbinirr <- find_parameters.logitor
+
 
 
 
@@ -622,17 +719,13 @@ find_parameters.zeroinfl <- function(x, component = c("all", "conditional", "zi"
   .filter_parameters(l, effects = "all", component = component, flatten = flatten, recursive = FALSE)
 }
 
-
-#' @rdname find_parameters
 #' @export
 find_parameters.hurdle <- find_parameters.zeroinfl
-
 
 #' @export
 find_parameters.zerotrunc <- find_parameters.default
 
 
-#' @rdname find_parameters
 #' @export
 find_parameters.zcpglm <- function(x, component = c("all", "conditional", "zi", "zero_inflated"), flatten = FALSE, ...) {
   cf <- stats::coef(x)
@@ -1057,6 +1150,46 @@ find_parameters.mcmc <- function(x, flatten = FALSE, parameters = NULL, ...) {
 
 
 
+#' @export
+find_parameters.bayesQR <- function(x, flatten = FALSE, parameters = NULL, ...) {
+  l <- .filter_pars(list(conditional = x[[1]]$names), parameters)
+
+  if (flatten) {
+    unique(unlist(l))
+  } else {
+    l
+  }
+}
+
+
+
+#' @export
+find_parameters.stanfit <- function(x, effects = c("all", "fixed", "random"), flatten = FALSE, parameters = NULL, ...) {
+  fe <- colnames(as.data.frame(x))
+
+  cond <- fe[grepl(pattern = "^(?!(b\\[|sigma|Sigma|lp__))", fe, perl = TRUE) & .grep_non_smoothers(fe)]
+  rand <- fe[grepl(pattern = "^b\\[", fe, perl = TRUE)]
+
+  l <- .compact_list(list(
+    conditional = cond,
+    random = rand
+  ))
+
+  l <- .filter_pars(l, parameters)
+
+  effects <- match.arg(effects)
+  elements <- .get_elements(effects, component = "all")
+  l <- .compact_list(l[elements])
+
+  if (flatten) {
+    unique(unlist(l))
+  } else {
+    l
+  }
+}
+
+
+
 
 
 
@@ -1155,6 +1288,20 @@ find_parameters.wbgee <- find_parameters.wbm
 
 
 # Other models -----------------------------------
+
+
+#' @export
+find_parameters.emmGrid <- function(x, flatten = TRUE, ...) {
+  s <- summary(x)
+  estimate_pos <- which(colnames(s) == x@misc$estName)
+  out <- list(conditional = colnames(s)[1:(estimate_pos - 1)])
+
+  if (flatten) {
+    unique(unlist(out))
+  } else {
+    out
+  }
+}
 
 
 #' @importFrom stats na.omit coef

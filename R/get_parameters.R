@@ -146,7 +146,6 @@ get_parameters.crqs <- get_parameters.crq
 
 
 #' @importFrom stats setNames
-#' @rdname get_parameters
 #' @export
 get_parameters.rqss <- function(x, component = c("all", "conditional", "smooth_terms"), ...) {
   component <- match.arg(component)
@@ -164,7 +163,6 @@ get_parameters.rqss <- function(x, component = c("all", "conditional", "smooth_t
 
 
 #' @importFrom stats setNames
-#' @rdname get_parameters
 #' @export
 get_parameters.cgam <- function(x, component = c("all", "conditional", "smooth_terms"), ...) {
   component <- match.arg(component)
@@ -187,7 +185,112 @@ get_parameters.cgam <- function(x, component = c("all", "conditional", "smooth_t
 
 
 
+
+# mfx models ---------------------------------------------
+
+
+#' @rdname get_parameters
+#' @export
+get_parameters.betamfx <- function(x, component = c("all", "conditional", "precision", "marginal"), ...) {
+  component <- match.arg(component)
+  params <- get_parameters.betareg(x$fit, component = "all", ...)
+  mfx <- x$mfxest
+
+  params <- rbind(
+    data.frame(
+      Parameter = gsub("^\\(phi\\)_", "", rownames(mfx)),
+      Estimate = as.vector(mfx[, 1]),
+      Component = "marginal",
+      stringsAsFactors = FALSE
+    ),
+    params
+  )
+
+  if (component != "all") {
+    params <- params[params$Component == component, , drop = FALSE]
+  }
+
+  .remove_backticks_from_parameter_names(params)
+}
+
+
+#' @export
+get_parameters.betaor <- function(x, component = c("all", "conditional", "precision"), ...) {
+  component <- match.arg(component)
+  get_parameters.betareg(x$fit, component = component, ...)
+}
+
+
+
+#' @rdname get_parameters
+#' @export
+get_parameters.logitmfx <- function(x, component = c("all", "conditional", "marginal"), ...) {
+  params <- get_parameters.default(x$fit, ...)
+  params$Component = "conditional"
+  mfx <- x$mfxest
+
+  params <- rbind(
+    data.frame(
+      Parameter = rownames(mfx),
+      Estimate = as.vector(mfx[, 1]),
+      Component = "marginal",
+      stringsAsFactors = FALSE
+    ),
+    params
+  )
+
+  component <- match.arg(component)
+  if (component != "all") {
+    params <- params[params$Component == component, , drop = FALSE]
+  }
+
+  .remove_backticks_from_parameter_names(params)
+}
+
+#' @export
+get_parameters.poissonmfx <- get_parameters.logitmfx
+
+#' @export
+get_parameters.negbinmfx <- get_parameters.logitmfx
+
+#' @export
+get_parameters.probitmfx <- get_parameters.logitmfx
+
+#' @export
+get_parameters.logitor <- function(x, ...) {
+  get_parameters.default(x$fit, ...)
+}
+
+#' @export
+get_parameters.poissonirr <- get_parameters.logitor
+
+#' @export
+get_parameters.negbinirr <- get_parameters.logitor
+
+
+
+
+
+
+
+
 # Special models ---------------------------------------------
+
+
+#' @export
+get_parameters.emmGrid <- function(x, ...) {
+  s <- summary(x)
+  estimate_pos <- which(colnames(s) == x@misc$estName)
+
+  params <- data.frame(
+    s[, 1:(estimate_pos - 1), drop = FALSE],
+    Estimate = s[[estimate_pos]],
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  .remove_backticks_from_parameter_names(params)
+}
 
 
 #' @rdname get_parameters
@@ -335,7 +438,7 @@ get_parameters.betareg <- function(x, component = c("all", "conditional", "preci
   cf <- stats::coef(x)
 
   params <- data.frame(
-    Parameter = names(cf),
+    Parameter = gsub("^\\(phi\\)_", "", names(cf)),
     Estimate = unname(cf),
     Component = c(rep("conditional", length(x$coefficients$mean)), rep("precision", length(x$coefficients$precision))),
     stringsAsFactors = FALSE,
@@ -348,6 +451,7 @@ get_parameters.betareg <- function(x, component = c("all", "conditional", "preci
 
   .remove_backticks_from_parameter_names(params)
 }
+
 
 
 #' @rdname get_parameters
@@ -721,7 +825,6 @@ get_parameters.rlmerMod <- get_parameters.merMod
 #' @export
 get_parameters.glmmadmb <- get_parameters.merMod
 
-#' @rdname get_parameters
 #' @export
 get_parameters.lme <- get_parameters.merMod
 
@@ -791,7 +894,6 @@ get_parameters.mixed <- function(x, effects = c("fixed", "random"), ...) {
 
 
 
-#' @rdname get_parameters
 #' @export
 get_parameters.MixMod <- function(x, effects = c("fixed", "random"), component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), ...) {
   if (!requireNamespace("lme4", quietly = TRUE)) {
@@ -1067,7 +1169,6 @@ get_parameters.glimML <- function(x, effects = c("fixed", "random", "all"), ...)
 # GAM models ---------------------------------------------
 
 
-#' @rdname get_parameters
 #' @export
 get_parameters.gamm <- function(x, component = c("all", "conditional", "smooth_terms"), ...) {
   x <- x$gam
@@ -1077,7 +1178,6 @@ get_parameters.gamm <- function(x, component = c("all", "conditional", "smooth_t
 
 
 
-#' @rdname get_parameters
 #' @export
 get_parameters.Gam <- function(x, component = c("all", "conditional", "smooth_terms"), ...) {
   component <- match.arg(component)
@@ -1111,7 +1211,6 @@ get_parameters.gam <- function(x, component = c("all", "conditional", "smooth_te
 
 
 
-#' @rdname get_parameters
 #' @export
 get_parameters.vgam <- function(x, component = c("all", "conditional", "smooth_terms"), ...) {
   component <- match.arg(component)
@@ -1431,6 +1530,9 @@ get_parameters.stanreg <- function(x, effects = c("fixed", "random", "all"), par
   as.data.frame(x)[.get_parms_data(x, effects, "all", parameters)]
 }
 
+#' @export
+get_parameters.stanfit <- get_parameters.stanreg
+
 
 #' @export
 get_parameters.bcplm <- function(x, parameters = NULL, ...) {
@@ -1442,7 +1544,6 @@ get_parameters.bcplm <- function(x, parameters = NULL, ...) {
 }
 
 
-#' @rdname find_parameters
 #' @export
 get_parameters.bayesx <- function(x, component = c("conditional", "smooth_terms", "all"), ...) {
   component <- match.arg(component)
@@ -1507,6 +1608,15 @@ get_parameters.sim <- function(x, parameters = NULL, ...) {
 get_parameters.mcmc <- function(x, parameters = NULL, ...) {
   as.data.frame(x)[.get_parms_data(x, "all", "all", parameters)]
 }
+
+
+#' @export
+get_parameters.bayesQR <- function(x, parameters = NULL, ...) {
+  out <- as.data.frame(x[[1]]$betadraw)
+  names(out) <- x[[1]]$names
+  out[.get_parms_data(x, "all", "all", parameters)]
+}
+
 
 
 

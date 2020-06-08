@@ -2,24 +2,19 @@
 % Please edit documentation in R/get_parameters.R
 \name{get_parameters}
 \alias{get_parameters}
-\alias{get_parameters.rqss}
-\alias{get_parameters.cgam}
+\alias{get_parameters.betamfx}
+\alias{get_parameters.logitmfx}
 \alias{get_parameters.averaging}
 \alias{get_parameters.betareg}
 \alias{get_parameters.DirichletRegModel}
 \alias{get_parameters.clm2}
 \alias{get_parameters.coxme}
 \alias{get_parameters.merMod}
-\alias{get_parameters.lme}
 \alias{get_parameters.mixed}
-\alias{get_parameters.MixMod}
 \alias{get_parameters.glmmTMB}
 \alias{get_parameters.BBmm}
 \alias{get_parameters.glimML}
-\alias{get_parameters.gamm}
-\alias{get_parameters.Gam}
 \alias{get_parameters.gam}
-\alias{get_parameters.vgam}
 \alias{get_parameters.zeroinfl}
 \alias{get_parameters.zcpglm}
 \alias{get_parameters.MCMCglmm}
@@ -32,9 +27,13 @@
 \usage{
 get_parameters(x, ...)
 
-\method{get_parameters}{rqss}(x, component = c("all", "conditional", "smooth_terms"), ...)
+\method{get_parameters}{betamfx}(
+  x,
+  component = c("all", "conditional", "precision", "marginal"),
+  ...
+)
 
-\method{get_parameters}{cgam}(x, component = c("all", "conditional", "smooth_terms"), ...)
+\method{get_parameters}{logitmfx}(x, component = c("all", "conditional", "marginal"), ...)
 
 \method{get_parameters}{averaging}(x, component = c("conditional", "full"), ...)
 
@@ -48,16 +47,7 @@ get_parameters(x, ...)
 
 \method{get_parameters}{merMod}(x, effects = c("fixed", "random"), ...)
 
-\method{get_parameters}{lme}(x, effects = c("fixed", "random"), ...)
-
 \method{get_parameters}{mixed}(x, effects = c("fixed", "random"), ...)
-
-\method{get_parameters}{MixMod}(
-  x,
-  effects = c("fixed", "random"),
-  component = c("all", "conditional", "zi", "zero_inflated", "dispersion"),
-  ...
-)
 
 \method{get_parameters}{glmmTMB}(
   x,
@@ -70,13 +60,7 @@ get_parameters(x, ...)
 
 \method{get_parameters}{glimML}(x, effects = c("fixed", "random", "all"), ...)
 
-\method{get_parameters}{gamm}(x, component = c("all", "conditional", "smooth_terms"), ...)
-
-\method{get_parameters}{Gam}(x, component = c("all", "conditional", "smooth_terms"), ...)
-
 \method{get_parameters}{gam}(x, component = c("all", "conditional", "smooth_terms"), ...)
-
-\method{get_parameters}{vgam}(x, component = c("all", "conditional", "smooth_terms"), ...)
 
 \method{get_parameters}{zeroinfl}(
   x,
@@ -138,9 +122,10 @@ get_parameters(x, ...)
 
 \item{component}{Should all parameters, parameters for the
  conditional model, the zero-inflated part of the model, the dispersion
- term or the instrumental variables be returned? Applies to models
- with zero-inflated and/or dispersion formula, or to models with instrumental
- variable (so called fixed-effects regressions). May be abbreviated. Note that the
+ term, the instrumental variables or marginal effects be returned? Applies
+ to models with zero-inflated and/or dispersion formula, or to models with
+ instrumental variables (so called fixed-effects regressions), or models
+ with marginal effects from \pkg{mfx}. May be abbreviated. Note that the
 \emph{conditional} component is also called \emph{count} or \emph{mean}
 component, depending on the model.}
 

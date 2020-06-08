@@ -90,6 +90,7 @@ link_inverse.bigglm <- link_inverse.glm
 
 
 
+
 # Tobit Family ---------------------------------
 
 
@@ -318,7 +319,64 @@ link_inverse.mixor <- link_inverse.clm
 
 
 
+# mfx models ------------------------------------------------------
+
+
+#' @rdname link_inverse
+#' @export
+link_inverse.betamfx <- function(x, what = c("mean", "precision"), ...) {
+  what <- match.arg(what)
+  link_inverse.betareg(x$fit, what = what, ...)
+}
+
+#' @export
+link_inverse.betaor <- link_inverse.betamfx
+
+#' @export
+link_inverse.logitmfx <- function(x, ...) {
+  link_inverse(x$fit, ...)
+}
+
+#' @export
+link_inverse.poissonmfx <- link_inverse.logitmfx
+
+#' @export
+link_inverse.probitmfx <- link_inverse.logitmfx
+
+#' @export
+link_inverse.negbinmfx <- link_inverse.logitmfx
+
+#' @export
+link_inverse.logitor <- link_inverse.logitmfx
+
+#' @export
+link_inverse.probitirr <- link_inverse.logitmfx
+
+#' @export
+link_inverse.negbinirr <- link_inverse.logitmfx
+
+
+
+
+
+
+
+
 # Other models ----------------------------
+
+
+#' @export
+link_inverse.robmixglm <- function(x, ...) {
+  switch(
+    tolower(x$family),
+    gaussian = stats::make.link(link = "identity")$linkinv,
+    binomial = stats::make.link(link = "logit")$linkinv,
+    gamma = stats::make.link(link = "inverse")$linkinv,
+    poisson = ,
+    truncpoisson = stats::make.link(link = "log")$linkinv,
+    stats::make.link(link = "identity")$linkinv
+  )
+}
 
 
 #' @export
