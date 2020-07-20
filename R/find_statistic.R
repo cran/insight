@@ -71,9 +71,11 @@ find_statistic <- function(x, ...) {
       "nlmerMod",
       "nlrq",
       "nls",
+      "ols",
       "orcutt",
       "polr",
       "rlm",
+      "rms",
       "rlmerMod",
       "rq",
       "rqss",
@@ -102,6 +104,7 @@ find_statistic <- function(x, ...) {
       "brglmFit",
       "brmultinom",
       "cglm",
+      "cph",
       "clm",
       "clm2",
       "clmm",
@@ -117,6 +120,7 @@ find_statistic <- function(x, ...) {
       "flexsurvreg",
       "gee",
       "glimML",
+      "glmm",
       "glmmadmb",
       "glmmLasso",
       "glmmTMB",
@@ -143,6 +147,7 @@ find_statistic <- function(x, ...) {
       "negbinirr",
       "nlreg",
       "objectiveML",
+      "orm",
       "poissonmfx",
       "poissonirr",
       "psm",
@@ -226,6 +231,14 @@ find_statistic <- function(x, ...) {
 
   unclear.mods <-
     c("plm")
+
+  if (inherits(x, "glht")) {
+    if (x$df == 0) {
+      z.mods <- c(z.mods, "glht")
+    } else {
+      t.mods <- c(t.mods, "glht")
+    }
+  }
 
   # no statistic -------------------------------------------------------------
 

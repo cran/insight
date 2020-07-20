@@ -6,6 +6,10 @@
 #'
 #' @param iterations Number of posterior draws.
 #' @param progress Display progress.
+#' @param summary Logical, indicates whether the full posterior samples
+#'   (\code{summary = FALSE})) or the summarized centrality indices of
+#'   the posterior samples (\code{summary = TRUE})) should be returned as
+#'   estimates.
 #' @param ... Currently not used.
 #'
 #' @inheritParams find_parameters
@@ -214,6 +218,7 @@ get_parameters.betamfx <- function(x, component = c("all", "conditional", "preci
 }
 
 
+
 #' @export
 get_parameters.betaor <- function(x, component = c("all", "conditional", "precision"), ...) {
   component <- match.arg(component)
@@ -278,6 +283,24 @@ get_parameters.negbinirr <- get_parameters.logitor
 
 
 #' @export
+get_parameters.glht <- function(x, ...) {
+  s <- summary(x)
+  alt <- switch(
+    x$alternative,
+    two.sided = "==",
+    less = ">=",
+    greater = "<="
+  )
+  out <- data.frame(
+    Parameter = paste(names(s$test$coefficients), alt, x$rhs),
+    Estimate = unname(s$test$coefficients),
+    stringsAsFactors = FALSE
+  )
+  .remove_backticks_from_parameter_names(out)
+}
+
+
+#' @export
 get_parameters.emmGrid <- function(x, ...) {
   s <- summary(x)
   estimate_pos <- which(colnames(s) == x@misc$estName)
@@ -330,6 +353,10 @@ get_parameters.lrm <- function(x, ...) {
     }
   )
 }
+
+
+#' @export
+get_parameters.orm <- get_parameters.lrm
 
 
 #' @export
@@ -531,6 +558,20 @@ get_parameters.rma <- function(x, ...) {
 }
 
 
+#' @export
+get_parameters.metaplus <- function(x, ...) {
+  params <- data.frame(
+    Parameter = rownames(x$results),
+    Estimate = unname(x$results[, 1]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  params$Parameter[grepl("muhat", params$Parameter)] <- "(Intercept)"
+  .remove_backticks_from_parameter_names(params)
+}
+
+
 
 
 
@@ -654,7 +695,31 @@ get_parameters.clm2 <- function(x, component = c("all", "conditional", "scale"),
 
 
 #' @export
+get_parameters.glmm <- function(x, effects = c("all", "fixed", "random"),  ...) {
+  effects <- match.arg(effects)
+
+  params <- data.frame(
+    Parameter = names(c(x$beta, x$nu)),
+    Estimate = unname(c(x$beta, x$nu)),
+    Effects = c(rep("fixed", times = length(x$beta)), rep("random", times = length(x$nu))),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  if (effects != "all") {
+    params <- params[params$Effects == effects, , drop = FALSE]
+    params$Effects <- NULL
+  }
+
+  .remove_backticks_from_parameter_names(params)
+}
+
+
+
+#' @export
 get_parameters.clmm2 <- get_parameters.clm2
+
+
 
 #' @rdname get_parameters
 #' @export
@@ -1103,7 +1168,7 @@ get_parameters.BBmm <- function(x, effects = c("fixed", "random"), ...) {
   ))
 
   fixed <- data.frame(
-    Parameter = rownames(l$conditional),
+    Parameter = names(l$conditional),
     Estimate = l$conditional,
     stringsAsFactors = FALSE,
     row.names = NULL
@@ -1405,46 +1470,55 @@ get_parameters.afex_aov <- function(x, ...) {
 
 #' @rdname get_parameters
 #' @export
-get_parameters.MCMCglmm <- function(x, effects = c("fixed", "random", "all"), ...) {
+get_parameters.BGGM <- function(x, component = c("correlation", "conditional", "intercept", "all"), summary = FALSE, ...) {
+  if (!requireNamespace("BGGM", quietly = TRUE)) {
+    stop("Package 'BGGM' required for this function to work. Please install it.")
+  }
+
+  out <- as.data.frame(BGGM::posterior_samples(x))
+  intercepts <- grepl("_\\(Intercept\\)$", colnames(out))
+  correlations <- grepl("(.*)--(.*)", colnames(out))
+  conditional <- !intercepts & !correlations
+
+  component <- match.arg(component)
+  out <- switch(
+    component,
+    "conditional" = out[, conditional, drop = FALSE],
+    "correlation" = out[, correlations, drop = FALSE],
+    "intercept" = out[, intercepts, drop = FALSE],
+    out
+  )
+  if (isTRUE(summary)) {
+    out <- .summary_of_posteriors(out)
+  }
+  out
+}
+
+
+## TODO change to "summary = FALSE" once bayestestR 0.7.1 or higher on CRAN
+
+#' @rdname get_parameters
+#' @export
+get_parameters.MCMCglmm <- function(x, effects = c("fixed", "random", "all"), summary = TRUE, ...) {
   effects <- match.arg(effects)
-  sc <- summary(x)
 
-  l <- .compact_list(list(
-    conditional = sc$solutions[, 1],
-    random = sc$Gcovariances[, 1]
-  ))
+  nF <- x$Fixed$nfl
+  fixed <- as.data.frame(x$Sol[, 1:nF, drop = FALSE])
+  random <- as.data.frame(x$VCV[, find_random(x, split_nested = TRUE, flatten = TRUE), drop = FALSE])
+  all <- cbind(fixed, random)
 
-  names(l$conditional) <- rownames(sc$solutions)
-  names(l$random) <- rownames(sc$Gcovariances)
-
-  fixed <- data.frame(
-    Parameter = names(l$conditional),
-    Estimate = unname(l$conditional),
-    stringsAsFactors = FALSE
-  )
-
-  fixed <- .remove_backticks_from_parameter_names(fixed)
-
-  random <- data.frame(
-    Parameter = names(l$random),
-    Estimate = unname(l$random),
-    stringsAsFactors = FALSE
-  )
-
-  random <- .remove_backticks_from_parameter_names(random)
-
-  all <- rbind(
-    cbind(fixed, data.frame(Effects = "fixed", stringsAsFactors = FALSE)),
-    cbind(random, data.frame(Effects = "random", stringsAsFactors = FALSE))
-  )
-
-  if (effects == "fixed") {
+  out <- if (effects == "fixed") {
     fixed
   } else if (effects == "random") {
     random
   } else {
     all
   }
+
+  if (isTRUE(summary)) {
+    out <- .summary_of_posteriors(out)
+  }
+  out
 }
 
 
@@ -1484,7 +1558,7 @@ get_parameters.BFBayesFactor <- function(x, effects = c("all", "fixed", "random"
 
 #' @rdname get_parameters
 #' @export
-get_parameters.stanmvreg <- function(x, effects = c("fixed", "random", "all"), parameters = NULL, ...) {
+get_parameters.stanmvreg <- function(x, effects = c("fixed", "random", "all"), parameters = NULL, summary = FALSE, ...) {
   effects <- match.arg(effects)
   elements <- .get_elements(effects, "all")
   parms <- find_parameters(x, flatten = FALSE, parameters = parameters)
@@ -1500,13 +1574,18 @@ get_parameters.stanmvreg <- function(x, effects = c("fixed", "random", "all"), p
     parms[[i]]$sigma <- NULL
   }
 
-  as.data.frame(x)[unlist(lapply(.compact_list(parms), function(i) i[elements]))]
+  out <- as.data.frame(x)[unlist(lapply(.compact_list(parms), function(i) i[elements]))]
+
+  if (isTRUE(summary)) {
+    out <- .summary_of_posteriors(out)
+  }
+  out
 }
 
 
 #' @rdname get_parameters
 #' @export
-get_parameters.brmsfit <- function(x, effects = c("fixed", "random", "all"), component = c("all", "conditional", "zi", "zero_inflated", "dispersion", "simplex", "sigma", "smooth_terms"), parameters = NULL, ...) {
+get_parameters.brmsfit <- function(x, effects = c("fixed", "random", "all"), component = c("all", "conditional", "zi", "zero_inflated", "dispersion", "simplex", "sigma", "smooth_terms"), parameters = NULL, summary = FALSE, ...) {
   effects <- match.arg(effects)
   component <- match.arg(component)
 
@@ -1514,20 +1593,30 @@ get_parameters.brmsfit <- function(x, effects = c("fixed", "random", "all"), com
     parms <- find_parameters(x, flatten = FALSE, parameters = parameters)
     elements <- .get_elements(effects, component)
     ## TODO remove "optional = FALSE" in a future update
-    as.data.frame(x, optional = FALSE)[unlist(lapply(parms, function(i) i[elements]))]
+    out <- as.data.frame(x, optional = FALSE)[unlist(lapply(parms, function(i) i[elements]))]
   } else {
     ## TODO remove "optional = FALSE" in a future update
-    as.data.frame(x, optional = FALSE)[.get_parms_data(x, effects, component, parameters)]
+    out <- as.data.frame(x, optional = FALSE)[.get_parms_data(x, effects, component, parameters)]
   }
+
+  if (isTRUE(summary)) {
+    out <- .summary_of_posteriors(out)
+  }
+  out
 }
 
 
 
 #' @rdname get_parameters
 #' @export
-get_parameters.stanreg <- function(x, effects = c("fixed", "random", "all"), parameters = NULL, ...) {
+get_parameters.stanreg <- function(x, effects = c("fixed", "random", "all"), parameters = NULL, summary = FALSE, ...) {
   effects <- match.arg(effects)
-  as.data.frame(x)[.get_parms_data(x, effects, "all", parameters)]
+  out <- as.data.frame(x)[.get_parms_data(x, effects, "all", parameters)]
+
+  if (isTRUE(summary)) {
+    out <- .summary_of_posteriors(out)
+  }
+  out
 }
 
 #' @export
@@ -1535,17 +1624,20 @@ get_parameters.stanfit <- get_parameters.stanreg
 
 
 #' @export
-get_parameters.bcplm <- function(x, parameters = NULL, ...) {
-  samples <- as.data.frame(do.call(rbind, x$sims.list))
+get_parameters.bcplm <- function(x, parameters = NULL, summary = FALSE, ...) {
+  out <- as.data.frame(do.call(rbind, x$sims.list))
   if (!is.null(parameters)) {
-    samples <- samples[grepl(pattern = parameters, x = colnames(samples), perl = TRUE)]
+    out <- out[grepl(pattern = parameters, x = colnames(out), perl = TRUE)]
   }
-  samples
+  if (isTRUE(summary)) {
+    out <- .summary_of_posteriors(out)
+  }
+  out
 }
 
 
 #' @export
-get_parameters.bayesx <- function(x, component = c("conditional", "smooth_terms", "all"), ...) {
+get_parameters.bayesx <- function(x, component = c("conditional", "smooth_terms", "all"), summary = FALSE, ...) {
   component <- match.arg(component)
 
   smooth_dat <- data.frame(
@@ -1569,7 +1661,12 @@ get_parameters.bayesx <- function(x, component = c("conditional", "smooth_terms"
     "smooth_terms" = smooth_dat
   )
 
-  .remove_backticks_from_parameter_names(params)
+  out <- .remove_backticks_from_parameter_names(params)
+
+  if (isTRUE(summary)) {
+    out <- .summary_of_posteriors(out)
+  }
+  out
 }
 
 
@@ -1584,7 +1681,7 @@ get_parameters.bayesx <- function(x, component = c("conditional", "smooth_terms"
 
 #' @rdname get_parameters
 #' @export
-get_parameters.sim.merMod <- function(x, effects = c("fixed", "random", "all"), parameters = NULL, ...) {
+get_parameters.sim.merMod <- function(x, effects = c("fixed", "random", "all"), parameters = NULL, summary = FALSE, ...) {
   effects <- match.arg(effects)
   fe <- re <- NULL
   if (effects %in% c("fixed", "all")) fe <- .get_armsim_fixef_parms(x)
@@ -1592,29 +1689,47 @@ get_parameters.sim.merMod <- function(x, effects = c("fixed", "random", "all"), 
 
   dat <- do.call(cbind, .compact_list(list(fe, re)))
 
-  as.data.frame(dat)[.get_parms_data(x, effects, "all", parameters)]
+  out <- as.data.frame(dat)[.get_parms_data(x, effects, "all", parameters)]
+
+  if (isTRUE(summary)) {
+    out <- .summary_of_posteriors(out)
+  }
+  out
 }
 
 
 
 #' @export
-get_parameters.sim <- function(x, parameters = NULL, ...) {
+get_parameters.sim <- function(x, parameters = NULL, summary = FALSE, ...) {
   dat <- .get_armsim_fixef_parms(x)
-  as.data.frame(dat)[.get_parms_data(x, "all", "all", parameters)]
+  out <- as.data.frame(dat)[.get_parms_data(x, "all", "all", parameters)]
+
+  if (isTRUE(summary)) {
+    out <- .summary_of_posteriors(out)
+  }
+  out
 }
 
 
 #' @export
-get_parameters.mcmc <- function(x, parameters = NULL, ...) {
-  as.data.frame(x)[.get_parms_data(x, "all", "all", parameters)]
+get_parameters.mcmc <- function(x, parameters = NULL, summary = FALSE, ...) {
+  out <- as.data.frame(x)[.get_parms_data(x, "all", "all", parameters)]
+  if (isTRUE(summary)) {
+    out <- .summary_of_posteriors(out)
+  }
+  out
 }
 
 
 #' @export
-get_parameters.bayesQR <- function(x, parameters = NULL, ...) {
+get_parameters.bayesQR <- function(x, parameters = NULL, summary = FALSE, ...) {
   out <- as.data.frame(x[[1]]$betadraw)
   names(out) <- x[[1]]$names
-  out[.get_parms_data(x, "all", "all", parameters)]
+  out <- out[.get_parms_data(x, "all", "all", parameters)]
+  if (isTRUE(summary)) {
+    out <- .summary_of_posteriors(out)
+  }
+  out
 }
 
 
@@ -1749,4 +1864,21 @@ get_parameters.bayesQR <- function(x, parameters = NULL, ...) {
 .get_bf_posteriors <- function(posteriors, params) {
   cn <- intersect(colnames(posteriors), params)
   posteriors[, cn, drop = FALSE]
+}
+
+
+
+#' @importFrom stats median
+.summary_of_posteriors <- function(out, centrality = "mean", ...) {
+  s <- switch(
+    centrality,
+    "mean" = sapply(out, mean),
+    "median" = sapply(out, stats::median),
+    sapply(out, mean)
+  )
+  data.frame(
+    Parameter = names(s),
+    Estimate = unname(s),
+    stringsAsFactors = FALSE
+  )
 }

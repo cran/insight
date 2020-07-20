@@ -180,6 +180,12 @@ find_formula.gamm <- function(x, ...) {
 
 
 #' @export
+find_formula.glht <- function(x, ...) {
+  list(conditional = stats::formula(x$model))
+}
+
+
+#' @export
 find_formula.betareg <- function(x, ...) {
   f <- stats::formula(x)
   fs <- .safe_deparse(f)
@@ -198,6 +204,10 @@ find_formula.betareg <- function(x, ...) {
 find_formula.rma <- function(x, ...) {
   NULL
 }
+
+#' @export
+find_formula.metaplus <- find_formula.rma
+
 
 
 #' @export
@@ -977,11 +987,35 @@ find_formula.mmclogit <- function(x, ...) {
 }
 
 
+#' @export
+find_formula.glmm <- function(x, ...) {
+  f.cond <- stats::as.formula(x$fixedcall)
+  f.random <- lapply(x$randcall, function(.x) {
+    av <- all.vars(.x)
+    stats::as.formula(paste0("~1|", av[length(av)]))
+  })
+
+  if (length(f.random) == 1) {
+    f.random <- f.random[[1]]
+  }
+
+  .compact_list(list(conditional = f.cond, random = f.random))
+}
+
+
+
 
 
 
 
 # Bayesian models --------------------------------
+
+
+#' @export
+find_formula.BGGM <- function(x, ...) {
+  list(conditional = x$formula)
+}
+
 
 
 #' @export

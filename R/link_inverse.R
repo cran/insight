@@ -263,6 +263,12 @@ link_inverse.coxme <- link_inverse.gmnl
 link_inverse.lrm <- link_inverse.gmnl
 
 #' @export
+link_inverse.orm <- link_inverse.gmnl
+
+#' @export
+link_inverse.cph <- link_inverse.gmnl
+
+#' @export
 link_inverse.logistf <- link_inverse.gmnl
 
 #' @export
@@ -520,6 +526,18 @@ link_inverse.MCMCglmm <- function(x, ...) {
     "zapoisson" = ,
     "ztpoisson" = ,
     "hupoisson" = stats::make.link("log")$linkinv
+  )
+}
+
+
+#' @export
+link_inverse.glmm <- function(x, ...) {
+  switch(
+    tolower(x$family.glmm$family.glmm),
+    "bernoulli.glmm" = ,
+    "binomial.glmm" = stats::make.link("logit")$linkinv,
+    "poisson.glmm" = stats::make.link("log")$linkinv,
+    stats::gaussian(link = "identity")$linkinv
   )
 }
 

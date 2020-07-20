@@ -698,6 +698,23 @@ find_parameters.lme <- function(x, effects = c("all", "fixed", "random"), flatte
 
 
 
+#' @export
+find_parameters.glmm <- function(x, effects = c("all", "fixed", "random"), flatten = FALSE, ...) {
+  effects <- match.arg(effects)
+  s <- summary(x)
+  fe_params <- rownames(s$coefmat)
+  re_params <- rownames(s$nucoefmat)
+
+  l <- .compact_list(list(
+    conditional = fe_params,
+    random = re_params
+  ))
+
+  .filter_parameters(l, effects = effects, flatten = flatten)
+}
+
+
+
 
 
 
@@ -746,6 +763,34 @@ find_parameters.zcpglm <- function(x, component = c("all", "conditional", "zi", 
 
 
 # Bayesian models -----------------------------------------
+
+
+
+#' @rdname find_parameters
+#' @export
+find_parameters.BGGM <- function(x, component = c("correlation", "conditional", "intercept", "all"), flatten = FALSE, ...) {
+  component <- match.arg(component)
+  l <- switch(
+    component,
+    "correlation" = list(correlation = colnames(get_parameters(x, component = "correlation"))),
+    "conditional" = list(conditional = colnames(get_parameters(x, component = "conditional"))),
+    "intercept" = list(intercept = colnames(x$Y)),
+    "all" = list(
+      intercept = colnames(x$Y),
+      correlation = colnames(get_parameters(x, component = "correlation")),
+      conditional = colnames(get_parameters(x, component = "conditional"))
+    )
+  )
+
+  l <- .compact_list(l)
+
+  if (flatten) {
+    unique(unlist(l))
+  } else {
+    l
+  }
+}
+
 
 #' @rdname find_parameters
 #' @export
@@ -834,7 +879,7 @@ find_parameters.MCMCglmm <- function(x, effects = c("all", "fixed", "random"), f
 #' @rdname find_parameters
 #' @export
 find_parameters.brmsfit <- function(x, effects = c("all", "fixed", "random"), component = c("all", "conditional", "zi", "zero_inflated", "dispersion", "simplex", "sigma", "smooth_terms"), flatten = FALSE, parameters = NULL, ...) {
-  ## TODO remove "optional = FALSE" in a future update
+  ## TODO remove "optional = FALSE" in a future update?
   fe <- colnames(as.data.frame(x, optional = FALSE))
   is_mv <- NULL
 
@@ -1291,6 +1336,26 @@ find_parameters.wbgee <- find_parameters.wbm
 
 
 #' @export
+find_parameters.glht <- function(x, flatten = FALSE, ...) {
+  s <- summary(x)
+  alt <- switch(
+    x$alternative,
+    two.sided = "==",
+    less = ">=",
+    greater = "<="
+  )
+
+  l <- list(conditional = paste(names(s$test$coefficients), alt, x$rhs))
+
+  if (flatten) {
+    unique(unlist(l))
+  } else {
+    l
+  }
+}
+
+
+#' @export
 find_parameters.emmGrid <- function(x, flatten = TRUE, ...) {
   s <- summary(x)
   estimate_pos <- which(colnames(s) == x@misc$estName)
@@ -1429,7 +1494,7 @@ find_parameters.flexsurvreg <- find_parameters.lrm
 #' @export
 find_parameters.BBmm <- function(x, effects = c("all", "fixed", "random"), flatten = FALSE, ...) {
   l <- .compact_list(list(
-    conditional = rownames(x$fixed.coef),
+    conditional = names(x$fixed.coef),
     random = x$namesRand
   ))
 
@@ -1549,6 +1614,21 @@ find_parameters.rma <- function(x, flatten = FALSE, ...) {
       NULL
     }
   )
+}
+
+
+
+#' @export
+find_parameters.metaplus <- function(x, flatten = FALSE, ...) {
+  pars <- list(conditional = rownames(x$results))
+  pars$conditional[grepl("muhat", pars$conditional)] <- "(Intercept)"
+  pars$conditional <- .remove_backticks_from_string(pars$conditional)
+
+  if (flatten) {
+    unique(unlist(pars))
+  } else {
+    pars
+  }
 }
 
 

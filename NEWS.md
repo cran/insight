@@ -1,3 +1,29 @@
+# insight 0.9.0
+
+## New supported model classes
+
+* `BGGM` (*BGGM*), `metaplus` (*metaplus*), `glht` (*multcomp*), `glmm` (*glmm*), improved support for `manova` (*stats*)
+
+## New functions
+
+* Value formatting functions `format_bf()`, `format_pd()`, `format_p()`, `format_rope()` and `format_number()` were moved from package *parameters* to *insight*.
+
+## Changes to functions
+
+* `get_variance()` now also returns the corrlation among random slopes.
+* `get_variance()` now also (partially) supports `brmsfit` models.
+* `get_parameters()` for models that return (posterior or simulated) samples of model parameters gains a `summary`-argument, which - if `TRUE` - returns a point-estimate (mean of samples) instead of the full samples.
+* `format_p()` returns `"> .999"` for p-values equal to or greater than 0.999.
+
+## Bug fixes
+
+* Fixed issue in `find_formula()` that did not properly work for models with random effects in formula (in *lme4* notation), when random effects were in between fixed effects parts.
+* `get_variance()` did not return variance components for random effects for null-models with random slopes.
+* Fixed issue with `get_variance()` for `lme`-models with categorical random slope.
+* Fixed issue that occured since R 4.0.0 in `find_weights()` when function call had no `weights`-argument.
+* Fixed issue in `get_data()` for models with `cbind()`-response variables and matrix-like variables in the model frame (e.g. when using `poly()`).
+* Fixed issues with `PROreg::BBmm()`, due to changes in latest package update.
+
 # insight 0.8.5
 
 ## New supported model classes

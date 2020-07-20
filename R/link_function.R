@@ -198,6 +198,12 @@ link_function.logistf <- link_function.multinom
 link_function.lrm <- link_function.multinom
 
 #' @export
+link_function.orm <- link_function.multinom
+
+#' @export
+link_function.cph <- link_function.multinom
+
+#' @export
 link_function.mlogit <- link_function.multinom
 
 #' @export
@@ -480,6 +486,19 @@ link_function.glimML <- function(x, ...) {
 #' @export
 link_function.glmmadmb <- function(x, ...) {
   x$linkfun
+}
+
+
+
+#' @export
+link_function.glmm <- function(x, ...) {
+  switch(
+    tolower(x$family.glmm$family.glmm),
+    "bernoulli.glmm" = ,
+    "binomial.glmm" = stats::make.link("logit")$linkfun,
+    "poisson.glmm" = stats::make.link("log")$linkfun,
+    stats::gaussian(link = "identity")$linkfun
+  )
 }
 
 

@@ -17,6 +17,8 @@
 #' @param effects Should the complete variance-covariance matrix of the model
 #'   be returned, or only for specific model parameters only? Currently only
 #'   applies to models of class \code{mixor}.
+#' @param complete Logical, if \code{TRUE}, for \code{aov}, returns the full
+#'   variance-covariance matrix.
 #' @param ... Currently not used.
 #'
 #' @note \code{get_varcov()} tries to return the nearest positive definite matrix
@@ -414,6 +416,23 @@ get_varcov.negbinirr <- get_varcov.logitmfx
 # Other models with special handling -----------------------------------------
 
 
+#' @rdname get_varcov
+#' @export
+get_varcov.aov <- function(x, complete = FALSE, ...) {
+  vc <- suppressWarnings(stats::vcov(x, complete = complete))
+
+  if (.is_negativ_matrix(vc)) {
+    vc <- .fix_negative_matrix(vc)
+  }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
+  .remove_backticks_from_matrix_names(as.matrix(vc))
+}
+
+
+
 #' @export
 get_varcov.averaging <- function(x, ...) {
   if (is.null(attributes(x)$modelList)) {
@@ -555,6 +574,10 @@ get_varcov.mixor <- function(x, effects = c("all", "fixed", "random"), ...) {
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
+
+
+#' @export
+get_varcov.glmm <- get_varcov.mixor
 
 
 #' @export

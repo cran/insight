@@ -232,6 +232,12 @@ model_info.aovlist <- model_info.mmclogit
 model_info.rma <- model_info.mmclogit
 
 #' @export
+model_info.metaplus <- model_info.mmclogit
+
+#' @export
+model_info.mclogit <- model_info.mmclogit
+
+#' @export
 model_info.mlm <- function(x, ...) {
   .make_family(x, multi.var = TRUE, ...)
 }
@@ -613,12 +619,64 @@ model_info.stanmvreg <- function(x, ...) {
 }
 
 
+#' @export
+model_info.BGGM <- function(x, ...) {
+  link <- switch(
+    x$type,
+    "continuous" = stats::gaussian(),
+    stats::binomial()
+  )
+
+  family <- switch(
+    x$type,
+    "continuous" = "gaussian",
+    "binary" = "binomial",
+    "ordinal"
+  )
+
+  .make_family(
+    x = x,
+    fitfam = family,
+    zero.inf = FALSE,
+    logit.link = link$link == "logit",
+    link.fun = link$link,
+    ...
+  )
+}
+
+
 
 
 
 
 
 # Other models ----------------------------
+
+
+#' @export
+model_info.glht <- function(x, ...) {
+  model_info(x$model, ...)
+}
+
+
+#' @export
+model_info.glmm <- function(x, ...) {
+  f <- switch(
+    tolower(x$family.glmm$family.glmm),
+    "bernoulli.glmm" = ,
+    "binomial.glmm" = stats::binomial("logit"),
+    "poisson.glmm" = stats::poisson("log"),
+    stats::gaussian("identity")
+  )
+  .make_family(
+    x = x,
+    fitfam = f$family,
+    logit.link = f$link == "logit",
+    multi.var = FALSE,
+    link.fun = f$link,
+    ...
+  )
+}
 
 
 #' @export
@@ -954,6 +1012,20 @@ model_info.polr <- function(x, ...) {
   link <- x$method
   if (link == "logistic") link <- "logit"
   faminfo <- stats::binomial(link = link)
+  .make_family(
+    x = x,
+    fitfam = faminfo$family,
+    logit.link = faminfo$link == "logit",
+    link.fun = faminfo$link,
+    ...
+  )
+}
+
+
+
+#' @export
+model_info.orm <- function(x, ...) {
+  faminfo <- stats::binomial(link = "logit")
   .make_family(
     x = x,
     fitfam = faminfo$family,

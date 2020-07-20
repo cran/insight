@@ -19,7 +19,7 @@
 #'   on the model.
 #' @param robust Logical, if \code{TRUE}, test statistic based on robust standard
 #'   errors is returned.
-#' @param adjust Character value naming the method used to adjust p-values or confidence intervals. See \code{\link[emmeans]{summary.emmGrid}} for details.
+#' @param adjust Character value naming the method used to adjust p-values or confidence intervals. See \code{?emmeans::summary.emmGrid} for details.
 #' @param ci Confidence Interval (CI) level. Default to 0.95 (95\%). Currently only applies to objects of class \code{emmGrid}.
 #' @param ... Currently not used.
 #'
@@ -533,6 +533,25 @@ get_statistic.clmm2 <- get_statistic.clm2
 
 
 #' @export
+get_statistic.glmm <- function(x, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+  s <- summary(x)
+
+  out <- get_parameters(x, effects = "all")
+  out$Statistic <- c(s$coefmat[, 3], s$nucoefmat[, 3])
+  out <- out[, c("Parameter", "Statistic", "Effects")]
+
+  if (effects != "all") {
+    out <- out[out$Effects == effects, , drop = FALSE]
+    out$Effects <- NULL
+  }
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
 get_statistic.mixor <- function(x, effects = c("all", "fixed", "random"), ...) {
   stats <- x$Model[, "z value"]
   effects <- match.arg(effects)
@@ -729,6 +748,26 @@ get_statistic.negbinirr <- get_statistic.logitor
 
 
 # Other models -------------------------------------------------------
+
+
+#' @export
+get_statistic.glht <- function(x, ...) {
+  s <- summary(x)
+  alt <- switch(
+    x$alternative,
+    two.sided = "==",
+    less = ">=",
+    greater = "<="
+  )
+  out <- data.frame(
+    Parameter = paste(names(s$test$coefficients), alt, x$rhs),
+    Statistic = unname(s$test$tstat),
+    stringsAsFactors = FALSE
+  )
+  out <- .remove_backticks_from_parameter_names(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
 
 
 #' @rdname get_statistic
@@ -969,6 +1008,23 @@ get_statistic.zcpglm <- function(x, component = c("all", "conditional", "zi", "z
 
   out <- .filter_component(rbind(tweedie, zero), component)
   out <- .remove_backticks_from_parameter_names(out)
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+
+#' @export
+get_statistic.manova <- function(x, ...) {
+  stats <- as.data.frame(summary(x)$stats)
+
+  out <- data.frame(
+    Parameter = rownames(stats),
+    Statistic = as.vector(stats[["approx F"]]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
 
   attr(out, "statistic") <- find_statistic(x)
   out
@@ -1368,6 +1424,9 @@ get_statistic.ols <- get_statistic.lrm
 get_statistic.rms <- get_statistic.lrm
 
 #' @export
+get_statistic.orm <- get_statistic.lrm
+
+#' @export
 get_statistic.psm <- get_statistic.lrm
 
 
@@ -1380,6 +1439,29 @@ get_statistic.rma <- function(x, ...) {
   out <- data.frame(
     Parameter = parms$Parameter,
     Statistic = as.vector(stat),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+
+#' @importFrom stats qnorm
+#' @export
+get_statistic.metaplus <- function(x, ...) {
+  params <- get_parameters(x)
+
+  ci_low <- as.vector(x$results[, "95% ci.lb"])
+  ci_high <- as.vector(x$results[, "95% ci.ub"])
+  cis <- apply(cbind(ci_low, ci_high), MARGIN = 1, diff)
+  se <- cis / (2 * stats::qnorm(.975))
+
+  out <- data.frame(
+    Parameter = params$Parameter,
+    Statistic = as.vector(params$Estimate / se),
     stringsAsFactors = FALSE,
     row.names = NULL
   )

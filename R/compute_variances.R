@@ -39,6 +39,7 @@
   var.intercept <- NULL
   var.slope <- NULL
   cor.slope_intercept <- NULL
+  cor.slopes <- NULL
 
   # Get variance of fixed effects: multiply coefs by design matrix
   if (component %in% c("fixed", "all")) {
@@ -87,6 +88,10 @@
     cor.slope_intercept <- .random_slope_intercept_corr(vals, x)
   }
 
+  if (component %in% c("all")) {
+    cor.slopes <- .random_slopes_corr(vals, x)
+  }
+
   # if we only need residual variance, we can delete those
   # values again...
   if (component == "residual") {
@@ -103,7 +108,8 @@
     "var.dispersion" = var.dispersion,
     "var.intercept" = var.intercept,
     "var.slope" = var.slope,
-    "cor.slope_intercept" = cor.slope_intercept
+    "cor.slope_intercept" = cor.slope_intercept,
+    "cor.slopes" = cor.slopes
   ))
 }
 
@@ -128,6 +134,7 @@
     stop("Package `rstanarm` needs to be installed to compute variances for mixed models.", call. = FALSE)
   }
 
+  # stanreg
   if (inherits(x, "stanreg")) {
     vals <- list(
       beta = lme4::fixef(x),
@@ -135,6 +142,8 @@
       vc = lme4::VarCorr(x),
       re = lme4::ranef(x)
     )
+
+    # GLMMapdative
   } else if (inherits(x, "MixMod")) {
     vals <- list(
       beta = lme4::fixef(x),
@@ -143,11 +152,12 @@
       re = list(lme4::ranef(x))
     )
     names(vals$re) <- x$id_name
+
+    # nlme
   } else if (inherits(x, "lme")) {
     re_names <- find_random(x, split_nested = TRUE, flatten = TRUE)
-    comp_x <- as.matrix(cbind(`(Intercept)` = 1, get_predictors(x)))
+    comp_x <- stats::model.matrix(x, data = get_data(x))
     rownames(comp_x) <- 1:nrow(comp_x)
-
     if (.is_nested_lme(x)) {
       vals_vc <- .get_nested_lme_varcorr(x)
       vals_re <- lme4::ranef(x)
@@ -155,16 +165,16 @@
       vals_vc <- list(nlme::getVarCov(x))
       vals_re <- list(lme4::ranef(x))
     }
-
     vals <- list(
       beta = lme4::fixef(x),
       X = comp_x,
       vc = vals_vc,
       re = vals_re
     )
-
     names(vals$re) <- re_names
     names(vals$vc) <- re_names
+
+    # ordinal
   } else if (inherits(x, "clmm")) {
     if (requireNamespace("ordinal", quietly = TRUE)) {
       f <- find_formula(x)$conditional
@@ -176,6 +186,8 @@
         re = ordinal::ranef(x)
       )
     }
+
+    # glmmadmb
   } else if (inherits(x, "glmmadmb")) {
     vals <- list(
       beta = lme4::fixef(x),
@@ -183,6 +195,32 @@
       vc = lme4::VarCorr(x),
       re = lme4::ranef(x)
     )
+
+    # brms
+  } else if (inherits(x, "brmsfit")) {
+    comp_x <- as.matrix(cbind(`(Intercept)` = 1, get_predictors(x)))
+    rownames(comp_x) <- 1:nrow(comp_x)
+    vc <- lapply(names(lme4::VarCorr(x)), function(i) {
+      element <- lme4::VarCorr(x)[[i]]
+      if (i != "residual__") {
+        out <- drop(element$cov[, 1, ])
+        attr(out, "sttdev") <- element$sd[, 1]
+      } else {
+        out <- NULL
+      }
+      out
+    })
+    vc <- .compact_list(vc)
+    names(vc) <- setdiff(names(lme4::VarCorr(x)), "residual__")
+    attr(vc, "sc") <- lme4::VarCorr(x)$residual__$sd[1, 1]
+    vals <- list(
+      beta = lme4::fixef(x)[, 1],
+      X = comp_x,
+      vc = vc,
+      re = lapply(lme4::ranef(x), function(re) drop(re[, 1, ]))
+    )
+
+    # cpglmm
   } else if (inherits(x, "cpglmm")) {
     if (!requireNamespace("cplm", quietly = TRUE)) {
       stop("Package 'cplm' required. Please install it.")
@@ -193,6 +231,8 @@
       vc = cplm::VarCorr(x),
       re = cplm::ranef(x)
     )
+
+    # lme4 / glmmTMB
   } else {
     vals <- list(
       beta = lme4::fixef(x),
@@ -201,6 +241,7 @@
       re = lme4::ranef(x)
     )
   }
+
 
   # for glmmTMB, tell user that dispersion model is ignored
 
@@ -617,6 +658,11 @@
     return(TRUE)
   }
 
+  # NULL models have no predictors, so no fixed effect as random slope
+  if (is.null(fe)) {
+    return(FALSE)
+  }
+
   # make sure we have identical subcomponents between random and
   # fixed effects
   fe <- .compact_list(fe[c("conditional", "zero_inflated")])
@@ -681,4 +727,36 @@
     })
     unlist(rho01)
   }
+}
+
+
+
+# slope-slope-correlations (rho 01)
+#' @importFrom utils combn
+#' @importFrom stats setNames
+.random_slopes_corr <- function(vals, x) {
+  corrs <- lapply(vals$vc, attr, "correlation")
+  rnd_slopes <- unlist(find_random_slopes(x))
+
+  if (length(rnd_slopes) < 2) {
+    return(NULL)
+  }
+
+  rho01 <- tryCatch(
+    {
+      sapply(corrs, function(i) {
+        if (!is.null(i)) {
+          slope_pairs <- utils::combn(x = rnd_slopes, m = 2, simplify = FALSE)
+          lapply(slope_pairs, function(j) {
+            stats::setNames(i[j[1], j[2]], paste0("..", paste0(j, collapse = "-")))
+          })
+        } else {
+          NULL
+        }
+      })
+    },
+    error = function(e) { NULL }
+  )
+
+  unlist(rho01)
 }

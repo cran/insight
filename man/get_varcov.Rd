@@ -13,6 +13,7 @@
 \alias{get_varcov.glmmTMB}
 \alias{get_varcov.brmsfit}
 \alias{get_varcov.betamfx}
+\alias{get_varcov.aov}
 \alias{get_varcov.mixor}
 \title{Get variance-covariance matrix from models}
 \usage{
@@ -44,6 +45,8 @@ get_varcov(x, ...)
 
 \method{get_varcov}{betamfx}(x, component = c("conditional", "precision", "all"), ...)
 
+\method{get_varcov}{aov}(x, complete = FALSE, ...)
+
 \method{get_varcov}{mixor}(x, effects = c("all", "fixed", "random"), ...)
 }
 \arguments{
@@ -59,6 +62,9 @@ may be one of \code{"conditional"}, \code{"zi"}, \code{"zero-inflated"},
 \code{"dispersion"}, \code{"precision"}, or \code{"all"}. May be abbreviated.
 Note that the \emph{conditional} component is also called \emph{count} or
 \emph{mean} component, depending on the model.}
+
+\item{complete}{Logical, if \code{TRUE}, for \code{aov}, returns the full
+variance-covariance matrix.}
 
 \item{effects}{Should the complete variance-covariance matrix of the model
 be returned, or only for specific model parameters only? Currently only

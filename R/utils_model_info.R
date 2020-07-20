@@ -73,7 +73,7 @@
   is.bayes <- inherits(x, c(
     "brmsfit", "stanfit", "MCMCglmm", "stanreg",
     "stanmvreg", "bmerMod", "BFBayesFactor", "bamlss",
-    "bayesx", "mcmc", "bcplm", "bayesQR"
+    "bayesx", "mcmc", "bcplm", "bayesQR", "BGGM"
   ))
 
   is.survival <- inherits(x, c("aareg", "survreg", "survfit", "survPresmooth", "flexsurvreg", "coxph", "coxme"))
@@ -141,6 +141,9 @@
       is_ttest <- FALSE
       is_correlation <- TRUE
     }
+  } else if (inherits(x, "BGGM")) {
+    is_ttest <- FALSE
+    is_correlation <- TRUE
   } else {
     is_ttest <- FALSE
     is_correlation <- FALSE
@@ -165,7 +168,7 @@
   }
 
 
-  if (inherits(x, "rma")) is_meta <- TRUE
+  is_meta <- inherits(x, c("rma", "metaplus"))
 
 
   list(
@@ -178,7 +181,7 @@
     is_dirichlet = dirichlet_fam,
     is_exponential = exponential_fam,
     is_logit = logit.link,
-    is_probit = link.fun == "probit",
+    is_probit = isTRUE(link.fun == "probit"),
     is_censored = inherits(x, c("tobit", "crch", "censReg")) | is.censored | is.survival,
     is_truncated = inherits(x, "truncreg") | is.truncated,
     is_survival = is.survival,

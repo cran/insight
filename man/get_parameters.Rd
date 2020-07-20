@@ -17,6 +17,7 @@
 \alias{get_parameters.gam}
 \alias{get_parameters.zeroinfl}
 \alias{get_parameters.zcpglm}
+\alias{get_parameters.BGGM}
 \alias{get_parameters.MCMCglmm}
 \alias{get_parameters.BFBayesFactor}
 \alias{get_parameters.stanmvreg}
@@ -74,7 +75,14 @@ get_parameters(x, ...)
   ...
 )
 
-\method{get_parameters}{MCMCglmm}(x, effects = c("fixed", "random", "all"), ...)
+\method{get_parameters}{BGGM}(
+  x,
+  component = c("correlation", "conditional", "intercept", "all"),
+  summary = FALSE,
+  ...
+)
+
+\method{get_parameters}{MCMCglmm}(x, effects = c("fixed", "random", "all"), summary = TRUE, ...)
 
 \method{get_parameters}{BFBayesFactor}(
   x,
@@ -89,6 +97,7 @@ get_parameters(x, ...)
   x,
   effects = c("fixed", "random", "all"),
   parameters = NULL,
+  summary = FALSE,
   ...
 )
 
@@ -98,6 +107,7 @@ get_parameters(x, ...)
   component = c("all", "conditional", "zi", "zero_inflated", "dispersion", "simplex",
     "sigma", "smooth_terms"),
   parameters = NULL,
+  summary = FALSE,
   ...
 )
 
@@ -105,6 +115,7 @@ get_parameters(x, ...)
   x,
   effects = c("fixed", "random", "all"),
   parameters = NULL,
+  summary = FALSE,
   ...
 )
 
@@ -112,6 +123,7 @@ get_parameters(x, ...)
   x,
   effects = c("fixed", "random", "all"),
   parameters = NULL,
+  summary = FALSE,
   ...
 )
 }
@@ -131,6 +143,11 @@ component, depending on the model.}
 
 \item{effects}{Should parameters for fixed effects, random effects
 or both be returned? Only applies to mixed models. May be abbreviated.}
+
+\item{summary}{Logical, indicates whether the full posterior samples
+(\code{summary = FALSE})) or the summarized centrality indices of
+the posterior samples (\code{summary = TRUE})) should be returned as
+estimates.}
 
 \item{iterations}{Number of posterior draws.}
 

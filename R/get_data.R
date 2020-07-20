@@ -176,7 +176,7 @@ get_data.hurdle <- function(x, component = c("all", "conditional", "zi", "zero_i
 get_data.zeroinfl <- get_data.hurdle
 
 #' @export
-get_data.zerotrunc <- get_data.default
+get_data.zerotrunc <- get_data.hurdle
 
 
 #' @rdname get_data
@@ -319,6 +319,28 @@ get_data.cpglmm <- function(x, effects = c("all", "fixed", "random"), ...) {
   )
 
   .prepare_get_data(x, mf, effects)
+}
+
+
+
+#' @export
+get_data.glmm <- function(x, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+  dat <- get_data.default(x)
+
+  mf <- tryCatch(
+    {
+      switch(
+        effects,
+        fixed = dat[, find_predictors(x, effects = "fixed", flatten = TRUE), drop = FALSE],
+        all = dat,
+        random = dat[, find_random(x, split_nested = TRUE, flatten = TRUE), drop = FALSE]
+      )
+    },
+    error = function(x) {
+      NULL
+    }
+  )
 }
 
 
@@ -870,6 +892,12 @@ get_data.negbinmfx <- get_data.betamfx
 
 
 #' @export
+get_data.glht <- function(x, ...) {
+  get_data(x$model, ...)
+}
+
+
+#' @export
 get_data.averaging <- function(x, ...) {
   ml <- attributes(x)$modelList
   if (is.null(ml)) {
@@ -926,6 +954,12 @@ get_data.Arima <- function(x, ...) {
   }
 
   dat
+}
+
+
+#' @export
+get_data.BGGM <- function(x, ...) {
+  x$Y
 }
 
 
@@ -1125,3 +1159,7 @@ get_data.rma <- function(x, ...) {
 
   .prepare_get_data(x, stats::na.omit(mf))
 }
+
+
+#' @export
+get_data.metaplus <- get_data.rma
