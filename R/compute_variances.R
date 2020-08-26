@@ -10,7 +10,7 @@
 
   faminfo <- model_info(x)
 
-  if (faminfo$family %in% c("truncated_nbinom1", "truncated_nbinom2")) {
+  if (faminfo$family %in% c("truncated_nbinom1")) {
     if (verbose) {
       warning(sprintf("Truncated negative binomial families are currently not supported by `%s`.", name_fun), call. = F)
     }
@@ -198,12 +198,21 @@
 
     # brms
   } else if (inherits(x, "brmsfit")) {
-    comp_x <- as.matrix(cbind(`(Intercept)` = 1, get_predictors(x)))
+    # comp_x <- as.matrix(cbind(`(Intercept)` = 1, get_predictors(x)))
+    formula_rhs <- .safe_deparse(find_formula(x)$conditional[[3]])
+    formula_rhs <- stats::as.formula(paste0("~", formula_rhs))
+    comp_x <- stats::model.matrix(formula_rhs, data = get_data(x))
     rownames(comp_x) <- 1:nrow(comp_x)
     vc <- lapply(names(lme4::VarCorr(x)), function(i) {
       element <- lme4::VarCorr(x)[[i]]
       if (i != "residual__") {
-        out <- drop(element$cov[, 1, ])
+        if (!is.null(element$cov)) {
+          out <- as.matrix(drop(element$cov[, 1, ]))
+          colnames(out) <- rownames(out) <- gsub("Intercept", "(Intercept)", rownames(element$cov), fixed = TRUE)
+        } else {
+          out <- as.matrix(drop(element$sd[, 1])^2)
+          colnames(out) <- rownames(out) <- gsub("Intercept", "(Intercept)", rownames(element$sd), fixed = TRUE)
+        }
         attr(out, "sttdev") <- element$sd[, 1]
       } else {
         out <- NULL
@@ -217,8 +226,13 @@
       beta = lme4::fixef(x)[, 1],
       X = comp_x,
       vc = vc,
-      re = lapply(lme4::ranef(x), function(re) drop(re[, 1, ]))
+      re = lapply(lme4::ranef(x), function(re) {
+        reval <- as.data.frame(drop(re[, 1, ]))
+        colnames(reval) <- gsub("Intercept", "(Intercept)", dimnames(re)[[3]], fixed = TRUE)
+        reval
+      })
     )
+    names(vals$beta) <- gsub("Intercept", "(Intercept)", names(vals$beta), fixed = TRUE)
 
     # cpglmm
   } else if (inherits(x, "cpglmm")) {
@@ -284,8 +298,11 @@
 
 
 
-# Get fixed effects variance
-#
+
+
+
+# fixed effects variance ----
+
 #' @importFrom stats var
 .compute_variance_fixed <- function(vals) {
   with(vals, stats::var(as.vector(beta %*% t(X))))
@@ -295,8 +312,10 @@
 
 
 
-# Compute variance associated with a random-effects term (Johnson 2014)
-#
+
+
+# variance associated with a random-effects term (Johnson 2014) ----
+
 #' @importFrom stats nobs
 .compute_variance_random <- function(terms, x, vals) {
   if (is.null(terms)) {
@@ -328,7 +347,10 @@
 
 
 
-# Calculate Distribution-specific variance (Nakagawa et al. 2017)
+
+
+# distribution-specific variance (Nakagawa et al. 2017) ----
+
 .compute_variance_distribution <- function(x, var.cor, faminfo, name, verbose = TRUE) {
   if (inherits(x, "lme")) {
     sig <- x$sigma
@@ -344,7 +366,16 @@
   if (faminfo$is_linear && !faminfo$is_tweedie) {
     dist.variance <- sig^2
   } else {
-    if (faminfo$is_binomial) {
+    if (faminfo$is_betabinomial) {
+      dist.variance <- switch(
+        faminfo$link_function,
+        logit = ,
+        probit = ,
+        cloglog = ,
+        clogloglink = .variance_distributional(x, faminfo, sig, name = name, verbose = verbose),
+        .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
+      )
+    } else if (faminfo$is_binomial) {
       dist.variance <- switch(
         faminfo$link_function,
         logit = pi^2 / 3,
@@ -393,7 +424,9 @@
 
 
 
-# Get dispersion-specific variance
+
+# dispersion-specific variance ----
+
 .compute_variance_dispersion <- function(x, vals, faminfo, obs.terms) {
   if (faminfo$is_linear) {
     0
@@ -405,6 +438,8 @@
     }
   }
 }
+
+
 
 
 
@@ -448,7 +483,7 @@
   }
   else if (mu < 6) {
     if (verbose) {
-      warning(sprintf("mu of %0.1f is too close to zero, estimate of %s may be unreliable.\n", mu, name), call. = FALSE)
+      warning(sprintf("mu of %0.1f is too close to zero, estimate of %s may be unreliable.", mu, name), call. = FALSE)
     }
   }
 
@@ -456,27 +491,39 @@
     {
       vv <- switch(
         faminfo$family,
-        # (zero-inflated) poisson
+
+        # (zero-inflated) poisson ----
         `zero-inflated poisson` = ,
         poisson = .variance_family_poisson(x, mu, faminfo),
-        # hurdle-poisson
+
+        # hurdle-poisson ----
         `hurdle poisson` = ,
         truncated_poisson = stats::family(x)$variance(sig),
-        # Gamma, exponential
+
+        # Gamma, exponential ----
         Gamma = stats::family(x)$variance(sig),
-        # (zero-inflated) negative binomial
+
+        # (zero-inflated) negative binomial ----
         `zero-inflated negative binomial` = ,
         `negative binomial` = ,
         genpois = ,
         nbinom1 = ,
         nbinom2 = .variance_family_nbinom(x, mu, sig, faminfo),
-        # other distributions
+        truncated_nbinom2 = stats::family(x)$variance(mu, sig),
+
+        # other distributions ----
         tweedie = .variance_family_tweedie(x, mu, sig),
         beta = .variance_family_beta(x, mu, sig),
-        # default variance for non-captured distributions
+        # betabinomial = stats::family(x)$variance(mu, sig),
+        # betabinomial = .variance_family_betabinom(x, mu, sig),
+
+        # default variance for non-captured distributions ----
         .variance_family_default(x, mu, verbose)
       )
 
+      if (vv < 0 && isTRUE(verbose)) {
+        warning("Model's distribution-specific variance is negative. Results are not reliable.", call. = F)
+      }
       vv / mu^2
     },
     error = function(x) {
@@ -523,8 +570,20 @@
 
 
 
+# Get distributional variance for beta-family
+.variance_family_betabinom <- function(x, mu, phi) {
+  if (inherits(x, "MixMod")) {
+    stats::family(x)$variance(mu)
+  } else {
+    n <- n_obs(x)
+    mu * (1 - mu) * (n * (phi + n) / (1 + phi))
+  }
+}
+
+
+
+
 # Get distributional variance for tweedie-family
-#
 #' @importFrom stats plogis
 .variance_family_tweedie <- function(x, mu, phi) {
   p <- unname(stats::plogis(x$fit$par["thetaf"]) + 1)
@@ -631,6 +690,13 @@
         mu * (1 + mu / lme4::getME(x, "glmer.nb.theta"))
       } else if (inherits(x, "MixMod")) {
         stats::family(x)$variance(mu)
+      } else if (inherits(x, "glmmTMB")) {
+        if (is.null(x$theta)) {
+          theta <- lme4::getME(x, "theta")
+        } else {
+          theta <- x$theta
+        }
+        mu * (1 + mu / theta)
       } else {
         mu * (1 + mu / x$theta)
       }
@@ -755,7 +821,9 @@
         }
       })
     },
-    error = function(e) { NULL }
+    error = function(e) {
+      NULL
+    }
   )
 
   unlist(rho01)

@@ -95,6 +95,27 @@ n_obs.lmRob <- function(x, ...) {
 
 
 #' @export
+n_obs.lqmm <- function(x, ...) {
+  x$nobs
+}
+
+#' @export
+n_obs.lqm <- n_obs.lqmm
+
+
+
+
+#' @export
+n_obs.sem <- function(x, ...) {
+  if (!.is_semLme(x)) {
+    return(NULL)
+  }
+  length(x$original.y)
+}
+
+
+
+#' @export
 n_obs.LORgee <- function(x, ...) {
   x$nobs
 }
@@ -162,6 +183,16 @@ n_obs.afex_aov <- function(x, ...) {
 n_obs.glimML <- function(x, ...) {
   nrow(x@data)
 }
+
+
+
+#' @export
+n_obs.mle2 <- function(x, ...) {
+  nrow(get_data(x))
+}
+
+#' @export
+n_obs.mle <- n_obs.mle2
 
 
 
@@ -401,3 +432,14 @@ n_obs.poissonirr <- n_obs.betamfx
 
 #' @export
 n_obs.logitor <- n_obs.betamfx
+
+
+
+
+
+# special models -----------
+
+#' @export
+n_obs.mipo <- function(x, ...) {
+  x$glanced$nobs
+}

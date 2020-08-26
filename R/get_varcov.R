@@ -476,7 +476,28 @@ get_varcov.rq <- function(x, ...) {
 
 
 #' @export
-get_varcov.crq <- get_varcov.rq
+get_varcov.crq <- function(x, ...) {
+  sc <- summary(x, covariance = TRUE)
+
+  if (all(unlist(lapply(sc, is.list)))) {
+    vc <- lapply(sc, function(i) {
+      .x <- as.matrix(i$cov)
+      if (.is_negativ_matrix(.x)) {
+        .x <- .fix_negative_matrix(.x)
+      }
+      .x
+    })
+    names(vc) <- sprintf("tau (%g)", unlist(lapply(sc, function(i) i$tau)))
+  } else {
+    vc <- as.matrix(sc$cov)
+    if (.is_negativ_matrix(vc)) {
+      vc <- .fix_negative_matrix(vc)
+    }
+    vc <- .remove_backticks_from_matrix_names(as.matrix(vc))
+  }
+
+  vc
+}
 
 #' @export
 get_varcov.nlrq <- get_varcov.rq
@@ -558,6 +579,26 @@ get_varcov.cglm <- function(x, ...) {
 
 
 
+#' @export
+get_varcov.mle2 <- function(x, ...) {
+  vc <- as.matrix(x@vcov)
+
+  if (.is_negativ_matrix(vc)) {
+    vc <- .fix_negative_matrix(vc)
+  }
+
+  # fix possible missings due to rank deficient model matrix
+  vc <- .fix_rank_deficiency(vc)
+
+  .remove_backticks_from_matrix_names(as.matrix(vc))
+}
+
+
+#' @export
+get_varcov.mle <- get_varcov.mle2
+
+
+
 #' @rdname get_varcov
 #' @export
 get_varcov.mixor <- function(x, effects = c("all", "fixed", "random"), ...) {
@@ -593,6 +634,36 @@ get_varcov.gamm <- function(x, ...) {
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
+
+
+#' @importFrom stats cov
+#' @export
+get_varcov.lqmm <- function(x, ...) {
+  sc <- summary(x, covariance = TRUE)
+  np <- length(find_parameters(x, flatten = TRUE))
+
+  if (length(dim(sc$Cov)) == 3) {
+    vc <- lapply(1:length(x$tau), function(i) {
+      .x <- sc$Cov[, , i][1:np, 1:np]
+      if (.is_negativ_matrix(.x)) {
+        .x <- .fix_negative_matrix(.x)
+      }
+      .x
+    })
+    names(vc) <- sprintf("tau (%g)", x$tau)
+  } else {
+    vc <- as.matrix(sc$Cov)[1:np, 1:np]
+    if (.is_negativ_matrix(vc)) {
+      vc <- .fix_negative_matrix(vc)
+    }
+    vc <- .remove_backticks_from_matrix_names(as.matrix(vc))
+  }
+
+  vc
+}
+
+#' @export
+get_varcov.lqm <- get_varcov.lqmm
 
 
 #' @export

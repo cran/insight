@@ -119,7 +119,7 @@ get_parameters.aareg <- function(x, ...) {
 get_parameters.crq <- function(x, ...) {
   sc <- summary(x)
 
-  if (all(lapply(sc, is.list))) {
+  if (all(unlist(lapply(sc, is.list)))) {
     list_sc <- lapply(sc, function(i) {
       .x <- as.data.frame(i)
       .x$Parameter <- rownames(.x)
@@ -147,6 +147,34 @@ get_parameters.crq <- function(x, ...) {
 
 #' @export
 get_parameters.crqs <- get_parameters.crq
+
+
+#' @importFrom stats coef
+#' @export
+get_parameters.lqmm <- function(x, ...) {
+  cs <- stats::coef(x)
+
+  if (is.matrix(cs)) {
+    params <- .gather(as.data.frame(cs), names_to = "Component", values_to = "Estimate")
+    params$Component <- sprintf("tau (%s)", params$Component)
+    params$Parameter <- rep(rownames(cs), length.out = nrow(params))
+    params <- params[c("Parameter", "Estimate", "Component")]
+    row.names(params) <- NULL
+  } else {
+    params <- data.frame(
+      Parameter = names(cs),
+      Estimate = unname(cs),
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  }
+
+  .remove_backticks_from_parameter_names(params)
+}
+
+#' @export
+get_parameters.lqm <- get_parameters.lqmm
+
 
 
 #' @importFrom stats setNames
@@ -231,7 +259,7 @@ get_parameters.betaor <- function(x, component = c("all", "conditional", "precis
 #' @export
 get_parameters.logitmfx <- function(x, component = c("all", "conditional", "marginal"), ...) {
   params <- get_parameters.default(x$fit, ...)
-  params$Component = "conditional"
+  params$Component <- "conditional"
   mfx <- x$mfxest
 
   params <- rbind(
@@ -283,6 +311,17 @@ get_parameters.negbinirr <- get_parameters.logitor
 
 
 #' @export
+get_parameters.mipo <- function(x, ...) {
+  out <- data.frame(
+    Parameter = as.vector(summary(x)$term),
+    Estimate = as.vector(summary(x)$estimate),
+    stringsAsFactors = FALSE
+  )
+  .remove_backticks_from_parameter_names(out)
+}
+
+
+#' @export
 get_parameters.glht <- function(x, ...) {
   s <- summary(x)
   alt <- switch(
@@ -314,6 +353,28 @@ get_parameters.emmGrid <- function(x, ...) {
 
   .remove_backticks_from_parameter_names(params)
 }
+
+
+#' @export
+get_parameters.mle2 <- function(x, ...) {
+  if (!requireNamespace("bbmle", quietly = TRUE)) {
+    stop("Package `bbmle` needs to be installed to extract parameters.", call. = FALSE)
+  }
+  s <- bbmle::summary(x)
+
+  params <- data.frame(
+    Parameter = names(s@coef[, 1]),
+    Estimate = unname(s@coef[, 1]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  .remove_backticks_from_parameter_names(params)
+}
+
+#' @export
+get_parameters.mle <- get_parameters.mle2
+
 
 
 #' @rdname get_parameters
@@ -695,7 +756,7 @@ get_parameters.clm2 <- function(x, component = c("all", "conditional", "scale"),
 
 
 #' @export
-get_parameters.glmm <- function(x, effects = c("all", "fixed", "random"),  ...) {
+get_parameters.glmm <- function(x, effects = c("all", "fixed", "random"), ...) {
   effects <- match.arg(effects)
 
   params <- data.frame(
@@ -892,6 +953,38 @@ get_parameters.glmmadmb <- get_parameters.merMod
 
 #' @export
 get_parameters.lme <- get_parameters.merMod
+
+
+
+#' @export
+get_parameters.sem <- function(x, effects = c("fixed", "random"), ...) {
+  if (!.is_semLme(x)) {
+    return(NULL)
+  }
+
+  effects <- match.arg(effects)
+
+  if (effects == "fixed") {
+    l <- list(conditional = x$coef)
+  } else {
+    l <- .compact_list(list(
+      conditional = x$coef,
+      random = x$ranef
+    ))
+  }
+
+  fixed <- data.frame(
+    Parameter = names(l$conditional),
+    Estimate = unname(l$conditional),
+    stringsAsFactors = FALSE
+  )
+
+  if (effects == "fixed") {
+    .remove_backticks_from_parameter_names(fixed)
+  } else {
+    l$random
+  }
+}
 
 
 

@@ -77,6 +77,12 @@ link_function.lm <- function(x, ...) {
 link_function.lme <- link_function.lm
 
 #' @export
+link_function.lqmm <- link_function.lm
+
+#' @export
+link_function.lqm <- link_function.lm
+
+#' @export
 link_function.bayesx <- link_function.lm
 
 #' @export
@@ -335,6 +341,13 @@ link_function.logitor <- link_function.logitmfx
 
 # Other models -----------------------------
 
+
+
+#' @export
+link_function.mipo <- function(x, ...) {
+  models <- eval(x$call$object)
+  link_function(models$analyses[[1]])
+}
 
 
 #' @export

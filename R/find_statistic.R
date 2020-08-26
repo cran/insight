@@ -27,6 +27,11 @@ find_statistic <- function(x, ...) {
     stop(message("The entered object is not a model object."), call. = FALSE)
   }
 
+  if (inherits(x, "mipo")) {
+    models <- eval(x$call$object)
+    x <- models$analyses[[1]]
+  }
+
   # t-value objects ----------------------------------------------------------
 
   t.mods <-
@@ -45,6 +50,7 @@ find_statistic <- function(x, ...) {
       "cpglm",
       "cpglmm",
       "crq",
+      "crqs",
       "drc",
       "emmGrid",
       "feis",
@@ -64,6 +70,8 @@ find_statistic <- function(x, ...) {
       "lmerModLmerTest",
       "lmRob",
       "lmrob",
+      "lqm",
+      "lqmm",
       "maxLik",
       "mixed",
       "mlm",
@@ -133,10 +141,12 @@ find_statistic <- function(x, ...) {
       "logitor",
       "LORgee",
       "lrm",
+      "margins",
       "metaplus",
       "mixor",
       "MixMod",
       "mjoint",
+      "mle",
       "mle2",
       "mlogit",
       "mclogit",
@@ -184,6 +194,7 @@ find_statistic <- function(x, ...) {
 
   chi.mods <-
     c(
+      "coxph.penal",
       "geeglm",
       "logistf",
       "MANOVA",
@@ -197,6 +208,7 @@ find_statistic <- function(x, ...) {
   # which statistic to use will be decided based on the family used
   g.mods <-
     c(
+      "bam",
       "bigglm",
       "cgam",
       "cgamm",

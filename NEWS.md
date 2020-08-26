@@ -1,3 +1,24 @@
+# insight 0.9.1
+
+## New supported model classes
+
+* Support for `mipo` (*mice*), `lqmm` and `lqm` (*lqmm*). Preliminary support for `semLME` (*smicd*), `mle` (*stats4*) and `mle2` (*bbmle*).
+
+## Changes to functions
+
+* `model_info()` returns `$is_meta = TRUE` for *brms*-meta-analysis models.
+* Make `find_statistic()` work with `mgcv::bam()`.
+* `get_variance()` now also support `truncated_nbinom2()` family from *glmmTMB*.
+
+## Bug fixes
+
+* Fixed issue with correctly detecting sigma-parameters in `find_parameters()` for multiple-response `brmsfit`-models.
+* Fixed issue with `find_formula()` for models from `stan_nlmer()`.
+* Fixed issues with `find_terms()` when response variable included a namespace, like `survival::Surv()`.
+* Fixed issues with `get_priors()` for _stanreg_ models, probably caused by the latest update to *rstanarm 2.21.2*.
+* Fixed issues in `get_variance()` for *brmsfit* models.
+* Fixed some issues around `crq` objects (package *quantreg*).
+
 # insight 0.9.0
 
 ## New supported model classes
@@ -10,7 +31,7 @@
 
 ## Changes to functions
 
-* `get_variance()` now also returns the corrlation among random slopes.
+* `get_variance()` now also returns the correlation among random slopes.
 * `get_variance()` now also (partially) supports `brmsfit` models.
 * `get_parameters()` for models that return (posterior or simulated) samples of model parameters gains a `summary`-argument, which - if `TRUE` - returns a point-estimate (mean of samples) instead of the full samples.
 * `format_p()` returns `"> .999"` for p-values equal to or greater than 0.999.
@@ -20,7 +41,7 @@
 * Fixed issue in `find_formula()` that did not properly work for models with random effects in formula (in *lme4* notation), when random effects were in between fixed effects parts.
 * `get_variance()` did not return variance components for random effects for null-models with random slopes.
 * Fixed issue with `get_variance()` for `lme`-models with categorical random slope.
-* Fixed issue that occured since R 4.0.0 in `find_weights()` when function call had no `weights`-argument.
+* Fixed issue that occurred since R 4.0.0 in `find_weights()` when function call had no `weights`-argument.
 * Fixed issue in `get_data()` for models with `cbind()`-response variables and matrix-like variables in the model frame (e.g. when using `poly()`).
 * Fixed issues with `PROreg::BBmm()`, due to changes in latest package update.
 

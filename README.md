@@ -2,11 +2,11 @@
 # insight <img src='man/figures/logo.png' align="right" height="139" />
 
 [![DOI](http://joss.theoj.org/papers/10.21105/joss.01412/status.svg)](https://doi.org/10.21105/joss.01412)
-[![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/insight)](https://cran.r-project.org/package=insight)
+[![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/insight)](https://cran.r-project.org/package=insight)
 [![Documentation](https://img.shields.io/badge/documentation-insight-orange.svg?colorB=E91E63)](https://easystats.github.io/insight/)
 ![R-check](https://github.com/easystats/insight/workflows/R-check/badge.svg?branch=master)
-[![downloads](http://cranlogs.r-pkg.org/badges/insight)](http://cranlogs.r-pkg.org/)
-[![total](http://cranlogs.r-pkg.org/badges/grand-total/insight)](http://cranlogs.r-pkg.org/)
+[![downloads](https://cranlogs.r-pkg.org/badges/insight)](https://cranlogs.r-pkg.org/)
+[![total](https://cranlogs.r-pkg.org/badges/grand-total/insight)](https://cranlogs.r-pkg.org/)
 
 **Gain insight into your models\!**
 
@@ -269,40 +269,42 @@ supported_models()
 #>  [28] "cgam"              "cgamm"             "cglm"             
 #>  [31] "clm"               "clm2"              "clmm"             
 #>  [34] "clmm2"             "clogit"            "complmrob"        
-#>  [37] "coxme"             "coxph"             "cpglm"            
-#>  [40] "cpglmm"            "crch"              "crq"              
-#>  [43] "crqs"              "DirichletRegModel" "feglm"            
-#>  [46] "feis"              "felm"              "fixest"           
-#>  [49] "flexsurvreg"       "gam"               "Gam"              
-#>  [52] "gamlss"            "gamm"              "gamm4"            
-#>  [55] "gbm"               "gee"               "geeglm"           
-#>  [58] "glht"              "glimML"            "glm"              
-#>  [61] "glmm"              "glmmadmb"          "glmmPQL"          
-#>  [64] "glmmTMB"           "glmrob"            "glmRob"           
-#>  [67] "glmx"              "gls"               "gmnl"             
-#>  [70] "htest"             "hurdle"            "iv_robust"        
-#>  [73] "ivreg"             "lavaan"            "lm"               
-#>  [76] "lm_robust"         "lme"               "lmerMod"          
-#>  [79] "lmerModLmerTest"   "lmrob"             "lmRob"            
-#>  [82] "logistf"           "logitmfx"          "logitor"          
-#>  [85] "LORgee"            "lrm"               "manova"           
-#>  [88] "MANOVA"            "maxLik"            "mclogit"          
-#>  [91] "mcmc"              "MCMCglmm"          "merMod"           
-#>  [94] "metaplus"          "mixed"             "MixMod"           
-#>  [97] "mixor"             "mlm"               "mlogit"           
-#> [100] "mmlogit"           "multinom"          "negbinirr"        
-#> [103] "negbinmfx"         "ols"               "plm"              
-#> [106] "poissonirr"        "poissonmfx"        "polr"             
-#> [109] "probitmfx"         "psm"               "rlm"              
-#> [112] "rlmerMod"          "RM"                "rma"              
-#> [115] "rma.uni"           "robmixglm"         "rq"               
-#> [118] "rqss"              "speedglm"          "speedlm"          
-#> [121] "stanmvreg"         "stanreg"           "survfit"          
-#> [124] "survreg"           "svyglm"            "svyolr"           
-#> [127] "tobit"             "truncreg"          "vgam"             
-#> [130] "vglm"              "wbgee"             "wblm"             
-#> [133] "wbm"               "zcpglm"            "zeroinfl"         
-#> [136] "zerotrunc"
+#>  [37] "coxme"             "coxph"             "coxph.penal"      
+#>  [40] "cpglm"             "cpglmm"            "crch"             
+#>  [43] "crq"               "crqs"              "DirichletRegModel"
+#>  [46] "feglm"             "feis"              "felm"             
+#>  [49] "fixest"            "flexsurvreg"       "gam"              
+#>  [52] "Gam"               "gamlss"            "gamm"             
+#>  [55] "gamm4"             "gbm"               "gee"              
+#>  [58] "geeglm"            "glht"              "glimML"           
+#>  [61] "glm"               "glmm"              "glmmadmb"         
+#>  [64] "glmmPQL"           "glmmTMB"           "glmrob"           
+#>  [67] "glmRob"            "glmx"              "gls"              
+#>  [70] "gmnl"              "htest"             "hurdle"           
+#>  [73] "iv_robust"         "ivreg"             "lavaan"           
+#>  [76] "lm"                "lm_robust"         "lme"              
+#>  [79] "lmerMod"           "lmerModLmerTest"   "lmrob"            
+#>  [82] "lmRob"             "logistf"           "logitmfx"         
+#>  [85] "logitor"           "LORgee"            "lqm"              
+#>  [88] "lqmm"              "lrm"               "manova"           
+#>  [91] "MANOVA"            "maxLik"            "mclogit"          
+#>  [94] "mcmc"              "MCMCglmm"          "merMod"           
+#>  [97] "metaplus"          "mipo"              "mixed"            
+#> [100] "MixMod"            "mixor"             "mle"              
+#> [103] "mle2"              "mlm"               "mlogit"           
+#> [106] "mmlogit"           "multinom"          "negbinirr"        
+#> [109] "negbinmfx"         "ols"               "plm"              
+#> [112] "poissonirr"        "poissonmfx"        "polr"             
+#> [115] "probitmfx"         "psm"               "rlm"              
+#> [118] "rlmerMod"          "RM"                "rma"              
+#> [121] "rma.uni"           "robmixglm"         "rq"               
+#> [124] "rqss"              "sem"               "speedglm"         
+#> [127] "speedlm"           "stanmvreg"         "stanreg"          
+#> [130] "survfit"           "survreg"           "svyglm"           
+#> [133] "svyolr"            "tobit"             "truncreg"         
+#> [136] "vgam"              "vglm"              "wbgee"            
+#> [139] "wblm"              "wbm"               "zcpglm"           
+#> [142] "zeroinfl"          "zerotrunc"
 ```
 
   - **Didn’t find a model?** [File an

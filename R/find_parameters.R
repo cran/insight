@@ -106,7 +106,6 @@ find_parameters.data.frame <- function(x, flatten = FALSE, ...) {
 #' @rdname find_parameters
 #' @export
 find_parameters.betamfx <- function(x, component = c("all", "conditional", "precision", "marginal"), flatten = FALSE, ...) {
-
   pars <- list(
     marginal = .remove_backticks_from_string(rownames(x$mfxest)),
     conditional = .remove_backticks_from_string(names(x$fit$coefficients$mean)),
@@ -600,6 +599,24 @@ find_parameters.glmmadmb <- find_parameters.merMod
 
 
 #' @export
+find_parameters.sem <- function(x, effects = c("all", "fixed", "random"), flatten = FALSE, ...) {
+  if (!.is_semLme(x)) {
+    return(NULL)
+  }
+
+  effects <- match.arg(effects)
+
+  l <- .compact_list(list(
+    conditional = names(x$coef),
+    random = colnames(x$ranef)
+  ))
+
+  .filter_parameters(l, effects = effects, flatten = flatten)
+}
+
+
+
+#' @export
 find_parameters.cpglmm <- function(x, effects = c("all", "fixed", "random"), flatten = FALSE, ...) {
   if (!requireNamespace("cplm", quietly = TRUE)) {
     stop("Package 'cplm' required for this function to work. Please install it.")
@@ -922,7 +939,9 @@ find_parameters.brmsfit <- function(x, effects = c("all", "fixed", "random"), co
       }
 
       if (.obj_has_name(l, "random")) {
-        random <- l$random[grepl(sprintf("__\\Q%s\\E\\.", i), l$random)]
+        random <- l$random[grepl(sprintf("__\\Q%s\\E\\.", i), l$random) |
+          grepl(sprintf("^sd_(.*)\\Q%s\\E\\_", i), l$random) |
+          grepl("^cor_", l$random)]
       } else {
         random <- NULL
       }
@@ -934,7 +953,9 @@ find_parameters.brmsfit <- function(x, effects = c("all", "fixed", "random"), co
       }
 
       if (.obj_has_name(l, "zero_inflated_random")) {
-        zero_inflated_random <- l$zero_inflated_random[grepl(sprintf("__zi_\\Q%s\\E\\.", i), l$zero_inflated_random)]
+        zero_inflated_random <- l$zero_inflated_random[grepl(sprintf("__zi_\\Q%s\\E\\.", i), l$zero_inflated_random) |
+          grepl(sprintf("^sd_(.*)\\Q%s\\E\\_", i), l$zero_inflated_random) |
+          grepl("^cor_", l$zero_inflated_random)]
       } else {
         zero_inflated_random <- NULL
       }
@@ -946,7 +967,7 @@ find_parameters.brmsfit <- function(x, effects = c("all", "fixed", "random"), co
       }
 
       if (.obj_has_name(l, "sigma")) {
-        sigma <- l$sigma[grepl(sprintf("^sigma_\\Q%s\\E", i), l$sigma)]
+        sigma <- l$sigma[grepl(sprintf("^sigma_\\Q%s\\E$", i), l$sigma)]
       } else {
         sigma <- NULL
       }
@@ -1336,6 +1357,25 @@ find_parameters.wbgee <- find_parameters.wbm
 
 
 #' @export
+find_parameters.mle2 <- function(x, flatten = FALSE, ...) {
+  if (!requireNamespace("bbmle", quietly = TRUE)) {
+    stop("Package `bbmle` needs to be installed to extract parameter names.", call. = FALSE)
+  }
+  s <- bbmle::summary(x)
+  out <- list(conditional = rownames(s@coef))
+
+  if (flatten) {
+    unique(unlist(out))
+  } else {
+    out
+  }
+}
+
+#' @export
+find_parameters.mle <- find_parameters.mle2
+
+
+#' @export
 find_parameters.glht <- function(x, flatten = FALSE, ...) {
   s <- summary(x)
   alt <- switch(
@@ -1534,7 +1574,7 @@ find_parameters.aovlist <- function(x, flatten = FALSE, ...) {
 find_parameters.crq <- function(x, flatten = FALSE, ...) {
   sc <- summary(x)
 
-  if (all(lapply(sc, is.list))) {
+  if (all(unlist(lapply(sc, is.list)))) {
     pars <- list(conditional = rownames(sc[[1]]$coefficients))
   } else {
     pars <- list(conditional = rownames(sc$coefficients))
@@ -1550,6 +1590,30 @@ find_parameters.crq <- function(x, flatten = FALSE, ...) {
 
 #' @export
 find_parameters.crqs <- find_parameters.crq
+
+
+
+#' @importFrom stats coef
+#' @export
+find_parameters.lqmm <- function(x, flatten = FALSE, ...) {
+  cs <- stats::coef(x)
+
+  if (is.matrix(cs)) {
+    pars <- list(conditional = rownames(cs))
+  } else {
+    pars <- list(conditional = names(cs))
+  }
+  pars$conditional <- .remove_backticks_from_string(pars$conditional)
+
+  if (flatten) {
+    unique(unlist(pars))
+  } else {
+    pars
+  }
+}
+
+#' @export
+find_parameters.lqm <- find_parameters.lqmm
 
 
 
@@ -1629,6 +1693,26 @@ find_parameters.metaplus <- function(x, flatten = FALSE, ...) {
   } else {
     pars
   }
+}
+
+
+
+#' @export
+find_parameters.mipo <- function(x, flatten = FALSE, ...) {
+  pars <- list(conditional = as.vector(summary(x)$term))
+  pars$conditional <- .remove_backticks_from_string(pars$conditional)
+
+  if (flatten) {
+    unique(unlist(pars))
+  } else {
+    pars
+  }
+}
+
+
+#' @export
+find_parameters.mira <- function(x, flatten = FALSE, ...) {
+  find_parameters(x$analyses[[1]], flatten = flatten, ...)
 }
 
 

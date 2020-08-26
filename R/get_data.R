@@ -157,6 +157,24 @@ get_data.nlrq <- get_data.gls
 get_data.robmixglm <- get_data.gls
 
 
+#' @export
+get_data.lqmm <- function(x, ...) {
+  mf <- tryCatch(
+    {
+      x$mfArgs$data
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+
+  .prepare_get_data(x, stats::na.omit(mf))
+}
+
+
+
+
+
 
 
 
@@ -414,6 +432,29 @@ get_data.clmm <- get_data.rlmerMod
 get_data.mixed <- function(x, effects = c("all", "fixed", "random"), ...) {
   effects <- match.arg(effects)
   .get_data_from_modelframe(x, x$data, effects)
+}
+
+
+
+#' @export
+get_data.sem <- function(x, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+  mf <- tryCatch(
+    {
+      dat <- .get_data_from_env(x)
+      switch(
+        effects,
+        all = dat[, find_variables(x, flatten = TRUE), drop = FALSE],
+        fixed = dat[, find_variables(x, effects = "fixed", flatten = TRUE), drop = FALSE],
+        random = dat[, find_random(x, flatten = TRUE), drop = FALSE]
+      )
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+
+  .prepare_get_data(x, stats::na.omit(mf), effects)
 }
 
 
@@ -892,6 +933,16 @@ get_data.negbinmfx <- get_data.betamfx
 
 
 #' @export
+get_data.mle2 <- function(x, ...) {
+  as.data.frame(do.call(cbind, x@data))
+}
+
+#' @export
+get_data.mle <- get_data.mle2
+
+
+
+#' @export
 get_data.glht <- function(x, ...) {
   get_data(x$model, ...)
 }
@@ -1163,3 +1214,11 @@ get_data.rma <- function(x, ...) {
 
 #' @export
 get_data.metaplus <- get_data.rma
+
+
+
+#' @export
+get_data.mipo <- function(x, ...) {
+  models <- eval(x$call$object)
+  get_data(models$analyses[[1]], ...)
+}

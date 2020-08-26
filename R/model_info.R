@@ -217,6 +217,12 @@ model_info.lm_robust <- model_info.mmclogit
 model_info.iv_robust <- model_info.mmclogit
 
 #' @export
+model_info.lqmm <- model_info.mmclogit
+
+#' @export
+model_info.lqm <- model_info.mmclogit
+
+#' @export
 model_info.felm <- model_info.mmclogit
 
 #' @export
@@ -1062,6 +1068,19 @@ model_info.gamlss <- function(x, ...) {
     link.fun = faminfo$mu.link,
     ...
   )
+}
+
+
+#' @export
+model_info.mipo <- function(x, ...) {
+  models <- eval(x$call$object)
+  model_info(models$analyses[[1]], ...)
+}
+
+
+#' @export
+model_info.mira <- function(x, ...) {
+  model_info(x$analyses[[1]], ...)
 }
 
 

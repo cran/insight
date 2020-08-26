@@ -751,6 +751,64 @@ get_statistic.negbinirr <- get_statistic.logitor
 
 
 #' @export
+get_statistic.lqmm <- function(x, ...) {
+  cs <- summary(x, ...)
+  params <- get_parameters(x)
+
+  if (is.list(cs$tTable)) {
+    stats <- do.call(rbind, cs$tTable)
+    params$Statistic <- params$Estimate / stats[, 2]
+    params <- params[c("Parameter", "Statistic", "Component")]
+  } else {
+    params$Statistic <- params$Estimate / cs$tTable[, 2]
+    params <- params[c("Parameter", "Statistic")]
+  }
+
+  .remove_backticks_from_parameter_names(params)
+}
+
+#' @export
+get_statistic.lqm <- get_statistic.lqmm
+
+
+#' @export
+get_statistic.mipo <- function(x, ...) {
+  params <- data.frame(
+    Parameter = as.vector(summary(x)$term),
+    Statistic = as.vector(summary(x)$statistic),
+    stringsAsFactors = FALSE
+  )
+
+  out <- .remove_backticks_from_parameter_names(params)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
+get_statistic.mle2 <- function(x, ...) {
+  if (!requireNamespace("bbmle", quietly = TRUE)) {
+    stop("Package `bbmle` needs to be installed to extract test statistic.", call. = FALSE)
+  }
+  s <- bbmle::summary(x)
+
+  params <- data.frame(
+    Parameter = names(s@coef[, 3]),
+    Statistic = unname(s@coef[, 3]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  out <- .remove_backticks_from_parameter_names(params)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+#' @export
+get_statistic.mle <- get_statistic.mle2
+
+
+#' @export
 get_statistic.glht <- function(x, ...) {
   s <- summary(x)
   alt <- switch(
@@ -805,6 +863,16 @@ get_statistic.emmGrid <- function(x, ci = .95, adjust = "none", ...) {
       se <- (s$upper.CL - s$lower.CL) / (2 * fac)
     }
     stat <- s[[x@misc$estName]] / se
+
+    # 2nd try
+    if (.is_empty_object(stat)) {
+      stat <- s[["t.ratio"]]
+    }
+
+    # quit
+    if (.is_empty_object(stat)) {
+      return(NULL)
+    }
 
     out <- data.frame(
       s[, 1:(estimate_pos - 1), drop = FALSE],
@@ -956,6 +1024,31 @@ get_statistic.cpglmm <- function(x, ...) {
 }
 
 
+#' @export
+get_statistic.sem <- function(x, ...) {
+  if (!.is_semLme(x)) {
+    return(NULL)
+  }
+
+  params <- get_parameters(x, effects = "fixed")
+
+  if (is.null(x$se)) {
+    warning("Model has no standard errors. Please fit model again with bootstrapped standard errors.", call. = FALSE)
+    return(NULL)
+  }
+
+  out <- data.frame(
+    Parameter = params$Parameter,
+    Statistic = as.vector(x$coef / x$se),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
 #' @importFrom utils capture.output
 #' @export
 get_statistic.cpglm <- function(x, ...) {
@@ -1079,7 +1172,39 @@ get_statistic.rq <- function(x, ...) {
 }
 
 #' @export
-get_statistic.crq <- get_statistic.rq
+get_statistic.crq <- function(x, ...) {
+  sc <- summary(x)
+  params <- get_parameters(x)
+
+  if (all(unlist(lapply(sc, is.list)))) {
+    list_sc <- lapply(sc, function(i) {
+      .x <- as.data.frame(i)
+      .x$Parameter <- rownames(.x)
+      .x
+    })
+    out <- do.call(rbind, list_sc)
+    out <- data.frame(
+      Parameter = params$Parameter,
+      Statistic = out$coefficients.T.Value,
+      Component = params$Component,
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  } else {
+    out <- data.frame(
+      Parameter = params$Parameter,
+      Statistic = unname(sc$coefficients[, 5]),
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  }
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+#' @export
+get_statistic.crqs <- get_statistic.crq
 
 #' @export
 get_statistic.nlrq <- get_statistic.rq

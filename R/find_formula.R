@@ -192,8 +192,10 @@ find_formula.betareg <- function(x, ...) {
 
   if (grepl("|", fs, fixed = TRUE)) {
     fs <- trimws(unlist(strsplit(fs, "|", fixed = TRUE)))
-    list(conditional = stats::as.formula(fs[1]),
-         precision = stats::as.formula(paste0("~", fs[2])))
+    list(
+      conditional = stats::as.formula(fs[1]),
+      precision = stats::as.formula(paste0("~", fs[2]))
+    )
   } else {
     list(conditional = f)
   }
@@ -895,6 +897,30 @@ find_formula.cgamm <- find_formula.merMod
 find_formula.coxme <- find_formula.merMod
 
 
+#' @export
+find_formula.sem <- function(x, ...) {
+  if (!.is_semLme(x)) {
+    return(NULL)
+  }
+
+  if (!requireNamespace("lme4", quietly = TRUE)) {
+    stop("To use this function, please install package 'lme4'.")
+  }
+
+  f.cond <- x$formula
+  f.random <- lapply(lme4::findbars(f.cond), function(.x) {
+    f <- .safe_deparse(.x)
+    stats::as.formula(paste0("~", f))
+  })
+
+  if (length(f.random) == 1) {
+    f.random <- f.random[[1]]
+  }
+
+  f.cond <- stats::as.formula(.get_fixed_effects(f.cond))
+  .compact_list(list(conditional = f.cond, random = f.random))
+}
+
 
 #' @export
 find_formula.lme <- function(x, ...) {
@@ -912,6 +938,20 @@ find_formula.lme <- function(x, ...) {
     conditional = fm,
     random = fmr,
     correlation = stats::as.formula(fc)
+  ))
+}
+
+
+
+#' @export
+find_formula.lqmm <- function(x, ...) {
+  fm <- eval(x$call$fixed)
+  fmr <- .safe_deparse(x$call$random)
+  fmg <- .safe_deparse(x$call$group)
+
+  .compact_list(list(
+    conditional = fm,
+    random = stats::as.formula(paste0(fmr, "|", fmg))
   ))
 }
 
@@ -1024,19 +1064,23 @@ find_formula.stanreg <- function(x, ...) {
     stop("To use this function, please install package 'lme4'.")
   }
 
-  f.cond <- stats::formula(x)
-  f.random <- lapply(lme4::findbars(f.cond), function(.x) {
-    f <- .safe_deparse(.x)
-    stats::as.formula(paste0("~", f))
-  })
+  if (inherits(x, "nlmerMod")) {
+    find_formula.nlmerMod(x, ...)
+  } else {
+    f.cond <- stats::formula(x)
+    f.random <- lapply(lme4::findbars(f.cond), function(.x) {
+      f <- .safe_deparse(.x)
+      stats::as.formula(paste0("~", f))
+    })
 
-  if (length(f.random) == 1) {
-    f.random <- f.random[[1]]
+    if (length(f.random) == 1) {
+      f.random <- f.random[[1]]
+    }
+
+    f.cond <- stats::as.formula(.get_fixed_effects(f.cond))
+
+    .compact_list(list(conditional = f.cond, random = f.random))
   }
-
-  f.cond <- stats::as.formula(.get_fixed_effects(f.cond))
-
-  .compact_list(list(conditional = f.cond, random = f.random))
 }
 
 
