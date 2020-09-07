@@ -10,6 +10,9 @@
     return(NULL)
   }
 
+  # save for later use
+  original_model_frame <- mf
+
   # we may store model weights here later
   mw <- NULL
 
@@ -19,9 +22,11 @@
     colnames(mf)[offcol] <- clean_names(.safe_deparse(x$call$offset))
   }
 
+  mf <- .backtransform(mf)
+
   # clean 1-dimensional matrices
   mf[] <- lapply(mf, function(.x) {
-    if (is.matrix(.x) && dim(.x)[2] == 1 && !inherits(.x, c("ns", "bs"))) {
+    if (is.matrix(.x) && dim(.x)[2] == 1 && !inherits(.x, c("ns", "bs", "poly"))) {
       as.vector(.x)
     } else {
       .x
@@ -542,4 +547,92 @@
       NULL
     }
   )
+}
+
+
+
+
+
+# backtransform variables -------------------------------
+
+.backtransform <- function(mf) {
+  tryCatch(
+    {
+      patterns <- c("scale\\(log", "exp\\(scale", "log\\(log", "log", "log1p",
+                    "log10", "log2", "sqrt", "exp", "expm1", "scale")
+      for (i in patterns) {
+        mf <- .backtransform_helper(mf, i)
+      }
+      mf
+    },
+    error = function(e) { mf }
+  )
+}
+
+
+.backtransform_helper <- function(mf, type) {
+  cn <- .get_transformed_names(colnames(mf), type)
+  if (!.is_empty_string(cn)) {
+    for (i in cn) {
+      if (type == "scale\\(log") {
+        mf[[i]] <- exp(.unscale(mf[[i]]))
+      } else if (type == "exp\\(scale") {
+        mf[[i]] <- .unscale(log(mf[[i]]))
+      } else if (type == "log\\(log") {
+        mf[[i]] <- exp(exp(mf[[i]]))
+      } else if (type == "log") {
+        mf[[i]] <- exp(mf[[i]])
+      } else if (type == "log1p") {
+        mf[[i]] <- expm1(mf[[i]])
+      } else if (type == "log10") {
+        mf[[i]] <- 10^(mf[[i]])
+      } else if (type == "log2") {
+        mf[[i]] <- 2^(mf[[i]])
+      } else if (type == "sqrt") {
+        mf[[i]] <- (mf[[i]])^2
+      } else if (type == "exp") {
+        mf[[i]] <- log(mf[[i]])
+      } else if (type == "expm1") {
+        mf[[i]] <- log1p(mf[[i]])
+      } else if (type == "scale") {
+        mf[[i]] <- .unscale(mf[[i]])
+      }
+      colnames(mf)[colnames(mf) == i] <- .get_transformed_terms(i, type)
+    }
+  }
+  mf
+}
+
+
+
+.unscale <- function(x) {
+  m <- attr(x, "scaled:center")
+  s <- attr(x, "scaled:scale")
+
+  if (is.null(m)) m <- 0
+  if (is.null(s)) s <- 1
+
+  s * x + m
+}
+
+
+
+# find transformed terms, to convert back as raw data --------------------------------
+
+# Find transformed terms inside model formula, and return "clean" term names
+.get_transformed_terms <- function(model, type = "all") {
+  if (is.character(model)) {
+    x <- model
+  } else {
+    x <- find_terms(model, flatten = TRUE)
+  }
+  pattern <- sprintf("%s\\(([^,)]*).*", type)
+  gsub(pattern, "\\1", x[grepl(pattern, x)])
+}
+
+
+# get column names of transformed terms
+.get_transformed_names <- function(x, type = "all") {
+  pattern <- sprintf("%s\\(([^,)]*).*", type)
+  x[grepl(pattern, x)]
 }
