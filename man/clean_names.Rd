@@ -2,12 +2,20 @@
 % Please edit documentation in R/clean_names.R
 \name{clean_names}
 \alias{clean_names}
+\alias{clean_names.character}
 \title{Get clean names of model terms}
 \usage{
-clean_names(x)
+clean_names(x, ...)
+
+\method{clean_names}{character}(x, include_names = FALSE, ...)
 }
 \arguments{
 \item{x}{A fitted model, or a character vector.}
+
+\item{...}{Currently not used.}
+
+\item{include_names}{Logical, if \code{TRUE}, returns a named vector where
+names are the original values of \code{x}.}
 }
 \value{
 The "cleaned" variable names as character vector, i.e. pattern

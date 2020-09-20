@@ -6,6 +6,9 @@
 #'   \code{as.factor()} etc.
 #'
 #' @param x A fitted model, or a character vector.
+#' @param include_names Logical, if \code{TRUE}, returns a named vector where
+#'   names are the original values of \code{x}.
+#' @param ... Currently not used.
 #'
 #' @return The "cleaned" variable names as character vector, i.e. pattern
 #'   like \code{s()} for splines or \code{log()} are removed from
@@ -40,21 +43,34 @@
 #' find_variables(m)
 #' find_variables(m, flatten = TRUE)
 #' @export
-clean_names <- function(x) {
+clean_names <- function(x, ...) {
   UseMethod("clean_names")
 }
 
 
 #' @export
-clean_names.default <- function(x) {
+clean_names.default <- function(x, ...) {
   cleaned <- unname(find_variables(x, flatten = TRUE))
   .remove_values(cleaned, c("1", "0"))
 }
 
 
+#' @rdname clean_names
 #' @export
-clean_names.character <- function(x) {
-  .remove_pattern_from_names(x)
+clean_names.character <- function(x, include_names = FALSE, ...) {
+  out <- sapply(x, function(.x) {
+    if (grepl(":", .x, fixed = TRUE) && !grepl("::", .x, fixed = TRUE)) {
+      paste(sapply(strsplit(.x, ":", fixed = TRUE), .remove_pattern_from_names), collapse = ":")
+    } else {
+      .remove_pattern_from_names(.x)
+    }
+  })
+
+  if (isTRUE(include_names)) {
+    out
+  } else {
+    unname(out)
+  }
 }
 
 
@@ -70,7 +86,8 @@ clean_names.character <- function(x) {
     "as.factor", "as.numeric", "factor", "frailty", "offset", "log1p", "log10",
     "log2", "log-log", "scale-log", "log", "lag", "diff", "lspline",
     "pspline", "scale-poly", "poly", "catg", "asis", "matrx", "pol", "strata",
-    "strat", "scale", "scored", "interaction", "sqrt", "lsp", "rcs", "pb", "lo",
+    "strat", "scale", "scored", "interaction", "sqrt", "sin", "cos", "tan",
+    "acos", "asin", "atan", "atan2", "exp", "lsp", "rcs", "pb", "lo",
     "bs", "ns", "t2", "te", "ti", "tt", # need to be fixed first "mmc", "mm",
     "mi", "mo", "gp", "s", "I"
   )
