@@ -77,6 +77,11 @@ find_formula.aovlist <- function(x, ...) {
 
 
 
+#' @export
+find_formula.anova <- function(x, ...) {
+  stop("Formulas cannot be retrieved from anova() objects.")
+}
+
 
 
 
@@ -180,6 +185,27 @@ find_formula.gamm <- function(x, ...) {
 
 
 #' @export
+find_formula.averaging <- function(x, ...) {
+  f_random <- tryCatch(
+    {
+      models <- attributes(x)$modelList
+      find_formula(models[[1]])
+    },
+    error = function(e) {
+      NULL
+    }
+  )
+
+  f <- find_formula.default(x)
+  if (!.obj_has_name(f, "random") && .obj_has_name(f_random, "random")) {
+    f$random <- f_random$random
+  }
+
+  f
+}
+
+
+#' @export
 find_formula.glht <- function(x, ...) {
   list(conditional = stats::formula(x$model))
 }
@@ -219,6 +245,12 @@ find_formula.afex_aov <- function(x, ...) {
   } else {
     find_formula(x$lm)
   }
+}
+
+
+#' @export
+find_formula.mira <- function(x, ...) {
+  find_formula(x$analyses[[1]])
 }
 
 
@@ -880,6 +912,15 @@ find_formula.cgamm <- find_formula.merMod
 #' @export
 find_formula.coxme <- find_formula.merMod
 
+#' @export
+find_formula.HLfit <- find_formula.merMod
+
+#' @export
+find_formula.merModList <- function(x, ...) {
+  find_formula(x[[1]], ...)
+}
+
+
 
 #' @export
 find_formula.sem <- function(x, ...) {
@@ -1116,11 +1157,25 @@ find_formula.BFBayesFactor <- function(x, ...) {
       f.random <- stats::as.formula(paste0("~", frand))
       fcond <- sub(frand, "", fcond, fixed = TRUE)
       fcond <- gsub("(.*)\\+$", "\\1", .trim(fcond))
+      # random effects only?
+      if (grepl("~$", fcond)) {
+        fcond <- paste(fcond, "1")
+      }
       f.cond <- stats::as.formula(.trim(fcond))
     } else {
       f.random <- NULL
       f.cond <- stats::as.formula(fcond)
     }
+  } else if (.classify_BFBayesFactor(x) %in% c("ttest1", "ttest2")) {
+    f.cond <- tryCatch(
+      {
+        stats::as.formula(x@numerator[[1]]@identifier$formula)
+      },
+      error = function(e) {
+        NULL
+      }
+    )
+    f.random <- NULL
   } else {
     return(NULL)
   }

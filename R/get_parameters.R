@@ -10,6 +10,11 @@
 #'   (\code{summary = FALSE})) or the summarized centrality indices of
 #'   the posterior samples (\code{summary = TRUE})) should be returned as
 #'   estimates.
+#' @param verbose Toggle messages and warnings.
+#' @param merge_parameters Logical, if \code{TRUE} and \code{x} has multiple
+#'   columns for parameter names (like \code{emmGrid} objects may have), these
+#'   are merged into a single parameter column, with parameters names and values
+#'   as values.
 #' @param ... Currently not used.
 #'
 #' @inheritParams find_parameters
@@ -330,6 +335,36 @@ get_parameters.mipo <- function(x, ...) {
 
 
 #' @export
+get_parameters.mira <- function(x, ...) {
+  if (!requireNamespace("mice", quietly = TRUE)) {
+    stop("Package `mice` required. Please install it.", call. = FALSE)
+  }
+  get_parameters(mice::pool(x), ...)
+}
+
+
+#' @export
+get_parameters.margins <- function(x, ...) {
+  s <- summary(x)
+  param <- as.vector(s$factor)
+  estimate_pos <- which(colnames(s) == "AME")
+
+  if (estimate_pos > 2) {
+    out <- s[1:(estimate_pos - 1)]
+    r <- apply(out, 1, function(i) paste0(colnames(out), " [", i, "]"))
+    param <- unname(sapply(as.data.frame(r), paste, collapse = ", "))
+  }
+
+  out <- data.frame(
+    Parameter = param,
+    Estimate = as.vector(summary(x)$AME),
+    stringsAsFactors = FALSE
+  )
+  .remove_backticks_from_parameter_names(out)
+}
+
+
+#' @export
 get_parameters.glht <- function(x, ...) {
   s <- summary(x)
   alt <- switch(
@@ -347,19 +382,64 @@ get_parameters.glht <- function(x, ...) {
 }
 
 
+#' @rdname get_parameters
 #' @export
-get_parameters.emmGrid <- function(x, ...) {
-  s <- summary(x)
-  estimate_pos <- which(colnames(s) == x@misc$estName)
+get_parameters.emmGrid <- function(x, summary = FALSE, merge_parameters = FALSE, ...) {
+  # check if we have a Bayesian model here
+  if (!.is_baysian_emmeans(x) || isTRUE(summary)) {
+    s <- summary(x)
+    estimate_pos <- which(colnames(s) == x@misc$estName)
+    params <- s[, 1:(estimate_pos - 1), drop = FALSE]
+    if (isTRUE(merge_parameters) && ncol(params) > 1) {
+      r <- apply(params, 1, function(i) paste0(colnames(params), " [", i, "]"))
+      out <- data.frame(
+        Parameter = unname(sapply(as.data.frame(r), paste, collapse = ", ")),
+        Estimate = s[[estimate_pos]],
+        stringsAsFactors = FALSE,
+        row.names = NULL
+      )
+    } else {
+      out <- data.frame(
+        params,
+        Estimate = s[[estimate_pos]],
+        stringsAsFactors = FALSE,
+        row.names = NULL
+      )
+      if (isTRUE(merge_parameters)) {
+        colnames(out)[1] <- "Parameter"
+      }
+    }
+    .remove_backticks_from_parameter_names(out)
+  } else {
+    .clean_emmeans_draws(x)
+  }
+}
 
-  params <- data.frame(
-    s[, 1:(estimate_pos - 1), drop = FALSE],
-    Estimate = s[[estimate_pos]],
-    stringsAsFactors = FALSE,
-    row.names = NULL
-  )
 
-  .remove_backticks_from_parameter_names(params)
+#' @export
+get_parameters.emm_list <- function(x, summary = FALSE, ...) {
+  if (!.is_baysian_emmeans(x) || isTRUE(summary)) {
+    do.call(rbind, lapply(names(x), function(i) {
+      out <- get_parameters(x[[i]], summary = summary)
+      if (ncol(out) > 2) {
+        est <- out$Estimate
+        out$Estimate <- NULL
+        r <- apply(out, 1, function(i) paste0(colnames(out), " [", i, "]"))
+        out <- data.frame(
+          Parameter = unname(sapply(as.data.frame(r), paste, collapse = ", ")),
+          Estimate = unname(est),
+          stringsAsFactors = FALSE
+        )
+      }
+      out$Component <- i
+      colnames(out)[1] <- "Parameter"
+      out
+    }))
+  } else {
+    do.call(cbind, lapply(names(x), function(i) {
+      .clean_emmeans_draws(x[[i]])
+    }))
+  }
 }
 
 
@@ -962,6 +1042,49 @@ get_parameters.glmmadmb <- get_parameters.merMod
 #' @export
 get_parameters.lme <- get_parameters.merMod
 
+#' @export
+get_parameters.merModList <- function(x, ...) {
+  s <- suppressWarnings(summary(x))
+  fixed <- data.frame(
+    Parameter = s$fe$term,
+    Estimate = s$fe$estimate,
+    stringsAsFactors = FALSE
+  )
+
+  .remove_backticks_from_parameter_names(fixed)
+}
+
+#' @export
+get_parameters.HLfit <- function(x, effects = c("fixed", "random"), ...) {
+  if (!requireNamespace("lme4", quietly = TRUE)) {
+    stop("To use this function, please install package 'lme4'.")
+  }
+
+  effects <- match.arg(effects)
+
+  if (effects == "fixed") {
+    l <- list(conditional = lme4::fixef(x))
+  } else {
+    utils::capture.output(s <- summary(x))
+    l <- .compact_list(list(
+      conditional = lme4::fixef(x),
+      random = lme4::ranef(x)
+    ))
+  }
+
+  fixed <- data.frame(
+    Parameter = names(l$conditional),
+    Estimate = unname(l$conditional),
+    stringsAsFactors = FALSE
+  )
+
+  if (effects == "fixed") {
+    .remove_backticks_from_parameter_names(fixed)
+  } else {
+    l$random
+  }
+}
+
 
 
 #' @export
@@ -1545,6 +1668,10 @@ get_parameters.manova <- function(x, ...) {
   .remove_backticks_from_parameter_names(out)
 }
 
+#' @export
+get_parameters.maov <- get_parameters.manova
+
+
 
 #' @export
 get_parameters.afex_aov <- function(x, ...) {
@@ -1596,11 +1723,9 @@ get_parameters.BGGM <- function(x, component = c("correlation", "conditional", "
 }
 
 
-## TODO change to "summary = FALSE" once bayestestR 0.7.1 or higher on CRAN
-
 #' @rdname get_parameters
 #' @export
-get_parameters.MCMCglmm <- function(x, effects = c("fixed", "random", "all"), summary = TRUE, ...) {
+get_parameters.MCMCglmm <- function(x, effects = c("fixed", "random", "all"), summary = FALSE, ...) {
   effects <- match.arg(effects)
 
   nF <- x$Fixed$nfl
@@ -1625,7 +1750,7 @@ get_parameters.MCMCglmm <- function(x, effects = c("fixed", "random", "all"), su
 
 #' @rdname get_parameters
 #' @export
-get_parameters.BFBayesFactor <- function(x, effects = c("all", "fixed", "random"), component = c("all", "extra"), iterations = 4000, progress = FALSE, ...) {
+get_parameters.BFBayesFactor <- function(x, effects = c("all", "fixed", "random"), component = c("all", "extra"), iterations = 4000, progress = FALSE, verbose = TRUE, ...) {
   if (!requireNamespace("BayesFactor", quietly = TRUE)) {
     stop("This function requires package `BayesFactor` to work. Please install it.")
   }
@@ -1637,18 +1762,22 @@ get_parameters.BFBayesFactor <- function(x, effects = c("all", "fixed", "random"
   # check if valid model was indexed...
 
   if (length(x@numerator) > 1 ||
-      !xor(x@denominator@shortName == "Intercept only",
-           grepl("^(Null|Indep)", x@denominator@shortName))) {
-    message(
-      "Multiple `BFBayesFactor` models detected - posteriors are extracted from the first numerator model.\n",
-      'See help("get_parameters", package = "insight").'
-    )
+    !xor(
+      x@denominator@shortName == "Intercept only",
+      grepl("^(Null|Indep)", x@denominator@shortName)
+    )) {
+    if (verbose) {
+      message(
+        "Multiple `BFBayesFactor` models detected - posteriors are extracted from the first numerator model.\n",
+        'See help("get_parameters", package = "insight").'
+      )
+    }
   }
 
 
-  params <- find_parameters(x, effects = effects, component = component, flatten = TRUE)
+  params <- find_parameters(x, effects = effects, component = component, flatten = TRUE, ...)
 
-  if (bf_type %in% c("correlation", "ttest", "meta", "linear")) {
+  if (bf_type %in% c("correlation", "ttest1", "ttest2", "meta", "linear")) {
     posteriors <-
       as.data.frame(suppressMessages(
         BayesFactor::posterior(x, iterations = iterations, progress = progress, index = 1, ...)
@@ -1657,7 +1786,8 @@ get_parameters.BFBayesFactor <- function(x, effects = c("all", "fixed", "random"
     switch(
       bf_type,
       "correlation" = data.frame("rho" = as.numeric(posteriors$rho)),
-      "ttest" = data.frame("Difference" = as.numeric(posteriors[, 2])),
+      "ttest1" = data.frame("Difference" = x@numerator[[1]]@prior$mu - as.numeric(posteriors[, 1])),
+      "ttest2" = data.frame("Difference" = x@numerator[[1]]@prior$mu - as.numeric(posteriors[, 2])),
       "meta" = data.frame("Effect" = as.numeric(posteriors$delta)),
       "linear" = .get_bf_posteriors(posteriors, params),
       NULL
@@ -1994,4 +2124,25 @@ get_parameters.bayesQR <- function(x, parameters = NULL, summary = FALSE, ...) {
     Estimate = unname(s),
     stringsAsFactors = FALSE
   )
+}
+
+
+.clean_emmeans_draws <- function(x, ...) {
+  if (!requireNamespace("emmeans", quietly = TRUE)) {
+    stop("Package 'emmeans' required for this function to work.\n",
+         "Please install it by running `install.packages('emmeans')`.")
+  }
+
+  if (!is.null(attributes(x)$misc$predict.type) && attributes(x)$misc$predict.type != "none") {
+    x <- emmeans::regrid(x, transform = attributes(x)$misc$predict.type, ...)
+  }
+
+  draws <- emmeans::as.mcmc.emmGrid(
+    x,
+    names = FALSE,
+    sep.chains = FALSE,
+    NE.include = TRUE,
+    ...
+  )
+  data.frame(draws, check.names = FALSE)
 }

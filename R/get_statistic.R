@@ -22,6 +22,7 @@
 #' @param adjust Character value naming the method used to adjust p-values or confidence intervals. See \code{?emmeans::summary.emmGrid} for details.
 #' @param ci Confidence Interval (CI) level. Default to 0.95 (95\%). Currently only applies to objects of class \code{emmGrid}.
 #' @param ... Currently not used.
+#' @inheritParams get_parameters
 #'
 #' @return A data frame with the model's parameter names and the related test statistic.
 #'
@@ -88,6 +89,19 @@ get_statistic.lme <- function(x, ...) {
 get_statistic.lmerModLmerTest <- get_statistic.lme
 
 
+#' @export
+get_statistic.merModList <- function(x, ...) {
+  s <- suppressWarnings(summary(x))
+  out <- data.frame(
+    Parameter = s$fe$term,
+    Statistic = s$fe$statistic,
+    stringsAsFactors = FALSE
+  )
+
+  out <- .remove_backticks_from_parameter_names(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
 
 
 #' @export
@@ -344,14 +358,16 @@ get_statistic.vglm <- function(x, ...) {
 get_statistic.vgam <- function(x, ...) {
   params <- get_parameters(x)
   out <- data.frame(
-    Parameter = params$Parameter,
-    Statistic = as.vector(params$Estimate / sqrt(diag(get_varcov(x)))),
-    Component = params$Component,
+    Parameter = names(x@nl.chisq),
+    Statistic = x@nl.chisq,
     stringsAsFactors = FALSE,
     row.names = NULL
   )
 
-  out <- .remove_backticks_from_parameter_names(out)
+  out <- merge(params, out, all.x = TRUE)
+  out <- out[order(out$Parameter, params$Parameter), ]
+
+  out <- .remove_backticks_from_parameter_names(out[c("Parameter", "Statistic", "Component")])
   attr(out, "statistic") <- find_statistic(x)
   out
 }
@@ -751,6 +767,38 @@ get_statistic.negbinirr <- get_statistic.logitor
 
 
 #' @export
+get_statistic.HLfit <- function(x, ...) {
+  if (!requireNamespace("lme4", quietly = TRUE)) {
+    stop("To use this function, please install package 'lme4'.")
+  }
+
+  utils::capture.output(s <- summary(x))
+
+  out <- data.frame(
+    Parameter = rownames(s$beta_table),
+    Statistic = as.vector(s$beta_table[, "t-value"]),
+    stringsAsFactors = FALSE
+  )
+  out <- .remove_backticks_from_parameter_names(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
+get_statistic.margins <- function(x, ...) {
+  out <- data.frame(
+    Parameter = get_parameters(x)$Parameter,
+    Statistic = as.vector(summary(x)$z),
+    stringsAsFactors = FALSE
+  )
+  out <- .remove_backticks_from_parameter_names(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
 get_statistic.lqmm <- function(x, ...) {
   cs <- summary(x, ...)
   params <- get_parameters(x)
@@ -764,7 +812,9 @@ get_statistic.lqmm <- function(x, ...) {
     params <- params[c("Parameter", "Statistic")]
   }
 
-  .remove_backticks_from_parameter_names(params)
+  out <- .remove_backticks_from_parameter_names(params)
+  attr(out, "statistic") <- find_statistic(x)
+  out
 }
 
 #' @export
@@ -778,10 +828,15 @@ get_statistic.mipo <- function(x, ...) {
     Statistic = as.vector(summary(x)$statistic),
     stringsAsFactors = FALSE
   )
-
   out <- .remove_backticks_from_parameter_names(params)
   attr(out, "statistic") <- find_statistic(x)
   out
+}
+
+
+#' @export
+get_statistic.mira <- function(x, ...) {
+  get_statistic(x$analyses[[1]], ...)
 }
 
 
@@ -830,8 +885,14 @@ get_statistic.glht <- function(x, ...) {
 
 #' @rdname get_statistic
 #' @export
-get_statistic.emmGrid <- function(x, ci = .95, adjust = "none", ...) {
+get_statistic.emmGrid <- function(x, ci = .95, adjust = "none", merge_parameters = FALSE, ...) {
   s <- summary(x, level = ci, adjust = adjust)
+
+  # check if DF exist
+  if (is.null(s$df)) {
+    return(NULL)
+  }
+
   estimate_pos <- which(colnames(s) == x@misc$estName)
 
   if (length(estimate_pos)) {
@@ -874,8 +935,14 @@ get_statistic.emmGrid <- function(x, ci = .95, adjust = "none", ...) {
       return(NULL)
     }
 
+    if (isTRUE(merge_parameters)) {
+      params <- get_parameters(x, merge_parameters = TRUE)["Parameter"]
+    } else {
+      params <- s[, 1:(estimate_pos - 1), drop = FALSE]
+    }
+
     out <- data.frame(
-      s[, 1:(estimate_pos - 1), drop = FALSE],
+      params,
       Statistic = as.vector(stat),
       stringsAsFactors = FALSE,
       row.names = NULL
@@ -888,6 +955,35 @@ get_statistic.emmGrid <- function(x, ci = .95, adjust = "none", ...) {
     return(NULL)
   }
 }
+
+
+#' @export
+get_statistic.emm_list <- function(x, ci = .95, adjust = "none", ...) {
+  params <- get_parameters(x)
+  s <- summary(x, level = ci, adjust = adjust)
+  se <- unlist(lapply(s, function(i) {
+    if (is.null(i$SE)) {
+      rep(NA, nrow(i))
+    } else {
+      i$SE
+    }
+  }))
+
+  stat <- params$Estimate / se
+
+  out <- data.frame(
+    Parameter = params$Parameter,
+    Statistic = as.vector(stat),
+    Component = params$Component,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  out <- .remove_backticks_from_parameter_names(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
 
 
 #' @export
@@ -1118,6 +1214,27 @@ get_statistic.manova <- function(x, ...) {
     stringsAsFactors = FALSE,
     row.names = NULL
   )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+
+#' @export
+get_statistic.maov <- function(x, ...) {
+  s <- summary(x)
+  out <- do.call(rbind, lapply(names(s), function(i) {
+    stats <- s[[i]]
+    missing <- is.na(stats[["F value"]])
+    data.frame(
+      Parameter = rownames(stats)[!missing],
+      Statistic = as.vector(stats[["F value"]][!missing]),
+      Response = gsub("\\s*Response ", "", i),
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  }))
 
   attr(out, "statistic") <- find_statistic(x)
   out

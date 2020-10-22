@@ -291,6 +291,12 @@ get_data.merMod <- function(x, effects = c("all", "fixed", "random"), ...) {
   .prepare_get_data(x, mf, effects)
 }
 
+#' @export
+get_data.merModList <- function(x, effects = c("all", "fixed", "random"), ...) {
+  warning("Can't access data for 'merModList' objects.", call. = FALSE)
+  return(NULL)
+}
+
 
 
 #' @export
@@ -341,6 +347,8 @@ get_data.cpglmm <- function(x, effects = c("all", "fixed", "random"), ...) {
   .prepare_get_data(x, mf, effects)
 }
 
+#' @export
+get_data.HLfit <- get_data.cpglmm
 
 
 #' @export
@@ -1228,6 +1236,13 @@ get_data.metaplus <- get_data.rma
 
 #' @export
 get_data.mipo <- function(x, ...) {
-  models <- eval(x$call$object)
-  get_data(models$analyses[[1]], ...)
+  tryCatch(
+    {
+      models <- eval(x$call$object)
+      get_data(models$analyses[[1]], ...)
+    },
+    error = function(e) {
+      NULL
+    }
+  )
 }

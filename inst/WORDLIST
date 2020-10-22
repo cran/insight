@@ -11,6 +11,7 @@ bayesx
 BayesX
 bbmle
 BBmm
+BFBayesFactor
 BGGM
 bife
 blavaan
@@ -33,12 +34,14 @@ doi
 DOI
 easystats
 emmGrid
+estimatr
 et
 fixest
 flexsurv
 gam
 gamls
 gamlss
+Gelman
 ggeffects
 github
 glmm
@@ -58,6 +61,7 @@ lavaan
 lme
 lmerModLmerTest
 logloss
+lqmm
 mclogit
 MCMCglmm
 MCSE
@@ -96,6 +100,7 @@ tweedie
 Tweedie
 untransformed
 variates
+Vehtari
 VGAM
 warmup
 warmups

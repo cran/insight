@@ -67,6 +67,13 @@ n_obs.gamm <- function(x, ...) {
 
 
 #' @export
+n_obs.merModList <- function(x, ...) {
+  stats::nobs(x[[1]])
+}
+
+
+
+#' @export
 n_obs.bayesx <- function(x, ...) {
   length(x$response)
 }
@@ -449,4 +456,19 @@ n_obs.logitor <- n_obs.betamfx
 #' @export
 n_obs.mipo <- function(x, ...) {
   x$glanced$nobs
+}
+
+
+#' @export
+n_obs.mira <- function(x, ...) {
+  if (!requireNamespace("mice", quietly = TRUE)) {
+    stop("Package `mice` required. Please install it.", call. = FALSE)
+  }
+  n_obs(mice::pool(x), ...)
+}
+
+
+#' @export
+n_obs.emm_list <- function(x, ...) {
+  NULL
 }

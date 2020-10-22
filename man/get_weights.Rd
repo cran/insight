@@ -4,15 +4,17 @@
 \alias{get_weights}
 \title{Get the values from model weights}
 \usage{
-get_weights(x, ...)
+get_weights(x, na_rm = FALSE, ...)
 }
 \arguments{
 \item{x}{A fitted model.}
 
+\item{na_rm}{Logical, if \code{TRUE}, removes possible missing values.}
+
 \item{...}{Currently not used.}
 }
 \value{
-The weighting variable, or \code{NULL} if no weights were specified.
+The weighting variable, or \code{NULL} if no weights were specified (or if all weights were 1).
 }
 \description{
 Returns weighting variable of a model.

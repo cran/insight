@@ -16,42 +16,55 @@ if (require("testthat") &&
   })
 
 
-  # ---------------------------
-  # context("BF t.test one sample")
-  # data(sleep)
-  #
-  # x <- ttestBF(x = sleep$extra[sleep$group == 1],
-  #              y = sleep$extra[sleep$group == 2],
-  #              paired = TRUE)
-  #
-  # test_that("get_data", {
-  #   expect_true(is.data.frame(get_data(x)))
-  # })
-  # test_that("find_formula", {
-  #   expect_null(find_formula(x))
-  # })
-  # test_that("get_parameters", {
-  #   expect_equal(nrow(get_parameters(x)), 4000)
-  # })
-
-
 
   # ---------------------------
-  data(chickwts)
-  chickwts <-
-    chickwts[chickwts$feed %in% c("horsebean", "linseed"), ]
-  chickwts$feed <- factor(chickwts$feed)
-  x <- ttestBF(formula = weight ~ feed, data = chickwts)
+  context("BF t.test one/two/paired samples")
+  set.seed(123)
+  x <- rnorm(1000, 0, 1)
+  y <- rnorm(1000, 0, 1)
+
+  t1 <- ttestBF(x = x, mu = 60)
+  t2 <- ttestBF(x = x, y = y)
+  t2d <- ttestBF(x = x, y = y, paired = TRUE, mu = 60)
+
   test_that("get_data", {
-    expect_true(is.data.frame(get_data(x)))
+    expect_true(is.data.frame(get_data(t1)))
+    expect_true(is.data.frame(get_data(t2)))
+    expect_true(is.data.frame(get_data(t2d)))
   })
   test_that("find_formula", {
-    expect_null(find_formula(x))
+    expect_equal(find_formula(t1), list(conditional = y ~ 1))
+    expect_equal(find_formula(t2), list(conditional = y ~ group))
+    expect_equal(find_formula(t2d), list(conditional = y ~ 1))
   })
   test_that("get_parameters", {
-    expect_equal(nrow(get_parameters(x)), 4000)
-  })
+    expect_equal(nrow(get_parameters(t1)), 4000)
+    expect_equal(nrow(get_parameters(t2)), 4000)
+    expect_equal(nrow(get_parameters(t2d)), 4000)
 
+    expect_equal(median(get_parameters(t1)[["Difference"]]), 60, tol = 0.05)
+    expect_equal(median(get_parameters(t2)[["Difference"]]), 0, tol = 0.05)
+    expect_equal(median(get_parameters(t2d)[["Difference"]]), 60, tol = 0.05)
+  })
+  test_that("model_info", {
+    expect_true(model_info(t1)$is_ttest)
+    expect_true(model_info(t2)$is_ttest)
+    expect_true(model_info(t2d)$is_ttest)
+  })
+  test_that("get_priors", {
+    expect_equal(nrow(get_priors(t1)), 1)
+    expect_equal(nrow(get_priors(t2)), 1)
+    expect_equal(nrow(get_priors(t2d)), 1)
+  })
+  test_that("find_parameters", {
+    expect_equal(nrow(get_parameters(t1)), 4000)
+    expect_equal(nrow(get_parameters(t2)), 4000)
+    expect_equal(nrow(get_parameters(t2d)), 4000)
+
+    expect_equal(find_parameters(t1)[[1]], "Difference")
+    expect_equal(find_parameters(t2)[[1]], "Difference")
+    expect_equal(find_parameters(t2d)[[1]], "Difference")
+  })
 
   # ---------------------------
   if (.runThisTest) {
@@ -245,23 +258,29 @@ if (require("testthat") &&
 
 
   corr_BF1 <- correlationBF(iris$Sepal.Length, iris$Sepal.Width, progress = FALSE)
-  corr_BFk <- correlationBF(iris$Sepal.Length, iris$Sepal.Width, progress = FALSE,
-                            nullInterval = c(-1,0))
+  corr_BFk <- correlationBF(iris$Sepal.Length, iris$Sepal.Width,
+    progress = FALSE,
+    nullInterval = c(-1, 0)
+  )
 
   data(raceDolls)
   xtab_BF1 <- contingencyTableBF(raceDolls, sampleType = "indepMulti", fixedMargin = "cols")
 
-  ttest_BF1 <- ttestBF(sleep$extra[sleep$group==1], sleep$extra[sleep$group==2], progress = FALSE)
-  ttest_BFk <- ttestBF(sleep$extra[sleep$group==1], sleep$extra[sleep$group==2], progress = FALSE,
-                       nullInterval = c(-3,0))
+  ttest_BF1 <- ttestBF(sleep$extra[sleep$group == 1], sleep$extra[sleep$group == 2], progress = FALSE)
+  ttest_BFk <- ttestBF(sleep$extra[sleep$group == 1], sleep$extra[sleep$group == 2],
+    progress = FALSE,
+    nullInterval = c(-3, 0)
+  )
 
   prop_BF1 <- proportionBF(y = 15, N = 25, p = .5, progress = FALSE)
-  prop_BFk <- proportionBF(y = 15, N = 25, p = .5, progress = FALSE,
-                           nullInterval = c(0,0.3))
+  prop_BFk <- proportionBF(
+    y = 15, N = 25, p = .5, progress = FALSE,
+    nullInterval = c(0, 0.3)
+  )
 
 
   lm_BFk <- generalTestBF(Sepal.Width ~ Sepal.Length + Species, data = iris, progress = FALSE)
-  lm_BFd <- lm_BFk[3]/lm_BFk[2]
+  lm_BFd <- lm_BFk[3] / lm_BFk[2]
   lm_BF1 <- lm_BFk[2]
 
   test_that("BFBayesFactor index model", {

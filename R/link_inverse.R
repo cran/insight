@@ -378,6 +378,12 @@ link_inverse.negbinirr <- link_inverse.logitmfx
 
 
 #' @export
+link_inverse.merModList <- function(x, ...) {
+  link_inverse.default(x[[1]], ...)
+}
+
+
+#' @export
 link_inverse.robmixglm <- function(x, ...) {
   switch(
     tolower(x$family),
@@ -673,6 +679,15 @@ link_inverse.gam <- function(x, ...) {
 link_inverse.mipo <- function(x, ...) {
   models <- eval(x$call$object)
   link_inverse(models$analyses[[1]])
+}
+
+
+#' @export
+link_inverse.mira <- function(x, ...) {
+  if (!requireNamespace("mice", quietly = TRUE)) {
+    stop("Package `mice` required. Please install it.", call. = FALSE)
+  }
+  link_inverse(mice::pool(x), ...)
 }
 
 

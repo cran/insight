@@ -1,3 +1,39 @@
+# insight 0.10.0
+
+## New function
+
+* `get_sigma()` to return the residual standard deviation.
+* `standardize_names()`, which was moved from package *parameters* to *insight*.
+
+## New supported model classes
+
+* Support for `maov` (*stats*), `HLfit` (*spaMM*), preliminary support for `margins` (*margins*), `merModList` (*merTools*).
+
+## General
+
+* Better support for (weighted) multivariate response models of class `mlm` for functions like `get_varcov()` or `clean_parameters()`.
+* Make `find_formula()` work with t-tests from *BayesFactor*.
+* Improved handling for *mira* objects.
+
+## Changes to functions
+
+* `format_bf()` gains a `na_reference` argument, to set the "reference" for Bayes factor values that are `NA`, and an `exact` argument for returning scientific formatted extreme values.
+* `format_value()` gains a `zap_small` argument, to prevent scientific printing of numbers if these have more decimal places than indicated by `digits`.
+* `get_weights()` now also returns `NULL` when all weights were 1.
+* `get_parameters()` for *BFBayesFactor* objects gets a `verbose` argument.
+* `get_parameters()` for *emmGrid* and *emm_list* objects gets a `summary` argument, to either return the full posterior samples or the summarized centrality indices for Bayesian models.
+* `find_formula()` for `MuMIn::model.avg()` now tries to retrieve the random effects part of a formula, when present.
+* `get_weights()` gains a `na_rm` argument to remove possible missing values.
+
+## Bug fixes
+
+* Fix issues with one-sample Bayesian t-tests ( https://github.com/easystats/parameters/issues/297 ).
+* Fix issue in `format_value()` that printed `"100%"` as `"1e+02%"`.
+* Removed unnecessary white-spaces in `format_ci()` when upper or lower interval was larger than 1e+5.
+* `has_intercept()` did not work correctly when intercept was removed from formula using `-1`.
+* `find_terms()` now shows removal of intercept formula using `-1` as term `"-1"`.
+* Fix issues with `get_statistic()` for *vgam* models.
+
 # insight 0.9.6
 
 ## Changes to functions

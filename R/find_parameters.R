@@ -596,6 +596,38 @@ find_parameters.rlmerMod <- find_parameters.merMod
 #' @export
 find_parameters.glmmadmb <- find_parameters.merMod
 
+#' @export
+find_parameters.merModList <- function(x, effects = c("all", "fixed", "random"), flatten = FALSE, ...) {
+  effects <- match.arg(effects)
+  find_parameters(x[[1]], effects = effects, flatten = flatten, ...)
+}
+
+#' @export
+find_parameters.HLfit <- function(x, effects = c("all", "fixed", "random"), flatten = FALSE, ...) {
+  effects <- match.arg(effects)
+
+  if (!requireNamespace("lme4", quietly = TRUE)) {
+    stop("Package 'lme4' required for this function to work. Please install it.")
+  }
+
+  # we extract random effects only when really necessary, to save
+  # computational time. In particular model with large sample and
+  # many random effects groups may take some time to return random effects
+
+  if (effects == "fixed") {
+    l <- list(conditional = names(lme4::fixef(x)))
+  } else {
+    utils::capture.output(s <- summary(x))
+    l <- .compact_list(list(
+      conditional = names(lme4::fixef(x)),
+      random = s$lambda_table$Term
+    ))
+  }
+
+  .filter_parameters(l, effects = effects, flatten = flatten)
+}
+
+
 
 
 #' @export
@@ -821,7 +853,7 @@ find_parameters.BFBayesFactor <- function(x, effects = c("all", "fixed", "random
 
   if (.classify_BFBayesFactor(x) == "correlation") {
     conditional <- "rho"
-  } else if (.classify_BFBayesFactor(x) == "ttest") {
+  } else if (.classify_BFBayesFactor(x) %in% c("ttest1", "ttest2")) {
     conditional <- "Difference"
   } else if (.classify_BFBayesFactor(x) == "meta") {
     conditional <- "Effect"
@@ -1052,6 +1084,7 @@ find_parameters.stanreg <- function(x, effects = c("all", "fixed", "random"), co
   rand <- fe[grepl(pattern = "^b\\[", fe, perl = TRUE)]
   rand_sd <- fe[grepl(pattern = "^Sigma\\[", fe, perl = TRUE)]
   smooth_terms <- fe[grepl(pattern = "^smooth_sd", fe, perl = TRUE)]
+  # sigma <- fe[grepl(pattern = "sigma", fe, fixed = TRUE)]
 
   l <- .compact_list(list(
     conditional = cond,
@@ -1409,6 +1442,20 @@ find_parameters.emmGrid <- function(x, flatten = TRUE, ...) {
 }
 
 
+#' @export
+find_parameters.emm_list <- function(x, flatten = TRUE, ...) {
+  s <- summary(x)[[1]]
+  estimate_pos <- which(colnames(s) == x[[1]]@misc$estName)
+  out <- list(conditional = colnames(s)[1:(estimate_pos - 1)])
+
+  if (flatten) {
+    unique(unlist(out))
+  } else {
+    out
+  }
+}
+
+
 #' @importFrom stats na.omit coef
 #' @export
 find_parameters.manova <- function(x, flatten = FALSE, ...) {
@@ -1420,6 +1467,10 @@ find_parameters.manova <- function(x, flatten = FALSE, ...) {
     out
   }
 }
+
+#' @export
+find_parameters.maov <- find_parameters.manova
+
 
 
 #' @rdname find_parameters

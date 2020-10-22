@@ -22,15 +22,37 @@ find_statistic <- function(x, ...) {
 
   # model object check --------------------------------------------------------
 
-  # check if the object is a model object; if so, quit early
+  # check if the object is a model object; if not, quit early
   if (!isTRUE(is_model(x))) {
-    stop(message("The entered object is not a model object."), call. = FALSE)
+    stop("The entered object is not a model object.", call. = FALSE)
   }
 
   if (inherits(x, "mipo")) {
-    models <- eval(x$call$object)
-    x <- models$analyses[[1]]
+    x <- tryCatch(
+      {
+        models <- eval(x$call$object)
+        x <- models$analyses[[1]]
+      },
+      error = function(e) {
+        NULL
+      }
+    )
   }
+
+  if (inherits(x, "mira")) {
+    x <- x$analyses[[1]]
+  }
+
+  if (inherits(x, "merModList")) {
+    x <- x[[1]]
+  }
+
+
+  # check if model object is accessible; if not, quit early
+  if (is.null(x)) {
+    return(NULL)
+  }
+
 
   # t-value objects ----------------------------------------------------------
 
@@ -53,6 +75,7 @@ find_statistic <- function(x, ...) {
       "crqs",
       "drc",
       "emmGrid",
+      "emm_list",
       "feis",
       "felm",
       "gamlss",
@@ -60,6 +83,7 @@ find_statistic <- function(x, ...) {
       "glmmPQL",
       "gls",
       "gmm",
+      "HLfit",
       "ivreg",
       "iv_robust",
       "lm",
@@ -88,6 +112,7 @@ find_statistic <- function(x, ...) {
       "rq",
       "rqss",
       "speedlm",
+      "spml",
       "svyglm",
       "svyolr",
       "truncreg",
@@ -166,6 +191,7 @@ find_statistic <- function(x, ...) {
       "rma",
       "rma.mv",
       "rma.uni",
+      "rrvglm",
       "sem",
       "slm",
       "survreg",
@@ -187,7 +213,8 @@ find_statistic <- function(x, ...) {
       "aovlist",
       "anova",
       "Gam",
-      "manova"
+      "manova",
+      "maov"
     )
 
   # chi-squared value objects ------------------------------------------------
@@ -241,8 +268,7 @@ find_statistic <- function(x, ...) {
 
   # pattern finding ----------------------------------------------------------
 
-  unclear.mods <-
-    c("plm")
+  unclear.mods <- c("plm")
 
   if (inherits(x, "glht")) {
     if (x$df == 0) {
@@ -256,14 +282,16 @@ find_statistic <- function(x, ...) {
 
   unsupported.mods <-
     c(
+      "bcplm",
       "BFBayesFactor",
       "brmsfit",
-      "stanreg",
-      "stanmvreg",
       "gbm",
       "list",
       "MCMCglmm",
-      "bcplm",
+      "pairwise.htest",
+      "splmm",
+      "stanreg",
+      "stanmvreg",
       "survfit"
     )
 

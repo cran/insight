@@ -213,7 +213,7 @@
 
     if (obj_type == "correlation") {
       is_correlation <- TRUE
-    } else if (obj_type == "ttest") {
+    } else if (obj_type %in% c("ttest1", "ttest2")) {
       is_ttest <- TRUE
     } else if (obj_type == "meta") {
       is_meta <- TRUE
@@ -223,7 +223,9 @@
 
   # meta analysis
 
-  is_meta <- inherits(x, c("rma", "metaplus"))
+  if (!is_meta) {
+    is_meta <- inherits(x, c("rma", "metaplus"))
+  }
 
   if (inherits(x, "brmsfit") && !is_multivariate(x)) {
     is_meta <- grepl("(.*)\\|(.*)se\\((.*)\\)", .safe_deparse(find_formula(x)$conditional[[2]]))
@@ -321,12 +323,16 @@
 
   if (any(class(x@denominator) %in% c("BFcorrelation"))) {
     "correlation"
-  } else if (any(class(x@denominator) %in% c("BFoneSample", "BFindepSample"))) {
-    "ttest"
+  } else if (any(class(x@denominator) %in% c("BFoneSample"))) {
+    "ttest1"
+  } else if (any(class(x@denominator) %in% c("BFindepSample"))) {
+    "ttest2"
   } else if (any(class(x@denominator) %in% c("BFmetat"))) {
     "meta"
   } else if (any(class(x@denominator) %in% c("BFlinearModel"))) {
     "linear"
+  } else if (any(class(x@denominator) %in% c("BFcontingencyTable"))) {
+    "xtable"
   } else {
     class(x@denominator)
   }
