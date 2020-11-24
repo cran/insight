@@ -8,6 +8,7 @@ if (require("testthat") &&
   test_that("model_info", {
     expect_true(model_info(m1)$is_poisson)
     expect_true(model_info(m1)$is_zero_inflated)
+    expect_false(model_info(m1)$is_linear)
   })
 
   test_that("find_predictors", {
@@ -48,7 +49,8 @@ if (require("testthat") &&
       list(
         conditional = as.formula("art ~ fem + mar + kid5 + ment"),
         zero_inflated = as.formula("~kid5 + phd")
-      )
+      ),
+      ignore_attr = TRUE
     )
   })
 

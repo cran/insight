@@ -1,7 +1,6 @@
 if (require("testthat") &&
   require("insight") &&
   require("ordinal")) {
-  context("insight, model_info")
 
   data(wine, package = "ordinal")
   m1 <- clm(rating ~ temp * contact, data = wine)
@@ -9,6 +8,7 @@ if (require("testthat") &&
   test_that("model_info", {
     expect_true(model_info(m1)$is_ordinal)
     expect_false(model_info(m1)$is_multinomial)
+    expect_false(model_info(m1)$is_linear)
   })
 
   test_that("find_predictors", {
@@ -50,7 +50,8 @@ if (require("testthat") &&
     expect_length(find_formula(m1), 1)
     expect_equal(
       find_formula(m1),
-      list(conditional = as.formula("rating ~ temp * contact"))
+      list(conditional = as.formula("rating ~ temp * contact")),
+      ignore_attr = TRUE
     )
   })
 

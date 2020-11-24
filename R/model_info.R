@@ -42,6 +42,12 @@
 #'      \item \code{is_trial}: model response contains additional information about the trials
 #'      \item \code{is_bayesian}: model is a Bayesian model
 #'      \item \code{is_anova}: model is an Anova object
+#'      \item \code{is_ttest}: model is an an object of class \code{htest}, returned by \code{t.test()}
+#'      \item \code{is_correlation}: model is an an object of class \code{htest}, returned by \code{cor.test()}
+#'      \item \code{is_onewaytest}: model is an an object of class \code{htest}, returned by \code{oneway.test()}
+#'      \item \code{is_proptest}: model is an an object of class \code{htest}, returned by \code{prop.test()}
+#'      \item \code{is_binomtest}: model is an an object of class \code{htest}, returned by \code{binom.test()}
+#'      \item \code{is_chi2test}: model is an an object of class \code{htest}, returned by \code{chisq.test()}
 #'      \item \code{link_function}: the link-function
 #'      \item \code{family}: the family-object
 #'      \item \code{n_obs}: number of observations
@@ -236,6 +242,15 @@ model_info.aovlist <- model_info.mmclogit
 
 #' @export
 model_info.rma <- model_info.mmclogit
+
+#' @export
+model_info.meta_random <- model_info.mmclogit
+
+#' @export
+model_info.meta_bma <- model_info.mmclogit
+
+#' @export
+model_info.meta_fixed <- model_info.mmclogit
 
 #' @export
 model_info.metaplus <- model_info.mmclogit

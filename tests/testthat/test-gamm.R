@@ -15,6 +15,7 @@ if (.runThisTest || Sys.getenv("USER") == "travis") {
 
     test_that("model_info", {
       expect_true(model_info(m1)$is_poisson)
+      expect_false(model_info(m1)$is_linear)
     })
 
     test_that("clean_names", {
@@ -48,7 +49,8 @@ if (.runThisTest || Sys.getenv("USER") == "travis") {
       expect_length(find_formula(m1), 1)
       expect_equal(
         find_formula(m1),
-        list(conditional = as.formula("y ~ s(x0) + s(x1) + s(x2)"))
+        list(conditional = as.formula("y ~ s(x0) + s(x1) + s(x2)")),
+        ignore_attr = TRUE
       )
     })
 

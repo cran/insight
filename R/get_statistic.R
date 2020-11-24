@@ -293,6 +293,10 @@ get_statistic.gam <- function(x, ...) {
   out
 }
 
+#' @export
+get_statistic.scam <- get_statistic.gam
+
+
 
 #' @export
 get_statistic.gamm <- function(x, ...) {
@@ -767,11 +771,13 @@ get_statistic.negbinirr <- get_statistic.logitor
 
 
 #' @export
-get_statistic.HLfit <- function(x, ...) {
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("To use this function, please install package 'lme4'.")
-  }
+get_statistic.ridgelm <- function(x, ...) {
+  NULL
+}
 
+
+#' @export
+get_statistic.HLfit <- function(x, ...) {
   utils::capture.output(s <- summary(x))
 
   out <- data.frame(
@@ -1728,4 +1734,10 @@ get_statistic.bife <- function(x, ...) {
 
   attr(out, "statistic") <- find_statistic(x)
   out
+}
+
+
+#' @export
+get_statistic.mediate <- function(x, ...) {
+  NULL
 }

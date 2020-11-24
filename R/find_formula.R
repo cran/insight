@@ -128,10 +128,7 @@ find_formula.gam <- function(x, ...) {
 find_formula.gamlss <- function(x, ...) {
   tryCatch(
     {
-      if (!requireNamespace("lme4", quietly = TRUE)) {
-        stop("To use this function, please install package 'lme4'.")
-      }
-      f.random <- lapply(lme4::findbars(x$mu.formula), function(.x) {
+      f.random <- lapply(.findbars(x$mu.formula), function(.x) {
         f <- .safe_deparse(.x)
         stats::as.formula(paste0("~", f))
       })
@@ -181,7 +178,42 @@ find_formula.gamm <- function(x, ...) {
 
 
 
+# Meta-Analysis -----------------------
+
+
+#' @export
+find_formula.rma <- function(x, ...) {
+  NULL
+}
+
+#' @export
+find_formula.metaplus <- find_formula.rma
+
+#' @export
+find_formula.meta_random <- find_formula.rma
+
+#' @export
+find_formula.meta_fixed <- find_formula.rma
+
+#' @export
+find_formula.meta_bma <- find_formula.rma
+
+
+
+
+
+
+
 # Other models ----------------------------------------------
+
+
+#' @export
+find_formula.mediate <- function(x, ...) {
+  list(
+    mediator = find_formula(x$model.m),
+    outcome = find_formula(x$model.y)
+  )
+}
 
 
 #' @export
@@ -226,16 +258,6 @@ find_formula.betareg <- function(x, ...) {
     list(conditional = f)
   }
 }
-
-
-#' @export
-find_formula.rma <- function(x, ...) {
-  NULL
-}
-
-#' @export
-find_formula.metaplus <- find_formula.rma
-
 
 
 #' @export
@@ -610,6 +632,7 @@ find_formula.bife <- function(x, ...) {
 
 
 
+#' @importFrom stats formula as.formula
 #' @export
 find_formula.wbm <- function(x, ...) {
   f <- .safe_deparse(stats::formula(x))
@@ -628,12 +651,9 @@ find_formula.wbm <- function(x, ...) {
     f_parts[3] <- .trim(f_parts[3])
     if (grepl("\\((.+)\\|(.+)\\)", f_parts[3])) {
       # we have multiple random effects, which we can better extract
-      # via "lme4::findbars()"
+      # via ".findbars()"
       if (length(gregexpr("\\|", f_parts[3])[[1]]) > 1) {
-        if (!requireNamespace("lme4", quietly = TRUE)) {
-          stop("To use this function, please install package 'lme4'.")
-        }
-        f.rand <- lme4::findbars(stats::as.formula(paste("~", f_parts[3])))
+        f.rand <- .findbars(stats::as.formula(paste("~", f_parts[3])))
       } else {
         f.rand <- gsub("(\\(|\\))", "", f_parts[3])
         f.rand <- stats::as.formula(paste0("~", .trim(f.rand)))
@@ -789,10 +809,6 @@ find_formula.DirichletRegModel <- function(x, ...) {
 
 #' @export
 find_formula.glmmTMB <- function(x, ...) {
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("To use this function, please install package 'lme4'.")
-  }
-
   f.cond <- stats::formula(x)
   f.zi <- stats::formula(x, component = "zi")
   f.disp <- stats::formula(x, component = "disp")
@@ -808,7 +824,7 @@ find_formula.glmmTMB <- function(x, ...) {
   }
 
 
-  f.random <- lapply(lme4::findbars(f.cond), function(.x) {
+  f.random <- lapply(.findbars(f.cond), function(.x) {
     f <- .safe_deparse(.x)
     stats::as.formula(paste0("~", f))
   })
@@ -817,7 +833,7 @@ find_formula.glmmTMB <- function(x, ...) {
     f.random <- f.random[[1]]
   }
 
-  f.zirandom <- lapply(lme4::findbars(f.zi), function(.x) {
+  f.zirandom <- lapply(.findbars(f.zi), function(.x) {
     f <- .safe_deparse(.x)
     if (f == "NULL") {
       return(NULL)
@@ -846,11 +862,7 @@ find_formula.glmmTMB <- function(x, ...) {
 
 #' @export
 find_formula.nlmerMod <- function(x, ...) {
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("To use this function, please install package 'lme4'.")
-  }
-
-  f.random <- lapply(lme4::findbars(stats::formula(x)), function(.x) {
+  f.random <- lapply(.findbars(stats::formula(x)), function(.x) {
     f <- .safe_deparse(.x)
     stats::as.formula(paste0("~", f))
   })
@@ -859,7 +871,7 @@ find_formula.nlmerMod <- function(x, ...) {
     f.random <- f.random[[1]]
   }
 
-  f.cond <- lme4::nobars(stats::as.formula(gsub("(.*)(~)(.*)~(.*)", "\\1\\2\\4", .safe_deparse(stats::formula(x)))))
+  f.cond <- .nobars(stats::as.formula(gsub("(.*)(~)(.*)~(.*)", "\\1\\2\\4", .safe_deparse(stats::formula(x)))))
   f.nonlin <- stats::as.formula(paste0("~", .trim(gsub("(.*)~(.*)~(.*)", "\\2", .safe_deparse(stats::formula(x))))))
 
   .compact_list(list(
@@ -873,12 +885,8 @@ find_formula.nlmerMod <- function(x, ...) {
 
 #' @export
 find_formula.merMod <- function(x, ...) {
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("To use this function, please install package 'lme4'.")
-  }
-
   f.cond <- stats::formula(x)
-  f.random <- lapply(lme4::findbars(f.cond), function(.x) {
+  f.random <- lapply(.findbars(f.cond), function(.x) {
     f <- .safe_deparse(.x)
     stats::as.formula(paste0("~", f))
   })
@@ -928,12 +936,8 @@ find_formula.sem <- function(x, ...) {
     return(NULL)
   }
 
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("To use this function, please install package 'lme4'.")
-  }
-
   f.cond <- x$formula
-  f.random <- lapply(lme4::findbars(f.cond), function(.x) {
+  f.random <- lapply(.findbars(f.cond), function(.x) {
     f <- .safe_deparse(.x)
     stats::as.formula(paste0("~", f))
   })
@@ -1084,16 +1088,19 @@ find_formula.BGGM <- function(x, ...) {
 
 
 #' @export
-find_formula.stanreg <- function(x, ...) {
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("To use this function, please install package 'lme4'.")
-  }
+find_formula.mcmc.list <- function(x, ...) {
+  NULL
+}
 
+
+
+#' @export
+find_formula.stanreg <- function(x, ...) {
   if (inherits(x, "nlmerMod")) {
     find_formula.nlmerMod(x, ...)
   } else {
     f.cond <- stats::formula(x)
-    f.random <- lapply(lme4::findbars(f.cond), function(.x) {
+    f.random <- lapply(.findbars(f.cond), function(.x) {
       f <- .safe_deparse(.x)
       stats::as.formula(paste0("~", f))
     })
@@ -1198,12 +1205,8 @@ find_formula.BFBayesFactor <- function(x, ...) {
 
 
 .get_brms_formula <- function(f) {
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("To use this function, please install package 'lme4'.")
-  }
-
   f.cond <- f$formula
-  f.random <- lapply(lme4::findbars(f.cond), function(.x) {
+  f.random <- lapply(.findbars(f.cond), function(.x) {
     fm <- .safe_deparse(.x)
     stats::as.formula(paste0("~", fm))
   })
@@ -1218,7 +1221,7 @@ find_formula.BFBayesFactor <- function(x, ...) {
   f.zirandom <- NULL
 
   if (!.is_empty_object(f.zi)) {
-    f.zirandom <- lapply(lme4::findbars(f.zi), function(.x) {
+    f.zirandom <- lapply(.findbars(f.zi), function(.x) {
       f <- .safe_deparse(.x)
       stats::as.formula(paste0("~", f))
     })
@@ -1243,12 +1246,8 @@ find_formula.BFBayesFactor <- function(x, ...) {
 
 
 .get_stanmv_formula <- function(f) {
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("To use this function, please install package 'lme4'.")
-  }
-
   f.cond <- f
-  f.random <- lapply(lme4::findbars(f.cond), function(.x) {
+  f.random <- lapply(.findbars(f.cond), function(.x) {
     fm <- .safe_deparse(.x)
     stats::as.formula(paste0("~", fm))
   })

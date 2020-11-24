@@ -393,6 +393,10 @@ find_parameters.gam <- function(x, component = c("all", "conditional", "smooth_t
 }
 
 
+#' @export
+find_parameters.scam <- find_parameters.gam
+
+
 
 #' @export
 find_parameters.Gam <- function(x, component = c("all", "conditional", "smooth_terms"), flatten = FALSE, ...) {
@@ -924,6 +928,17 @@ find_parameters.MCMCglmm <- function(x, effects = c("all", "fixed", "random"), f
 }
 
 
+#' @export
+find_parameters.mcmc.list <- function(x, flatten = FALSE, ...) {
+  l <- list(conditional = colnames(x[[1]]))
+  if (flatten) {
+    unique(unlist(l))
+  } else {
+    l
+  }
+}
+
+
 
 #' @rdname find_parameters
 #' @export
@@ -1390,6 +1405,69 @@ find_parameters.wbgee <- find_parameters.wbm
 
 
 #' @export
+find_parameters.rms <- find_parameters.default
+
+
+#' @export
+find_parameters.tobit <- find_parameters.default
+
+
+#' @export
+find_parameters.mediate <- function(x, flatten = FALSE, ...) {
+  info <- model_info(x$model.y)
+  if (info$is_linear && !x$INT) {
+    out <-
+      list(conditional = c("ACME", "ADE", "Total Effect", "Prop. Mediated"))
+  } else {
+    out <- list(
+      conditional = c(
+        "ACME (control)",
+        "ACME (treated)",
+        "ADE (control)",
+        "ADE (treated)",
+        "Total Effect",
+        "Prop. Mediated (control)",
+        "Prop. Mediated (treated)",
+        "ACME (average)",
+        "ADE (average)",
+        "Prop. Mediated (average)"
+      )
+    )
+  }
+  if (flatten) {
+    unique(unlist(out))
+  } else {
+    out
+  }
+}
+
+
+#' @export
+find_parameters.ridgelm <- function(x, flatten = FALSE, ...) {
+  out <- list(conditional = names(x$coef))
+
+  if (flatten) {
+    unique(unlist(out))
+  } else {
+    out
+  }
+}
+
+
+#' @export
+find_parameters.survreg <- function(x, flatten = FALSE, ...) {
+  s <- summary(x)
+  out <- list(conditional = rownames(s$table))
+
+  if (flatten) {
+    unique(unlist(out))
+  } else {
+    out
+  }
+}
+
+
+#' @export
 find_parameters.mle2 <- function(x, flatten = FALSE, ...) {
   if (!requireNamespace("bbmle", quietly = TRUE)) {
     stop("Package `bbmle` needs to be installed to extract parameter names.", call. = FALSE)
@@ -1730,6 +1808,35 @@ find_parameters.rma <- function(x, flatten = FALSE, ...) {
     }
   )
 }
+
+
+
+#' @export
+find_parameters.meta_random <- function(x, flatten = FALSE, ...) {
+  tryCatch(
+    {
+      cf <- x$estimates
+      pars <- list(conditional = rownames(cf))
+      pars$conditional[pars$conditional == "d"] <- "(Intercept)"
+
+      if (flatten) {
+        unique(unlist(pars))
+      } else {
+        pars
+      }
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+}
+
+
+#' @export
+find_parameters.meta_fixed <- find_parameters.meta_random
+
+#' @export
+find_parameters.meta_bma <- find_parameters.meta_random
 
 
 

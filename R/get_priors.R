@@ -5,6 +5,7 @@
 #'   for the parameters in a given model.
 #'
 #' @param x A Bayesian model.
+#' @param verbose Toggle warnings and messages.
 #' @param ... Currently not used.
 #'
 #' @return A data frame with a summary of the prior distributions used
@@ -151,8 +152,9 @@ get_priors.stanmvreg <- function(x, ...) {
 }
 
 
+#' @rdname get_priors
 #' @export
-get_priors.brmsfit <- function(x, ...) {
+get_priors.brmsfit <- function(x, verbose = TRUE, ...) {
   ## TODO needs testing for edge cases - check if "coef"-column is
   # always empty for intercept-class
   x$prior$coef[x$prior$class == "Intercept"] <- "(Intercept)"
@@ -202,7 +204,9 @@ get_priors.brmsfit <- function(x, ...) {
   }), stringsAsFactors = FALSE)
 
   if (.is_empty_string(pinfo$Distribution)) {
-    print_color("Model was fitted with uninformative (flat) priors!\n", "red")
+    if (verbose) {
+      print_color("Model was fitted with uninformative (flat) priors!\n", "red")
+    }
     pinfo$Distribution <- "uniform"
     pinfo$Location <- 0
     pinfo$Scale <- NA
@@ -234,17 +238,61 @@ get_priors.bcplm <- function(x, ...) {
 
 
 
+#' @export
+get_priors.meta_random <- function(x, ...) {
+  params <- rownames(x$estimates)
+  params[params == "d"] <- "(Intercept)"
+
+  prior_info1 <- attr(x$prior_d, "param")
+  prior_info2 <- attr(x$prior_tau, "param")
+
+  fam1 <- attr(x$prior_d, "family")
+  fam2 <- attr(x$prior_tau, "family")
+
+  data.frame(
+    Parameter = params,
+    Distribution = c(fam1, fam2),
+    Location = c(prior_info1["mean"], prior_info2["shape"]),
+    Scale = c(prior_info1["sd"], prior_info2["scale"]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+}
+
+
+#' @export
+get_priors.meta_fixed <- function(x, ...) {
+  params <- rownames(x$estimates)
+  params[params == "d"] <- "(Intercept)"
+
+  prior_info <- attr(x$prior_d, "param")
+  fam <- attr(x$prior_d, "family")
+
+  data.frame(
+    Parameter = params,
+    Distribution = fam,
+    Location = prior_info["mean"],
+    Scale = prior_info["sd"],
+    stringsAsFactors = FALSE
+  )
+}
+
+
+
 #' @importFrom utils tail
 #' @export
 get_priors.BFBayesFactor <- function(x, ...) {
   prior <- .compact_list(utils::tail(x@numerator, 1)[[1]]@prior[[1]])
+  bf_type <- .classify_BFBayesFactor(x)
 
   prior_names <- switch(
-    .classify_BFBayesFactor(x),
+    bf_type,
     "correlation" = "rho",
     "ttest1" = ,
     "ttest2" = "Difference",
     "meta" = "Effect",
+    "proptest" = "Proportion",
+    "xtable" = "Ratio",
     names(prior)
   )
 
@@ -260,9 +308,15 @@ get_priors.BFBayesFactor <- function(x, ...) {
     }))
   }
 
+  if (bf_type == "xtable") {
+    Distribution <- x@denominator@type[[1]]
+  } else {
+    Distribution <- "cauchy"
+  }
+
   data.frame(
     Parameter = prior_names,
-    Distribution = "cauchy",
+    Distribution = Distribution,
     Location = 0,
     Scale = prior_scale,
     stringsAsFactors = FALSE,
@@ -308,6 +362,12 @@ get_priors.blavaan <- function(x, ...) {
   ))
 }
 
+
+
+#' @export
+get_priors.mcmc.list <- function(x, ...) {
+  NULL
+}
 
 
 #' @importFrom stats na.omit

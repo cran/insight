@@ -1,7 +1,4 @@
-if (require("testthat") &&
-  require("insight") &&
-  require("stats") &&
-  require("BayesFactor")) {
+if (require("testthat") && require("insight") && require("stats") && require("BayesFactor")) {
   .runThisTest <- Sys.getenv("RunAllinsightTests") == "yes"
 
   x <- correlationBF(y = iris$Sepal.Length, x = iris$Sepal.Width)
@@ -14,11 +11,17 @@ if (require("testthat") &&
   test_that("get_parameters", {
     expect_equal(nrow(get_parameters(x)), 4000)
   })
+  mi <- insight::model_info(x)
+  test_that("model_info-BF", {
+    expect_false(mi$is_binomial)
+    expect_true(mi$is_linear)
+    expect_true(mi$is_correlation)
+    expect_false(mi$is_ttest)
+  })
 
 
 
   # ---------------------------
-  context("BF t.test one/two/paired samples")
   set.seed(123)
   x <- rnorm(1000, 0, 1)
   y <- rnorm(1000, 0, 1)
@@ -33,18 +36,18 @@ if (require("testthat") &&
     expect_true(is.data.frame(get_data(t2d)))
   })
   test_that("find_formula", {
-    expect_equal(find_formula(t1), list(conditional = y ~ 1))
-    expect_equal(find_formula(t2), list(conditional = y ~ group))
-    expect_equal(find_formula(t2d), list(conditional = y ~ 1))
+    expect_equal(find_formula(t1), list(conditional = y ~ 1), ignore_attr = TRUE)
+    expect_equal(find_formula(t2), list(conditional = y ~ group), ignore_attr = TRUE)
+    expect_equal(find_formula(t2d), list(conditional = y ~ 1), ignore_attr = TRUE)
   })
   test_that("get_parameters", {
     expect_equal(nrow(get_parameters(t1)), 4000)
     expect_equal(nrow(get_parameters(t2)), 4000)
     expect_equal(nrow(get_parameters(t2d)), 4000)
 
-    expect_equal(median(get_parameters(t1)[["Difference"]]), 60, tol = 0.05)
-    expect_equal(median(get_parameters(t2)[["Difference"]]), 0, tol = 0.05)
-    expect_equal(median(get_parameters(t2d)[["Difference"]]), 60, tol = 0.05)
+    expect_equal(median(get_parameters(t1)[["Difference"]]), 60, tolerance = 0.05)
+    expect_equal(median(get_parameters(t2)[["Difference"]]), 0, tolerance = 0.05)
+    expect_equal(median(get_parameters(t2d)[["Difference"]]), 60, tolerance = 0.05)
   })
   test_that("model_info", {
     expect_true(model_info(t1)$is_ttest)
@@ -95,7 +98,10 @@ if (require("testthat") &&
     })
 
     test_that("find_formula", {
-      expect_equal(find_formula(x), list(conditional = as.formula("len ~ supp + dose + supp:dose")))
+      expect_equal(find_formula(x),
+        list(conditional = as.formula("len ~ supp + dose + supp:dose")),
+        ignore_attr = TRUE
+      )
     })
 
     test_that("get_parameters", {
@@ -117,7 +123,8 @@ if (require("testthat") &&
         list(
           conditional = as.formula("RT ~ shape + color + shape:color"),
           random = as.formula("~ID")
-        )
+        ),
+        ignore_attr = TRUE
       )
     })
 
@@ -204,7 +211,7 @@ if (require("testthat") &&
       expect_true(is.data.frame(get_data(x)))
     })
     test_that("find_formula", {
-      expect_equal(find_formula(x), list(conditional = as.formula("len ~ supp + dose")))
+      expect_equal(find_formula(x), list(conditional = as.formula("len ~ supp + dose")), ignore_attr = TRUE)
     })
     test_that("get_parameters", {
       expect_equal(
@@ -224,7 +231,7 @@ if (require("testthat") &&
       expect_true(is.data.frame(get_data(x)))
     })
     test_that("find_formula", {
-      expect_equal(find_formula(x), list(conditional = as.formula("len ~ supp + dose")))
+      expect_equal(find_formula(x), list(conditional = as.formula("len ~ supp + dose")), ignore_attr = TRUE)
     })
     test_that("get_parameters", {
       expect_equal(
@@ -264,7 +271,7 @@ if (require("testthat") &&
   )
 
   data(raceDolls)
-  xtab_BF1 <- contingencyTableBF(raceDolls, sampleType = "indepMulti", fixedMargin = "cols")
+  xtab_BF1 <- contingencyTableBF(raceDolls, sampleType = "indepMulti", fixedMargin = "cols", priorConcentration = 2)
 
   ttest_BF1 <- ttestBF(sleep$extra[sleep$group == 1], sleep$extra[sleep$group == 2], progress = FALSE)
   ttest_BFk <- ttestBF(sleep$extra[sleep$group == 1], sleep$extra[sleep$group == 2],
@@ -295,5 +302,51 @@ if (require("testthat") &&
     expect_message(get_parameters(ttest_BF1), regexp = NA)
     expect_message(get_parameters(prop_BF1), regexp = NA)
     expect_message(get_parameters(lm_BF1), regexp = NA)
+  })
+
+  test_that("get_priors for xtable", {
+    expect_equal(
+      get_priors(xtab_BF1),
+      structure(list(
+        Parameter = "Ratio",
+        Distribution = "independent multinomial",
+        Location = 0,
+        Scale = 2
+      ),
+      class = "data.frame",
+      row.names = c(NA, -1L)
+      ),
+      tolerance = 1e-5
+    )
+  })
+
+  test_that("get_priors for correlation", {
+    expect_equal(
+      get_priors(corr_BF1),
+      structure(list(
+        Parameter = "rho", Distribution = "cauchy", Location = 0,
+        Scale = 0.333333333333333
+      ), class = "data.frame", row.names = c(
+        NA,
+        -1L
+      )),
+      tolerance = 1e-5
+    )
+  })
+
+  test_that("get_priors for t-test", {
+    expect_equal(
+      get_priors(ttest_BF1),
+      structure(list(
+        Parameter = "Difference",
+        Distribution = "cauchy",
+        Location = 0,
+        Scale = 0.707106781186548
+      ),
+      class = "data.frame",
+      row.names = c(NA, -1L)
+      ),
+      tolerance = 1e-5
+    )
   })
 }

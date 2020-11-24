@@ -16,11 +16,11 @@ if (require("testthat") &&
     cov.prior = NULL
   )
 
-  m2 <- blmer(
+  m2 <- suppressWarnings(blmer(
     Reaction ~ Days + (1 | mygrp / mysubgrp) + (1 | Subject),
     data = sleepstudy,
     cov.prior = wishart
-  )
+  ))
 
   test_that("model_info", {
     expect_true(model_info(m1)$is_linear)
@@ -126,7 +126,8 @@ if (require("testthat") &&
       list(
         conditional = as.formula("Reaction ~ Days"),
         random = as.formula("~1 + Days | Subject")
-      )
+      ),
+      ignore_attr = TRUE
     )
     expect_equal(
       find_formula(m2, component = "conditional"),
@@ -137,7 +138,8 @@ if (require("testthat") &&
           as.formula("~1 | mygrp"),
           as.formula("~1 | Subject")
         )
-      )
+      ),
+      ignore_attr = TRUE
     )
   })
 

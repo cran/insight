@@ -1,8 +1,6 @@
 if (require("testthat") &&
   require("insight") &&
   require("robustbase")) {
-  context("insight, model_info")
-
   data(carrots)
 
   m1 <- glmrob(
@@ -15,6 +13,7 @@ if (require("testthat") &&
 
   test_that("model_info", {
     expect_true(model_info(m1)$is_binomial)
+    expect_false(model_info(m1)$is_linear)
   })
 
   test_that("find_predictors", {
@@ -64,7 +63,8 @@ if (require("testthat") &&
       find_formula(m1),
       list(
         conditional = as.formula("cbind(success, total - success) ~ logdose + block")
-      )
+      ),
+      ignore_attr = TRUE
     )
   })
 

@@ -1,10 +1,16 @@
 if (require("testthat") &&
   require("insight") &&
   require("cgam")) {
-  context("insight, model_info")
 
   data(cubic, package = "cgam")
   m <- cgam(y ~ incr.conv(x), data = cubic)
+
+  mi <- insight::model_info(m)
+  test_that("model_info", {
+    expect_false(mi$is_binomial)
+    expect_true(mi$is_linear)
+    expect_false(mi$is_censored)
+  })
 
   test_that("n_obs", {
     expect_equal(n_obs(m), 50)
@@ -14,7 +20,8 @@ if (require("testthat") &&
     expect_length(find_formula(m), 1)
     expect_equal(
       find_formula(m),
-      list(conditional = as.formula("y ~ incr.conv(x)"))
+      list(conditional = as.formula("y ~ incr.conv(x)")),
+      ignore_attr = TRUE
     )
   })
 

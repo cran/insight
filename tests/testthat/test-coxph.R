@@ -1,7 +1,6 @@
 if (require("testthat") &&
   require("insight") &&
   require("survival")) {
-  context("insight, coxph")
 
   data("lung")
   lung <- subset(lung, subset = ph.ecog %in% 0:2)
@@ -12,6 +11,7 @@ if (require("testthat") &&
 
   test_that("model_info", {
     expect_true(model_info(m1)$is_logit)
+    expect_false(model_info(m1)$is_linear)
   })
 
   test_that("find_predictors", {
@@ -49,7 +49,8 @@ if (require("testthat") &&
       find_formula(m1),
       list(conditional = as.formula(
         "Surv(time, status) ~ sex + age + ph.ecog"
-      ))
+      )),
+      ignore_attr = TRUE
     )
   })
 
@@ -103,4 +104,13 @@ if (require("testthat") &&
   test_that("find_statistic", {
     expect_identical(find_statistic(m1), "z-statistic")
   })
+
+  if (require("JM")) {
+    data("aids", package = "JM")
+    m <- coxph(Surv(start, stop, event) ~ CD4, data = aids)
+    test_that("coxph triple response", {
+      expect_equal(colnames(get_data(m)), c("start", "stop", "event", "Surv(start, stop, event)", "CD4"))
+      expect_equal(find_variables(m), list(response = c("start", "stop", "event"), conditional = "CD4"))
+    })
+  }
 }

@@ -2,13 +2,12 @@ if (require("testthat") &&
   require("insight") &&
   require("nnet") &&
   require("MASS")) {
-  context("insight, model_info")
-
   data("birthwt")
   m1 <- multinom(low ~ age + lwt + race + smoke, data = birthwt)
 
   test_that("model_info", {
     expect_true(model_info(m1)$is_binomial)
+    expect_false(model_info(m1)$is_linear)
   })
 
   test_that("find_predictors", {
@@ -40,7 +39,8 @@ if (require("testthat") &&
     expect_length(find_formula(m1), 1)
     expect_equal(
       find_formula(m1),
-      list(conditional = as.formula("low ~ age + lwt + race + smoke"))
+      list(conditional = as.formula("low ~ age + lwt + race + smoke")),
+      ignore_attr = TRUE
     )
   })
 

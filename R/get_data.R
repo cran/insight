@@ -494,6 +494,7 @@ get_data.lme <- function(x, effects = c("all", "fixed", "random"), ...) {
 
 
 
+#' @importFrom stats model.frame
 #' @rdname get_data
 #' @export
 get_data.MixMod <- function(x, effects = c("all", "fixed", "random"), component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), ...) {
@@ -502,15 +503,23 @@ get_data.MixMod <- function(x, effects = c("all", "fixed", "random"), component 
 
   tryCatch(
     {
-      fitfram <- x$model_frames$mfX
-      if (!.is_empty_object(x$model_frames$mfZ)) {
-        fitfram <- .merge_dataframes(x$model_frames$mfZ, fitfram, replace = TRUE)
+      fitfram <- stats::model.frame(x, type = "fixed")
+      fitfram_re <- stats::model.frame(x, type = "random")
+      fitfram_zi <- stats::model.frame(x, type = "zi_fixed")
+      fitfram_zi_re <- stats::model.frame(x, type = "zi_random")
+
+      if (!.is_empty_object(fitfram_re)) {
+        for (i in 1:length(fitfram_re)) {
+          fitfram <- .merge_dataframes(fitfram_re[[i]], fitfram, replace = TRUE)
+        }
       }
-      if (!.is_empty_object(x$model_frames$mfX_zi)) {
-        fitfram <- .merge_dataframes(x$model_frames$mfX_zi, fitfram, replace = TRUE)
+      if (!.is_empty_object(fitfram_zi)) {
+        fitfram <- .merge_dataframes(fitfram_zi, fitfram, replace = TRUE)
       }
-      if (!.is_empty_object(x$model_frames$mfZ_zi)) {
-        fitfram <- .merge_dataframes(x$model_frames$mfZ_zi, fitfram, replace = TRUE)
+      if (!.is_empty_object(fitfram_zi_re)) {
+        for (i in 1:length(fitfram_zi_re)) {
+          fitfram <- .merge_dataframes(fitfram_zi_re[[i]], fitfram, replace = TRUE)
+        }
       }
 
       fitfram$grp__id <- unlist(x$id)
@@ -950,6 +959,14 @@ get_data.negbinmfx <- get_data.betamfx
 
 
 #' @export
+get_data.mediate <- function(x, ...) {
+  d1 <- get_data(x$model.m)
+  d2 <- get_data(x$model.y)
+  merge(d1, d2, sort = FALSE, all = TRUE)
+}
+
+
+#' @export
 get_data.mle2 <- function(x, ...) {
   as.data.frame(do.call(cbind, x@data))
 }
@@ -1028,6 +1045,12 @@ get_data.Arima <- function(x, ...) {
 #' @export
 get_data.BGGM <- function(x, ...) {
   x$Y
+}
+
+
+#' @export
+get_data.mcmc.list <- function(x, ...) {
+  NULL
 }
 
 
@@ -1232,6 +1255,39 @@ get_data.rma <- function(x, ...) {
 #' @export
 get_data.metaplus <- get_data.rma
 
+
+#' @export
+get_data.meta_random <- function(x, ...) {
+  mf <- tryCatch(
+    {
+      x$data$data
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+
+  .prepare_get_data(x, stats::na.omit(mf))
+}
+
+
+#' @export
+get_data.meta_bma <- function(x, ...) {
+  mf <- tryCatch(
+    {
+      x$meta$fixed$data$data
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+
+  .prepare_get_data(x, stats::na.omit(mf))
+}
+
+
+#' @export
+get_data.meta_fixed <- get_data.meta_random
 
 
 #' @export

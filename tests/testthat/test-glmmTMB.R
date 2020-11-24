@@ -35,13 +35,13 @@ if (require("testthat") &&
     family = truncated_poisson()
   )
 
-  m7 <- glmmTMB(
+  m7 <- suppressWarnings(glmmTMB(
     count ~ child + camper + (1 + xb | persons),
     ziformula = ~ child + livebait + (1 + zg + nofish | ID),
     dispformula = ~xb,
     data = fish,
     family = truncated_poisson()
-  )
+  ))
 
   data(Salamanders)
   m5 <- glmmTMB(
@@ -73,6 +73,7 @@ if (require("testthat") &&
     expect_true(model_info(m3)$is_pois)
     expect_false(model_info(m3)$is_negbin)
     expect_true(model_info(m6)$is_count)
+    expect_false(model_info(m1)$is_linear)
   })
 
   test_that("clean_names", {
@@ -352,9 +353,10 @@ if (require("testthat") &&
         zero_inflated = as.formula("~child + livebait"),
         zero_inflated_random = as.formula("~1 | ID"),
         dispersion = as.formula("~xb")
-      )
+      ),
+      ignore_attr = TRUE
     )
-    expect_equal(find_formula(m6), list(conditional = as.formula("count ~ 1")))
+    expect_equal(find_formula(m6), list(conditional = as.formula("count ~ 1")), ignore_attr = TRUE)
   })
 
   test_that("find_predictors", {

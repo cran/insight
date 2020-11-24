@@ -1,7 +1,6 @@
 if (require("testthat") &&
   require("insight") &&
   require("ordinal")) {
-  context("insight, model_info")
 
   data(wine, package = "ordinal")
   data(soup)
@@ -19,6 +18,7 @@ if (require("testthat") &&
     expect_true(model_info(m1)$is_logit)
     expect_true(model_info(m2)$is_probit)
     expect_false(model_info(m1)$is_multinomial)
+    expect_false(model_info(m1)$is_linear)
   })
 
   test_that("find_predictors", {
@@ -96,7 +96,8 @@ if (require("testthat") &&
       list(
         conditional = as.formula("rating ~ temp + contact"),
         random = as.formula("~1 | judge")
-      )
+      ),
+      ignore_attr = TRUE
     )
     expect_length(find_formula(m2), 2)
     expect_equal(
@@ -104,7 +105,8 @@ if (require("testthat") &&
       list(
         conditional = as.formula("SURENESS ~ PROD"),
         random = list(as.formula("~1 | RESP"), as.formula("~1 | RESP:PROD"))
-      )
+      ),
+      ignore_attr = TRUE
     )
   })
 

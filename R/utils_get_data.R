@@ -17,8 +17,8 @@
   mw <- NULL
 
   # do we have an offset, not specified in the formula?
-  if ("(offset)" %in% colnames(mf) && .obj_has_name(x, "call") && .obj_has_name(x$call, "offset")) {
-    offcol <- which(colnames(mf) == "(offset)")
+  offcol <- grep("^(\\(offset\\)|offset\\((.*)\\))", colnames(mf))
+  if (length(offcol) && .obj_has_name(x, "call") && .obj_has_name(x$call, "offset")) {
     colnames(mf)[offcol] <- clean_names(.safe_deparse(x$call$offset))
   }
 
@@ -41,13 +41,18 @@
   rn <- find_response(x, combine = TRUE)
   rn_not_combined <- find_response(x, combine = FALSE)
 
+  # make sure rn is not NULL, but empty string
+  if (is.null(rn)) rn <- ""
+  if (is.null(rn_not_combined)) rn_not_combined <- ""
+
   trials.data <- NULL
 
   if (mc[1] && rn == colnames(mf)[1]) {
     mc[1] <- FALSE
     if (inherits(x, c("coxph", "flexsurvreg", "coxme", "survreg", "survfit", "crq", "psm"))) {
-      mf <- cbind(mf[[1]][, 1], mf[[1]][, 2], mf)
-      colnames(mf)[1:2] <- rn_not_combined
+      n_of_responses <- ncol(mf[[1]])
+      mf <- cbind(as.data.frame(as.matrix(mf[[1]])), mf)
+      colnames(mf)[1:n_of_responses] <- rn_not_combined
     } else {
       tryCatch(
         {
@@ -399,6 +404,7 @@
 
 .return_zeroinf_data <- function(x, component) {
   model.terms <- find_variables(x, effects = "all", component = "all", flatten = FALSE)
+  model.terms$offset <- find_offset(x)
 
   mf <- tryCatch(
     {
@@ -415,8 +421,8 @@
 
   fixed.data <- switch(
     component,
-    all = c(model.terms$conditional, model.terms$zero_inflated),
-    conditional = model.terms$conditional,
+    all = c(model.terms$conditional, model.terms$zero_inflated, model.terms$offset),
+    conditional = c(model.terms$conditional, model.terms$offset),
     zi = ,
     zero_inflated = model.terms$zero_inflated
   )
@@ -432,6 +438,10 @@
 # here we have a model frame with many variables, so just extract the important ones...
 #
 .get_data_from_modelframe <- function(x, dat, effects) {
+  if (.is_empty_object(dat)) {
+    warning("Could not get model data.", call. = F)
+    return(NULL)
+  }
   cn <- clean_names(colnames(dat))
 
   ft <- switch(
@@ -630,8 +640,8 @@
   } else {
     x <- find_terms(model, flatten = TRUE)
   }
-  pattern <- sprintf("%s\\(([^,)]*).*", type)
-  gsub(pattern, "\\1", x[grepl(pattern, x)])
+  pattern <- sprintf("%s\\(([^,\\+)]*).*", type)
+  .trim(gsub(pattern, "\\1", x[grepl(pattern, x)]))
 }
 
 

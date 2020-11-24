@@ -9,7 +9,8 @@
 #'    instance also contain patterns like \code{"cbind(...)"}. Else, the original
 #'    variable names from the matrix-column are returned. See 'Examples'.
 #'
-#' @return The name(s) of the response variable(s) from \code{x} as character vector.
+#' @return The name(s) of the response variable(s) from \code{x} as character
+#'   vector, or \code{NULL} if response variable could not be found.
 #'
 #' @examples
 #' library(lme4)
@@ -23,9 +24,15 @@
 find_response <- function(x, combine = TRUE) {
   f <- find_formula(x)
 
+  if (is.null(f)) {
+    return(NULL)
+  }
+
   # this is for multivariate response models, where
   # we have a list of formulas
-  if (is_multivariate(f)) {
+  if (inherits(x, "mediate")) {
+    resp <- c(.safe_deparse(f$mediator$conditional[[2L]]), .safe_deparse(f$outcome$conditional[[2L]]))
+  } else if (is_multivariate(f)) {
     resp <- unlist(lapply(f, function(i) .safe_deparse(i$conditional[[2L]])))
   } else {
     resp <- .safe_deparse(f$conditional[[2L]])

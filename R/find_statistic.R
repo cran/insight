@@ -63,7 +63,6 @@ find_statistic <- function(x, ...) {
       "BBmm",
       "bcplm",
       "biglm",
-      "bglmerMod",
       "blmerMod",
       "cch",
       "censReg",
@@ -131,6 +130,7 @@ find_statistic <- function(x, ...) {
       "betaor",
       "betareg",
       "bife",
+      "bglmerMod",
       "boot_test_mediation",
       "bracl",
       "brglm",
@@ -192,6 +192,7 @@ find_statistic <- function(x, ...) {
       "rma.mv",
       "rma.uni",
       "rrvglm",
+      "sarlm",
       "sem",
       "slm",
       "survreg",
@@ -241,14 +242,16 @@ find_statistic <- function(x, ...) {
       "cgamm",
       "gam",
       "glm",
+      "Glm",
       "glmc",
       "glmerMod",
       "glmRob",
       "glmrob",
+      "pseudoglm",
       "speedglm"
     )
 
-  # t-statistic
+  # t-statistic (otherwise z-statistic: "binomial", "poisson")
   g.t.mods <-
     c(
       "quasi",
@@ -257,13 +260,6 @@ find_statistic <- function(x, ...) {
       "quasipoisson",
       "Gamma",
       "inverse.gaussian"
-    )
-
-  # z-statistic
-  g.z.mods <-
-    c(
-      "binomial",
-      "poisson"
     )
 
   # pattern finding ----------------------------------------------------------
@@ -288,7 +284,10 @@ find_statistic <- function(x, ...) {
       "gbm",
       "list",
       "MCMCglmm",
+      "mediate",
+      "mlergm",
       "pairwise.htest",
+      "ridgelm",
       "splmm",
       "stanreg",
       "stanmvreg",
@@ -371,7 +370,7 @@ find_statistic <- function(x, ...) {
     f_names <- c("F", "F-value", "F value", "F.value")
     chi_names <- c("Chisq", "chi-sq", "chi.sq", "Wald", "W", "Pr(>|W|)")
 
-    if (length(colnames(as.data.frame(summary(x)$coefficients))) == 0L) {
+    if (length(col_names) == 0L) {
       return(NULL)
     }
     if (any(t_names %in% col_names)) {

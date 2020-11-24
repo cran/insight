@@ -14,7 +14,7 @@ if (require("testthat") &&
   m1 <- crq(survival::Surv(pmax(y, c), d, type = "left") ~ x, method = "Portnoy", data = dat)
 
   test_that("model_info", {
-    expect_true(model_info(m1)$is_linear)
+    expect_false(model_info(m1)$is_linear)
     expect_true(model_info(m1)$is_censored)
   })
 
@@ -50,7 +50,8 @@ if (require("testthat") &&
     expect_length(find_formula(m1), 1)
     expect_equal(
       find_formula(m1),
-      list(conditional = as.formula("survival::Surv(pmax(y, c), d, type = \"left\") ~ x"))
+      list(conditional = as.formula("survival::Surv(pmax(y, c), d, type = \"left\") ~ x")),
+      ignore_attr = TRUE
     )
   })
 

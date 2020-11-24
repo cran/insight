@@ -17,6 +17,15 @@
 #'   from which the group or component model parameters belong. If \code{NULL}, the
 #'   merged data frame is returned. Else, the data frame is split into a list,
 #'   split by the values from those columns defined in \code{split_by}.
+#' @param format Name of output-format, as string. If \code{NULL} (or \code{"text"}),
+#'   assumed use for output is basic printing. If \code{"markdown"}, markdown-format
+#'   is assumed. This only affects the style of title- and table-caption attributes,
+#'   which are used in \code{\link{export_table}}.
+#' @param keep_parameter_column Logical, if \code{TRUE}, the data frames in the
+#'   returned list have both a \code{"Cleaned_Parameter"} and \code{"Parameter"}
+#'   column. If \code{FALSE}, the (unformatted) \code{"Parameter"} is removed,
+#'   and the column with cleaned parameter names (\code{"Cleaned_Parameter"}) is
+#'   renamed into \code{"Parameter"}.
 #'
 #' @return A data frame or a list of data frames (if \code{split_by} is not \code{NULL}).
 #' If a list is returned, the element names reflect the model components where the
@@ -72,9 +81,18 @@
 #'
 #' @importFrom stats na.omit
 #' @export
-print_parameters <- function(x, ..., split_by = c("Effects", "Component", "Group", "Response")) {
+print_parameters <- function(x, ..., split_by = c("Effects", "Component", "Group", "Response"), format = "text", keep_parameter_column = TRUE) {
   obj <- list(...)
 
+  # save attributes of original object
+  att <- do.call(c, .compact_list(lapply(obj, function(i) {
+    a <- attributes(i)
+    a$names <- a$class <- a$row.names <- NULL
+    a
+  })))
+  att <- att[!duplicated(names(att))]
+
+  # get cleaned parameters
   cp <- if (!inherits(x, "clean_parameters")) {
     clean_parameters(x)
   } else {
@@ -82,19 +100,12 @@ print_parameters <- function(x, ..., split_by = c("Effects", "Component", "Group
   }
   cn1 <- colnames(cp)
 
-  obj <- lapply(obj, function(i) {
-    # make sure we have a Parameter column
-    if (!"Parameter" %in% colnames(i)) colnames(i)[1] <- "Parameter"
-    # remove all other common columns that might produce duplicates
-    cn2 <- colnames(i)
-    dupes <- stats::na.omit(match(cn1, cn2)[-1])
-    if (length(dupes) > 0) i <- i[, -dupes, drop = FALSE]
-    i
-  })
-
   # merge all objects together
   obj <- Reduce(
-    function(x, y) merge(x, y, all.x = FALSE, by = "Parameter", sort = FALSE),
+    function(x, y) {
+      merge_by <- unique(c("Parameter", intersect(colnames(y), intersect(c("Effects", "Component", "Group", "Response"), colnames(x)))))
+      merge(x, y, all.x = FALSE, by = merge_by, sort = FALSE)
+    },
     c(list(cp), obj)
   )
 
@@ -146,6 +157,7 @@ print_parameters <- function(x, ..., split_by = c("Effects", "Component", "Group
           parts[j],
           "fixed" = "Fixed effects",
           "random" = "Random effects",
+          "dispersion" = "Dispersion",
           "conditional" = "(conditional)",
           "zero_inflated" = "(zero-inflated)"
         )
@@ -169,15 +181,39 @@ print_parameters <- function(x, ..., split_by = c("Effects", "Component", "Group
     keep <- setdiff(colnames(element), c("Effects", "Component", "Cleaned_Parameter"))
     element <- element[, c("Cleaned_Parameter", keep)]
 
+    # if we had a pretty_names attributes in the original object,
+    # match parameters of pretty names here, and add this attributes
+    # to each element here...
+    if ("pretty_names" %in% names(att)) {
+      attr(element, "pretty_names") <- setNames(att$pretty_names[element$Parameter], element$Cleaned_Parameter)
+    }
+
+    # keep or remove old parameter column?
+    if (!isTRUE(keep_parameter_column)) {
+      element$Parameter <- NULL
+      colnames(element)[colnames(element) == "Cleaned_Parameter"] <- "Parameter"
+    }
+
+    # for sub-table titles
+    if (is.null(format) || format == "text") {
+      title_prefix <- "# "
+    } else {
+      title_prefix <- ""
+    }
+
     # add attributes
     attr(element, "main_title") <- .trim(title1)
+    attr(element, "table_caption") <- c(paste0(title_prefix, .trim(title1)), "blue")
     attr(element, "sub_title") <- .trim(title2)
+    attr(element, "table_subtitle") <- c(.trim(title2), "red")
     attr(element, "Effects") <- .effects
     attr(element, "Component") <- .component
 
     element
   })
 
+  att$pretty_names <- NULL
+  attr(out, "additional_attributes") <- att
   names(out) <- list_names
   out
 }

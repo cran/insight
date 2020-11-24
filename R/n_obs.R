@@ -74,6 +74,13 @@ n_obs.merModList <- function(x, ...) {
 
 
 #' @export
+n_obs.mediate <- function(x, ...) {
+  x$nobs
+}
+
+
+
+#' @export
 n_obs.bayesx <- function(x, ...) {
   length(x$response)
 }
@@ -390,11 +397,14 @@ n_obs.blrm <- function(x, ...) {
 }
 
 
-
 #' @export
 n_obs.mlogit <- function(x, ...) {
   nrow(x$model)
 }
+
+
+#' @export
+n_obs.Glm <- n_obs.mlogit
 
 
 #' @export

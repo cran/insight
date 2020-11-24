@@ -1,13 +1,11 @@
-osx <- tryCatch(
-  {
-    si <- Sys.info()
-    if (!is.null(si["sysname"])) {
-      si["sysname"] == "Darwin" || grepl("^darwin", R.version$os)
-    } else {
-      FALSE
-    }
+osx <- tryCatch({
+  si <- Sys.info()
+  if (!is.null(si["sysname"])) {
+    si["sysname"] == "Darwin" || grepl("^darwin", R.version$os)
+  } else {
+    FALSE
   }
-)
+})
 
 
 if (require("testthat") &&
@@ -26,6 +24,7 @@ if (require("testthat") &&
 
   test_that("model_info", {
     expect_true(model_info(m1)$is_mixed)
+    expect_true(model_info(m1)$is_linear)
   })
 
   test_that("find_predictors", {
@@ -73,7 +72,8 @@ if (require("testthat") &&
       list(
         conditional = as.formula("PO ~ plate"),
         random = as.formula("~FSfamily")
-      )
+      ),
+      ignore_attr = TRUE
     )
   })
 

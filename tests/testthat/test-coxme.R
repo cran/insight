@@ -2,7 +2,6 @@ if (require("testthat") &&
   require("insight") &&
   require("survival") &&
   require("coxme")) {
-  context("insight, model_info")
 
   data(lung)
   set.seed(1234)
@@ -16,6 +15,7 @@ if (require("testthat") &&
 
   test_that("model_info", {
     expect_true(model_info(m1)$is_logit)
+    expect_false(model_info(m1)$is_linear)
   })
 
   test_that("find_predictors", {
@@ -72,7 +72,8 @@ if (require("testthat") &&
       list(
         conditional = as.formula("Surv(time, status) ~ ph.ecog + age"),
         random = as.formula("~1 | inst")
-      )
+      ),
+      ignore_attr = TRUE
     )
 
     expect_length(find_formula(m2), 2)
@@ -81,7 +82,8 @@ if (require("testthat") &&
       list(
         conditional = as.formula("Surv(time, status) ~ ph.ecog + age"),
         random = list(as.formula("~1 | inst"), as.formula("~1 | inst2"))
-      )
+      ),
+      ignore_attr = TRUE
     )
   })
 

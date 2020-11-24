@@ -6,6 +6,7 @@ if (require("testthat") &&
 
   test_that("model_info", {
     expect_true(model_info(m1)$is_count)
+    expect_false(model_info(m1)$is_linear)
   })
 
   test_that("find_predictors", {
@@ -62,7 +63,8 @@ if (require("testthat") &&
       list(
         conditional = as.formula("RLD ~ Stock + Spacing"),
         random = as.formula("~1 | Plant")
-      )
+      ),
+      ignore_attr = TRUE
     )
   })
 
@@ -136,10 +138,9 @@ if (require("testthat") &&
 
   test_that("get_variance", {
     skip_on_cran()
-    skip_on_travis()
 
     expect_equal(
-      get_variance(m1),
+      suppressWarnings(get_variance(m1)),
       list(
         var.fixed = 0.1687617,
         var.random = 0.0002706301,

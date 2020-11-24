@@ -57,18 +57,6 @@
   exponential_fam <- fitfam %in% c("Gamma", "gamma", "weibull")
 
 
-  # gaussian family --------
-
-  linear_model <- (!binom_fam & !exponential_fam & !poisson_fam & !neg_bin_fam & !logit.link) ||
-    fitfam %in% c("Student's-t", "t Family", "gaussian", "Gaussian") || grepl("(\\st)$", fitfam)
-
-
-  # tweedie family --------
-
-  tweedie_fam <- grepl("^(tweedie|Tweedie)", fitfam) | grepl("^(tweedie|Tweedie)", link.fun)
-  tweedie_model <- (linear_model && tweedie_fam) || inherits(x, c("bcplm", "cpglm", "cpglmm", "zcpglm"))
-
-
   # zero-inflated or hurdle component --------
 
   zero.inf <- zero.inf | fitfam == "ziplss" |
@@ -114,7 +102,8 @@
   is.bayes <- inherits(x, c(
     "brmsfit", "stanfit", "MCMCglmm", "stanreg",
     "stanmvreg", "bmerMod", "BFBayesFactor", "bamlss",
-    "bayesx", "mcmc", "bcplm", "bayesQR", "BGGM"
+    "bayesx", "mcmc", "bcplm", "bayesQR", "BGGM",
+    "meta_random", "meta_fixed", "meta_bma", "blavaan"
   ))
 
 
@@ -129,7 +118,7 @@
   # censored or truncated response --------
 
   is.trial <- FALSE
-  is.censored <- inherits(x, c("crq", "crqs")) | all(inherits(x, c("sem", "lme")))
+  is.censored <- inherits(x, c("tobit", "crch", "censReg", "crq", "crqs")) | (inherits(x, "sem") && inherits(x, "lme"))
   is.truncated <- FALSE
 
   if (inherits(x, "brmsfit") && is.null(stats::formula(x)$responses)) {
@@ -185,20 +174,31 @@
 
   # significance tests --------
 
+  is_ttest <- FALSE
+  is_correlation <- FALSE
+  is_oneway <- FALSE
+  is_proptest <- FALSE
+  is_binomtest <- FALSE
+  is_chi2test <- FALSE
+
   if (inherits(x, "htest")) {
     if (grepl("t-test", x$method)) {
       is_ttest <- TRUE
-      is_correlation <- FALSE
+    } else if (grepl("^One-way", x$method)) {
+      is_oneway <- TRUE
+    } else if (x$method == "Exact binomial test") {
+      binom_fam <- TRUE
+      is_binomtest <- TRUE
+    } else if (grepl("\\d+-sample(.*)proportions(.*)", x$method)) {
+      binom_fam <- TRUE
+      is_proptest <- TRUE
+    } else if (grepl("Chi-squared", x$method)) {
+      is_chi2test <- TRUE
     } else {
-      is_ttest <- FALSE
       is_correlation <- TRUE
     }
   } else if (inherits(x, "BGGM")) {
-    is_ttest <- FALSE
     is_correlation <- TRUE
-  } else {
-    is_ttest <- FALSE
-    is_correlation <- FALSE
   }
 
 
@@ -208,6 +208,8 @@
   if (inherits(x, "BFBayesFactor")) {
     is_ttest <- FALSE
     is_correlation <- FALSE
+    is_oneway <- FALSE
+    is_proptest <- FALSE
 
     obj_type <- .classify_BFBayesFactor(x)
 
@@ -217,19 +219,43 @@
       is_ttest <- TRUE
     } else if (obj_type == "meta") {
       is_meta <- TRUE
+    } else if (obj_type == "proptest") {
+      binom_fam <- TRUE
+      is_proptest <- TRUE
     }
   }
 
 
-  # meta analysis
+  # meta analysis --------
 
   if (!is_meta) {
-    is_meta <- inherits(x, c("rma", "metaplus"))
+    is_meta <- inherits(x, c("rma", "metaplus", "meta_random", "meta_fixed", "meta_bma"))
   }
 
   if (inherits(x, "brmsfit") && !is_multivariate(x)) {
     is_meta <- grepl("(.*)\\|(.*)se\\((.*)\\)", .safe_deparse(find_formula(x)$conditional[[2]]))
   }
+
+
+  # gaussian family --------
+
+  linear_model <- TRUE
+  if (binom_fam | exponential_fam | poisson_fam | neg_bin_fam | logit.link |
+      dirichlet_fam | is.ordinal | zero.inf | is.censored | is.survival |
+      is.categorical | hurdle | is.multinomial) {
+    linear_model <- FALSE
+  } else if (!(fitfam %in% c("Student's-t", "t Family", "gaussian", "Gaussian")) && !grepl("(\\st)$", fitfam)) {
+    linear_model <- FALSE
+  }
+  if (!linear_model && is.survival && fitfam == "gaussian") {
+    linear_model <- TRUE
+  }
+
+
+  # tweedie family --------
+
+  tweedie_fam <- grepl("^(tweedie|Tweedie)", fitfam) | grepl("^(tweedie|Tweedie)", link.fun)
+  tweedie_model <- (linear_model && tweedie_fam) || inherits(x, c("bcplm", "cpglm", "cpglmm", "zcpglm"))
 
 
   # return...
@@ -245,7 +271,7 @@
     is_exponential = exponential_fam,
     is_logit = logit.link,
     is_probit = isTRUE(link.fun == "probit"),
-    is_censored = inherits(x, c("tobit", "crch", "censReg")) | is.censored | is.survival,
+    is_censored = is.censored | is.survival,
     is_truncated = inherits(x, "truncreg") | is.truncated,
     is_survival = is.survival,
     is_linear = linear_model,
@@ -266,6 +292,10 @@
     is_timeseries = inherits(x, c("Arima")),
     is_ttest = is_ttest,
     is_correlation = is_correlation,
+    is_onewaytest = is_oneway,
+    is_chi2test = is_chi2test,
+    is_proptest = is_proptest,
+    is_binomtest = is_binomtest,
     is_meta = is_meta,
     link_function = link.fun,
     family = fitfam,
@@ -333,6 +363,8 @@
     "linear"
   } else if (any(class(x@denominator) %in% c("BFcontingencyTable"))) {
     "xtable"
+  } else if (any(class(x@denominator) %in% c("BFproportion"))) {
+    "proptest"
   } else {
     class(x@denominator)
   }
