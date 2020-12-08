@@ -13,6 +13,7 @@
 #' @param ci_brackets Logical, if \code{TRUE} (default), CI-values are encompassed in square brackets (else in parentheses).
 #' @param ci_digits Number of decimal places for confidence intervals.
 #' @param p_digits Number of decimal places for p-values. May also be \code{"scientific"} for scientific notation of p-values.
+#' @param rope_digits Number of decimal places for the ROPE percentage values.
 #' @param preserve_attributes Logical, if \code{TRUE}, preserves all attributes from the input data frame.
 #' @inheritParams format_p
 #' @param ... Arguments passed to or from other methods.
@@ -31,12 +32,13 @@
 #' }}
 #' @return A data frame.
 #' @export
-parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, ci_width = "auto", ci_brackets = TRUE, ci_digits = 2, p_digits = 3, preserve_attributes = FALSE, ...) {
+parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, ci_width = "auto", ci_brackets = TRUE, ci_digits = 2, p_digits = 3, rope_digits = 2, preserve_attributes = FALSE, ...) {
 
   # check if user supplied digits attributes
   if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
   if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
   if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
+  if (missing(rope_digits)) rope_digits <- .additional_arguments(x, "rope_digits", 2)
 
   att <- attributes(x)
   x <- as.data.frame(x)
@@ -44,6 +46,8 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 
   # Format parameters names ----
   if (pretty_names & !is.null(att$pretty_names)) {
+    # remove strings with NA names
+    att$pretty_names <- att$pretty_names[!is.na(names(att$pretty_names))]
     if (length(att$pretty_names) != length(x$Parameter)) {
       match_pretty_names <- stats::na.omit(match(x$Parameter, names(att$pretty_names)))
       if (length(match_pretty_names)) {
@@ -53,6 +57,11 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
       match_pretty_names <- att$pretty_names[x$Parameter]
       if (!anyNA(match_pretty_names)) {
         x$Parameter <- att$pretty_names[x$Parameter]
+      } else {
+        match_pretty_names <- stats::na.omit(match(names(att$pretty_names), x$Parameter))
+        if (length(match_pretty_names)) {
+          x$Parameter[match_pretty_names] <- att$pretty_names[x$Parameter[match_pretty_names]]
+        }
       }
     }
   }
@@ -107,18 +116,12 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 
 
   # Bayesian ---
-  x <- .format_bayes_columns(x, stars)
+  x <- .format_bayes_columns(x, stars, rope_digits = rope_digits)
 
 
   # rename performance columns
   x <- .format_performance_columns(x)
 
-
-  # ROPE %
-  if ("ROPE_Percentage" %in% names(x)) {
-    x$ROPE_Percentage <- format_value(x$ROPE_Percentage, digits = digits, as_percent = TRUE)
-    names(x)[names(x) == "ROPE_Percentage"] <- "% in ROPE"
-  }
 
   # Format remaining columns
   other_cols <- names(x)[sapply(x, is.numeric)]
@@ -145,8 +148,6 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 
 
 
-
-
 # sub-routines ---------------
 
 
@@ -160,12 +161,12 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
     x$p.value <- format(x$p.value, justify = "left")
   }
 
-  for (stats in c("p_CochransQ", "p_Omnibus", "p_Chi2", "p_Baseline", "p_RMSEA")) {
+  for (stats in c("p_CochransQ", "p_Omnibus", "p_Chi2", "p_Baseline", "p_RMSEA", "p_ROPE")) {
     if (stats %in% names(x)) {
       x[[stats]] <- format_p(x[[stats]], stars = stars, name = NULL, missing = "", digits = p_digits)
       x[[stats]] <- format(x[[stats]], justify = "left")
       p_name <- gsub("(.*)_p$", "\\1", gsub("^p_(.*)", "\\1", stats))
-      names(x)[names(x) == stats] <- paste0("p (", p_name, ")")
+      names(x)[names(x) == stats] <- paste0("p(", p_name, ")")
     }
   }
   x
@@ -313,6 +314,17 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 
 
 
+.format_rope_columns <- function(x, ci_width = "auto", ci_brackets = TRUE) {
+  if (all(c("ROPE_low", "ROPE_high") %in% names(x))) {
+    x$ROPE_low <- format_ci(x$ROPE_low, x$ROPE_high, ci = NULL, width = ci_width, brackets = ci_brackets)
+    x$ROPE_high <- NULL
+    names(x)[names(x) == "ROPE_low"] <- "ROPE"
+  }
+  x
+}
+
+
+
 .format_std_columns <- function(x, other_ci_colname, digits) {
   std_cols <- names(x)[grepl("Std_", names(x))]
   if (length(std_cols) == 0) {
@@ -343,14 +355,19 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 
 
 
-.format_bayes_columns <- function(x, stars) {
+.format_bayes_columns <- function(x, stars, rope_digits = 2) {
   # Indices
   if ("BF" %in% names(x)) x$BF <- format_bf(x$BF, name = NULL, stars = stars)
   if ("pd" %in% names(x)) x$pd <- format_pd(x$pd, name = NULL, stars = stars)
-  if ("ROPE_Percentage" %in% names(x)) x$ROPE_Percentage <- format_rope(x$ROPE_Percentage, name = NULL)
-  names(x)[names(x) == "ROPE_Percentage"] <- "% in ROPE"
   if ("Rhat" %in% names(x)) x$Rhat <- format_value(x$Rhat, digits = 3)
   if ("ESS" %in% names(x)) x$ESS <- format_value(x$ESS, protect_integers = TRUE)
+
+  # ROPE
+  if ("ROPE_Percentage" %in% names(x)) {
+    x$ROPE_Percentage <- format_rope(x$ROPE_Percentage, name = NULL, digits = rope_digits)
+    names(x)[names(x) == "ROPE_Percentage"] <- "% in ROPE"
+  }
+  x <- .format_rope_columns(x)
 
   # Priors
   if ("Prior_Location" %in% names(x)) x$Prior_Location <- format_value(x$Prior_Location, protect_integers = TRUE)

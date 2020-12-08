@@ -2,6 +2,7 @@
 % Please edit documentation in R/find_parameters.R
 \name{find_parameters}
 \alias{find_parameters}
+\alias{find_parameters.default}
 \alias{find_parameters.betamfx}
 \alias{find_parameters.logitmfx}
 \alias{find_parameters.gam}
@@ -17,6 +18,8 @@
 \title{Find names of model parameters}
 \usage{
 find_parameters(x, ...)
+
+\method{find_parameters}{default}(x, flatten = FALSE, verbose = TRUE, ...)
 
 \method{find_parameters}{betamfx}(
   x,
@@ -105,6 +108,11 @@ find_parameters(x, ...)
 
 \item{...}{Currently not used.}
 
+\item{flatten}{Logical, if \code{TRUE}, the values are returned
+as character vector, not as list. Duplicated values are removed.}
+
+\item{verbose}{Toggle messages and warnings.}
+
 \item{component}{Should all parameters, parameters for the
  conditional model, the zero-inflated part of the model, the dispersion
  term, the instrumental variables or marginal effects be returned? Applies
@@ -113,9 +121,6 @@ find_parameters(x, ...)
  with marginal effects from \pkg{mfx}. May be abbreviated. Note that the
 \emph{conditional} component is also called \emph{count} or \emph{mean}
 component, depending on the model.}
-
-\item{flatten}{Logical, if \code{TRUE}, the values are returned
-as character vector, not as list. Duplicated values are removed.}
 
 \item{effects}{Should parameters for fixed effects, random effects
 or both be returned? Only applies to mixed models. May be abbreviated.}

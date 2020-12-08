@@ -1,11 +1,41 @@
+# insight 0.11.1
+
+## General
+
+* Warnings that formerly were printed using `print_color()` now use `warning()`,
+  to better suppress warning messages if required.
+
+## New functions
+
+* `find_smooth()`, to return in particular smooth terms used in a model.
+
+## Changes to functions
+
+* `get_variance()` and `get_variance_random()` gain a `tolerance`-argument, to
+  set the tolerance level for singularity checks when computing random effect
+  variances.
+
+* `parameters_table()` formats more objects from the *easystats* packages, 
+  like ROPE-range or `p_rope()`.
+
+* `find_statistic()` now supports models of class *scam*.
+
+* `get_data()` now also supports `htest`-object, where possible.
+
+## Bug fixes
+
+* Fix CRAN check issues.
+
+* `find_formula()` for `stan_gamm4()` now correctly includes random effects.
+
 # insight 0.11.0
 
 ## Breaking changes
 
-* `model_info()` now also detects models from `oneway.test()`, `binom.test()` 
-  `chisq.test()`, `mcnemar.test()` and `prop.test()`. Furthermore, `model_info()` 
-  better deals with objects from `BFBayesFactor`, and censored regression models 
-  no longer return `TRUE` for `$is_linear`.
+* `model_info()` now also detects models from `oneway.test()`, `binom.test()`
+  `chisq.test()`, `mcnemar.test()` and `prop.test()`. Furthermore,
+  `model_info()` better deals with objects from `BFBayesFactor`, and censored
+  regression models no longer return `TRUE` for `$is_linear`.
 
 * `format_table()` is going to be renamed in a future update. Please use its
   alias `export_table()`.
@@ -18,31 +48,31 @@
 
 ## New function
 
-* `parameters_table()`, which was moved from package *parameters* to
-  *insight*. Note that this function is going to be renamed into `format_table()`
-  in a future update.
+* `parameters_table()`, which was moved from package *parameters* to *insight*.
+  Note that this function is going to be renamed into `format_table()` in a
+  future update.
 
 * `find_offset()`, to find the name of offset-terms.
 
-* Added generics for `display()` and `print_md()`, to allow other packages 
-  to create tables in other formats when not printing the output to console.
+* Added generics for `display()` and `print_md()`, to allow other packages to
+  create tables in other formats when not printing the output to console.
 
 ## Changes to functions
 
 * `standardize_names()` tries to be as loyal to the *broom*-naming conventions
   as possible.
-  
-* The function of the `brackets`-argument in `format_ci()` was changed. It is 
+
+* The function of the `brackets`-argument in `format_ci()` was changed. It is
   now also possible to provide a length-two character vector, to define own
   brackets that encompass the CI-values.
 
-* Related to the change in `format_ci()`, the function of the `brackets`-argument
-  in `parameters_table()` was changed accordingly. Furthermore, `parameters_table()` 
-  gains a `preserve_attributes`-argument, to preserve any attributes from the
-  input data frame.
+* Related to the change in `format_ci()`, the function of the
+  `brackets`-argument in `parameters_table()` was changed accordingly.
+  Furthermore, `parameters_table()` gains a `preserve_attributes`-argument, to
+  preserve any attributes from the input data frame.
 
-* `export_table()` gains several new arguments that allows to create tables
-  in markdown-format.
+* `export_table()` gains several new arguments that allows to create tables in
+  markdown-format.
 
 * `print_parameters()` gains a `keep_parameter_column`-argument, to keep
   (default) both the `"Cleaned_Parameter"` and `"Parameter"` columns, or - if
@@ -70,7 +100,6 @@
 * Fixed issue with `survreg` models that included `strata()` in their formula.
 
 * Fixed warning in CRAN checks for forthcoming R-devel.
-
 
 # insight 0.10.0
 
@@ -134,7 +163,6 @@
   `"-1"`.
 
 * Fix issues with `get_statistic()` for *vgam* models.
-
 
 # insight 0.9.6
 

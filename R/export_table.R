@@ -23,13 +23,38 @@
 #'   column.
 #' @inheritParams format_value
 #'
-#' @note This function is going to be renamed in a future update. Please use its
-#' alias \code{export_table()}.
+#' @note The values for \code{caption}, \code{subtitle} and \code{footer}
+#'   can also be provided as attributes of \code{x}, e.g. if \code{caption = NULL}
+#'   and \code{x} has attribute \code{table_caption}, the value for this
+#'   attribute will be used as table caption. \code{table_subtitle} is the
+#'   attribute for \code{subtitle}, and \code{table_footer} for \code{footer}.
 #'
 #' @return A data frame in character format.
 #' @examples
 #' cat(export_table(iris))
 #' cat(export_table(iris, sep = " ", header = "*", digits = 1))
+#'
+#' \dontrun{
+#' # colored footers
+#' data(iris)
+#' x <- as.data.frame(iris[1:5, ])
+#' attr(x, "table_footer") <- c("This is a yellow footer line.", "yellow")
+#' cat(export_table(x))
+#'
+#' attr(x, "table_footer") <- list(
+#'   c("\nA yellow line", "yellow"),
+#'   c("\nAnd a red line", "red"),
+#'   c("\nAnd a blue line", "blue")
+#' )
+#' cat(export_table(x))
+#'
+#' attr(x, "table_footer") <- list(
+#'   c("Without the ", "yellow"),
+#'   c("new-line character ", "red"),
+#'   c("we can have multiple colors per line.", "blue")
+#' )
+#' cat(export_table(x))
+#' }
 #' @export
 export_table <- function(x,
                          sep = " | ",
@@ -56,6 +81,15 @@ export_table <- function(x,
 
   # single data frame
   if (is.data.frame(x)) {
+    if (is.null(caption)) {
+      caption <- attributes(x)$table_caption
+    }
+    if (is.null(subtitle)) {
+      subtitle <- attributes(x)$table_subtitle
+    }
+    if (is.null(footer)) {
+      footer <- attributes(x)$table_footer
+    }
     out <- .export_table(
       x = x,
       sep = sep,
@@ -113,14 +147,9 @@ export_table <- function(x,
   out
 }
 
-
 #' @rdname export_table
 #' @export
 format_table <- export_table
-
-
-
-
 
 
 
@@ -214,13 +243,26 @@ format_table <- export_table
   }
 
   if (!is.null(footer)) {
-    if (length(footer) == 2 && .is_valid_colour(footer[2])) {
-      footer <- .colour(footer[2], footer[1])
+    if (is.list(footer)) {
+      for (i in footer) {
+        rows <- .paste_footers(i, rows)
+      }
+    } else {
+      rows <- .paste_footers(footer, rows)
     }
-    rows <- paste0(rows, footer[1])
   }
 
   rows
+}
+
+
+# helper ----------------
+
+.paste_footers <- function(footer, rows) {
+  if (length(footer) == 2 && .is_valid_colour(footer[2])) {
+    footer <- .colour(footer[2], footer[1])
+  }
+  paste0(rows, footer[1])
 }
 
 
