@@ -3,105 +3,11 @@
 \name{find_parameters}
 \alias{find_parameters}
 \alias{find_parameters.default}
-\alias{find_parameters.betamfx}
-\alias{find_parameters.logitmfx}
-\alias{find_parameters.gam}
-\alias{find_parameters.merMod}
-\alias{find_parameters.zeroinfl}
-\alias{find_parameters.BGGM}
-\alias{find_parameters.BFBayesFactor}
-\alias{find_parameters.brmsfit}
-\alias{find_parameters.bayesx}
-\alias{find_parameters.stanreg}
-\alias{find_parameters.sim.merMod}
-\alias{find_parameters.averaging}
 \title{Find names of model parameters}
 \usage{
 find_parameters(x, ...)
 
 \method{find_parameters}{default}(x, flatten = FALSE, verbose = TRUE, ...)
-
-\method{find_parameters}{betamfx}(
-  x,
-  component = c("all", "conditional", "precision", "marginal"),
-  flatten = FALSE,
-  ...
-)
-
-\method{find_parameters}{logitmfx}(
-  x,
-  component = c("all", "conditional", "marginal"),
-  flatten = FALSE,
-  ...
-)
-
-\method{find_parameters}{gam}(
-  x,
-  component = c("all", "conditional", "smooth_terms"),
-  flatten = FALSE,
-  ...
-)
-
-\method{find_parameters}{merMod}(x, effects = c("all", "fixed", "random"), flatten = FALSE, ...)
-
-\method{find_parameters}{zeroinfl}(
-  x,
-  component = c("all", "conditional", "zi", "zero_inflated"),
-  flatten = FALSE,
-  ...
-)
-
-\method{find_parameters}{BGGM}(
-  x,
-  component = c("correlation", "conditional", "intercept", "all"),
-  flatten = FALSE,
-  ...
-)
-
-\method{find_parameters}{BFBayesFactor}(
-  x,
-  effects = c("all", "fixed", "random"),
-  component = c("all", "extra"),
-  flatten = FALSE,
-  ...
-)
-
-\method{find_parameters}{brmsfit}(
-  x,
-  effects = c("all", "fixed", "random"),
-  component = c("all", "conditional", "zi", "zero_inflated", "dispersion", "simplex",
-    "sigma", "smooth_terms"),
-  flatten = FALSE,
-  parameters = NULL,
-  ...
-)
-
-\method{find_parameters}{bayesx}(
-  x,
-  component = c("all", "conditional", "smooth_terms"),
-  flatten = FALSE,
-  parameters = NULL,
-  ...
-)
-
-\method{find_parameters}{stanreg}(
-  x,
-  effects = c("all", "fixed", "random"),
-  component = c("all", "conditional", "smooth_terms"),
-  flatten = FALSE,
-  parameters = NULL,
-  ...
-)
-
-\method{find_parameters}{sim.merMod}(
-  x,
-  effects = c("all", "fixed", "random"),
-  flatten = FALSE,
-  parameters = NULL,
-  ...
-)
-
-\method{find_parameters}{averaging}(x, component = c("conditional", "full"), flatten = FALSE, ...)
 }
 \arguments{
 \item{x}{A fitted model.}
@@ -112,48 +18,24 @@ find_parameters(x, ...)
 as character vector, not as list. Duplicated values are removed.}
 
 \item{verbose}{Toggle messages and warnings.}
-
-\item{component}{Should all parameters, parameters for the
- conditional model, the zero-inflated part of the model, the dispersion
- term, the instrumental variables or marginal effects be returned? Applies
- to models with zero-inflated and/or dispersion formula, or to models with
- instrumental variables (so called fixed-effects regressions), or models
- with marginal effects from \pkg{mfx}. May be abbreviated. Note that the
-\emph{conditional} component is also called \emph{count} or \emph{mean}
-component, depending on the model.}
-
-\item{effects}{Should parameters for fixed effects, random effects
-or both be returned? Only applies to mixed models. May be abbreviated.}
-
-\item{parameters}{Regular expression pattern that describes the parameters that
-should be returned.}
 }
 \value{
 A list of parameter names. For simple models, only one list-element,
-   \code{conditional}, is returned. For more complex models, the returned
-   list may have following elements:
-   \itemize{
-     \item \code{conditional}, the "fixed effects" part from the model
-     \item \code{random}, the "random effects" part from the model
-     \item \code{zero_inflated}, the "fixed effects" part from the zero-inflation component of the model
-     \item \code{zero_inflated_random}, the "random effects" part from the zero-inflation component of the model
-     \item \code{dispersion}, the dispersion parameters
-     \item \code{simplex}, simplex parameters of monotonic effects (\pkg{brms} only)
-     \item \code{smooth_terms}, the smooth parameters
-     \item \code{marginal}, the marginal effects (for models from \pkg{mfx})
-   }
+   \code{conditional}, is returned.
 }
 \description{
 Returns the names of model parameters, like they typically
     appear in the \code{summary()} output. For Bayesian models, the parameter
     names equal the column names of the posterior samples after coercion
-    from \code{as.data.frame()}.
-}
-\details{
-In most cases when models either return different "effects" (fixed,
-random) or "components" (conditional, zero-inflated, ...), the arguments
-\code{effects} and \code{component} can be used. Not all model classes that
-support these arguments are listed here in the 'Usage' section.
+    from \code{as.data.frame()}. See the documentation for your object's class:
+   \itemize{
+     \item{\link[=find_parameters.BGGM]{Bayesian models} (\pkg{rstanarm}, \pkg{brms}, \pkg{MCMCglmm}, ...)}
+     \item{\link[=find_parameters.gamlss]{Generalized additive models} (\pkg{mgcv}, \pkg{VGAM}, ...)}
+     \item{\link[=find_parameters.betamfx]{Marginal effects models} (\pkg{mfx})}
+     \item{\link[=find_parameters.glmmTMB]{Mixed models} (\pkg{lme4}, \pkg{glmmTMB}, \pkg{GLMMadaptive}, ...)}
+     \item{\link[=find_parameters.zeroinfl]{Zero-inflated and hurdle models} (\pkg{pscl}, ...)}
+     \item{\link[=find_parameters.averaging]{Models with special components} (\pkg{betareg}, \pkg{MuMIn}, ...)}
+   }
 }
 \examples{
 data(mtcars)

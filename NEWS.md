@@ -1,3 +1,75 @@
+# insight 0.12.0
+
+## Breaking changes
+
+* `format_table()` is an alias for `parameters_table()`, and is no longer
+  referring to `export_table()`.
+
+## New supported model classes
+
+* Support for `coxr` (*coxrobust*), `coeftest` (*lmtest*), `ivFixed` (*ivFixed*),
+  `ivprobit` (*ivprobit*), `riskRegression` (*riskRegression*). `summary.lm`,
+  `lmodel2` (*lmodel2*), improved support for `bamlss` (*bamlss*).
+
+## New functions
+
+* Added `get_deviance()` function that returns the model deviance as a
+  robust alternative to `stats::deviance()`.
+
+* Added `model_name()` function that returns the model's "name".
+
+* Added `format()` method for `find_formula()` output to flatten it.
+
+* Added `null_as_ones = TRUE` argument to `get_weights()` to return vector of
+  1s instead of `NULL`.
+
+* Added `get_intercept()` as a helper function to easily retrieve the  value
+  at the intercept.
+
+* Added `get_df()` as a robust alternative to `stats::df.residuals()`.
+
+* Added `get_predicted()` as a robust alternative to `stats::fitted()`.
+
+* Added `get_loglikelihood()` (and its alias `loglikelihood()`) function as a
+  robust alternative to `stats::logLik()`.
+
+* Added `get_residuals()` as a robust alternative extract model residuals.
+
+* Added `ellipsis_info()` to specify the nature of ellipsis (`...`) inputs.
+
+* Added `is_nested_models()` to check if multiple regression models are
+  nested (decreasing or increasing).
+
+* Added generic `print_html()`, to allow other packages to create tables in
+  HTML format (via `export_table()`) when not printing the output to console.
+
+* Added `is_mixed_model()`, to safely check if a model is a mixed effects model.
+  This function also works for multivariate response models.
+
+* `n_parameters()` was moved from *parameters* to *insight*.
+
+## Changes to functions
+
+* `find_formula()`, `find_predictor()`, `find_random()` and related functions
+  now also return names of random effects from generalized  additive mixed
+  models (`gamm`, `gamm4`, `stan_gamm4`).
+
+* Added support for more BFBayesFactor objects.
+
+* `model_info()` now returns `$is_xtab` for `chisq.test()` and
+  `BayesFactor::contingencyTableBF()`. Furthermore, the `$family` element for
+  those objects is set to `"categorical"`.
+
+* `n_obs()` now handles number of observations from models with binomial family
+  correctly when these have matrix-columns as response variable.
+
+## Bug fixes
+
+* Fixed issue in `find_statistic()` for *fixest* models, which did not
+  return the correct value `"t-statistic"` for `feols()`.
+
+* Fixes inconsistencies in `get_priors()` for (linear) `BFBayesFactor` models.
+
 # insight 0.11.1
 
 ## General
@@ -15,7 +87,7 @@
   set the tolerance level for singularity checks when computing random effect
   variances.
 
-* `parameters_table()` formats more objects from the *easystats* packages, 
+* `parameters_table()` formats more objects from the *easystats* packages,
   like ROPE-range or `p_rope()`.
 
 * `find_statistic()` now supports models of class *scam*.

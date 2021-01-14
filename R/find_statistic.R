@@ -23,7 +23,7 @@ find_statistic <- function(x, ...) {
   # model object check --------------------------------------------------------
 
   # check if the object is a model object; if not, quit early
-  if (!isTRUE(is_model(x))) {
+  if (isFALSE(is_model(x))) {
     stop("The entered object is not a model object.", call. = FALSE)
   }
 
@@ -65,7 +65,6 @@ find_statistic <- function(x, ...) {
       "blmerMod",
       "cch",
       "censReg",
-      "coeftest",
       "complmrob",
       "cpglm",
       "cpglmm",
@@ -83,13 +82,16 @@ find_statistic <- function(x, ...) {
       "gmm",
       "HLfit",
       "ivreg",
+      "ivFixed",
       "iv_robust",
+      "ivprobit",
       "lm",
       "lm_robust",
       "lm.beta",
       "lme",
       "lmerMod",
       "lmerModLmerTest",
+      "lmodel2",
       "lmRob",
       "lmrob",
       "lqm",
@@ -103,19 +105,24 @@ find_statistic <- function(x, ...) {
       "nls",
       "ols",
       "orcutt",
+      "pb1",
+      "pb2",
       "polr",
       "rlm",
       "rms",
       "rlmerMod",
       "rq",
+      "rqs",
       "rqss",
       "speedlm",
       "spml",
+      "summary.lm",
       "svyglm",
       "svyolr",
       "truncreg",
       "wbm",
-      "wblm"
+      "wblm",
+      "yuen"
     )
 
   # z-value objects ----------------------------------------------------------
@@ -144,11 +151,11 @@ find_statistic <- function(x, ...) {
       "clogit",
       "coxme",
       "coxph",
+      "coxr",
       "crch",
       "DirichletRegModel",
       "ergm",
       "feglm",
-      "fixest",
       "flexsurvreg",
       "gee",
       "glimML",
@@ -186,6 +193,7 @@ find_statistic <- function(x, ...) {
       "poissonirr",
       "psm",
       "probitmfx",
+      "riskRegression",
       "robmixglm",
       "rma",
       "rma.mv",
@@ -208,13 +216,15 @@ find_statistic <- function(x, ...) {
 
   f.mods <-
     c(
+      "afex_aov",
       "Anova.mlm",
       "aov",
       "aovlist",
       "anova",
       "Gam",
       "manova",
-      "maov"
+      "maov",
+      "t1way"
     )
 
   # chi-squared value objects ------------------------------------------------
@@ -225,6 +235,7 @@ find_statistic <- function(x, ...) {
       "geeglm",
       "logistf",
       "MANOVA",
+      "mlma",
       "nparLD",
       "RM",
       "vgam"
@@ -240,6 +251,7 @@ find_statistic <- function(x, ...) {
       "bigglm",
       "cgam",
       "cgamm",
+      "fixest",
       "gam",
       "glm",
       "Glm",
@@ -272,6 +284,14 @@ find_statistic <- function(x, ...) {
       z.mods <- c(z.mods, "glht")
     } else {
       t.mods <- c(t.mods, "glht")
+    }
+  }
+
+  if (inherits(x, "coeftest")) {
+    if ("z value" %in% dimnames(x)[[2]]) {
+      z.mods <- c(z.mods, "coeftest")
+    } else {
+      t.mods <- c(t.mods, "coeftest")
     }
   }
 

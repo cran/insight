@@ -1,5 +1,5 @@
 #' @title Parameter table formatting
-#' @name parameters_table
+#' @name format_table
 #'
 #' @description This functions takes a data frame with model parameters as input
 #'   and formats certain columns into a more readable layout (like collapsing
@@ -21,18 +21,18 @@
 #' @examples
 #' if (require("parameters")) {
 #'   x <- model_parameters(lm(Sepal.Length ~ Species * Sepal.Width, data = iris))
-#'   as.data.frame(parameters_table(x))
-#'   as.data.frame(parameters_table(x, p_digits = "scientific"))
+#'   as.data.frame(format_table(x))
+#'   as.data.frame(format_table(x, p_digits = "scientific"))
 #' }
 #' \donttest{
 #' if (require("rstanarm") && require("parameters")) {
 #'   model <- stan_glm(Sepal.Length ~ Species, data = iris, refresh = 0, seed = 123)
 #'   x <- model_parameters(model, ci = c(0.69, 0.89, 0.95))
-#'   as.data.frame(parameters_table(x))
+#'   as.data.frame(format_table(x))
 #' }}
 #' @return A data frame.
 #' @export
-parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, ci_width = "auto", ci_brackets = TRUE, ci_digits = 2, p_digits = 3, rope_digits = 2, preserve_attributes = FALSE, ...) {
+format_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, ci_width = "auto", ci_brackets = TRUE, ci_digits = 2, p_digits = 3, rope_digits = 2, preserve_attributes = FALSE, ...) {
 
   # check if user supplied digits attributes
   if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
@@ -49,9 +49,9 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
     # remove strings with NA names
     att$pretty_names <- att$pretty_names[!is.na(names(att$pretty_names))]
     if (length(att$pretty_names) != length(x$Parameter)) {
-      match_pretty_names <- stats::na.omit(match(x$Parameter, names(att$pretty_names)))
+      match_pretty_names <- stats::na.omit(match(names(att$pretty_names), x$Parameter))
       if (length(match_pretty_names)) {
-        x$Parameter[x$Parameter == names(att$pretty_names[match_pretty_names])] <- att$pretty_names[match_pretty_names]
+        x$Parameter[match_pretty_names] <- att$pretty_names[x$Parameter[match_pretty_names]]
       }
     } else {
       match_pretty_names <- att$pretty_names[x$Parameter]
@@ -74,6 +74,10 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 
   # Format df columns ----
   x <- .format_df_columns(x)
+
+
+  # Format special anova columns ----
+  x <- .format_aov_columns(x)
 
 
   # Format frequentist stats ----
@@ -147,6 +151,12 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 
 
 
+#' @rdname format_table
+#' @export
+parameters_table <- format_table
+
+
+
 
 # sub-routines ---------------
 
@@ -161,7 +171,7 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
     x$p.value <- format(x$p.value, justify = "left")
   }
 
-  for (stats in c("p_CochransQ", "p_Omnibus", "p_Chi2", "p_Baseline", "p_RMSEA", "p_ROPE")) {
+  for (stats in c("p_CochransQ", "p_Omnibus", "p_Chi2", "p_Baseline", "p_RMSEA", "p_ROPE", "Wu_Hausman_p", "Sargan_p", "p_Omega2", "p_LR")) {
     if (stats %in% names(x)) {
       x[[stats]] <- format_p(x[[stats]], stars = stars, name = NULL, missing = "", digits = p_digits)
       x[[stats]] <- format(x[[stats]], justify = "left")
@@ -173,6 +183,8 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 }
 
 
+
+
 .format_df_columns <- function(x) {
   # generic df
   if ("df" %in% names(x)) x$df <- format_value(x$df, protect_integers = TRUE)
@@ -180,13 +192,40 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
   if ("df_residual" %in% names(x)) x$df_residual <- format_value(x$df_residual, protect_integers = TRUE)
   names(x)[names(x) == "df_residual"] <- "df"
   # df for errors
-  if ("df_error" %in% names(x)) x$df_error <- format_value(x$df_error, protect_integers = TRUE)
-  if (!("df" %in% names(x))) names(x)[names(x) == "df_error"] <- "df"
+  if ("df_error" %in% names(x)) {
+    x$df_error <- format_value(x$df_error, protect_integers = TRUE)
+    if (!("df" %in% names(x))) {
+      names(x)[names(x) == "df_error"] <- "df"
+    } else {
+      names(x)[names(x) == "df_error"] <- "df (error)"
+    }
+  }
   # denominator and numerator df
-  if ("df_num" %in% names(x)) x$df_num <- format_value(x$df_num, protect_integers = TRUE)
-  if ("df_denom" %in% names(x)) x$df_denom <- format_value(x$df_denom, protect_integers = TRUE)
+  if ("df_num" %in% names(x)) {
+    x$df_num <- format_value(x$df_num, protect_integers = TRUE)
+    names(x)[names(x) == "df_num"] <- "df (num.)"
+  }
+  if ("df_denom" %in% names(x)) {
+    x$df_denom <- format_value(x$df_denom, protect_integers = TRUE)
+    names(x)[names(x) == "df_denom"] <- "df (denom.)"
+  }
   x
 }
+
+
+
+
+.format_aov_columns <- function(x) {
+  if ("Deviance_error" %in% names(x)) {
+    x$Deviance_error <- format_value(x$Deviance_error, protect_integers = TRUE)
+    names(x)[names(x) == "Deviance_error"] <- "Deviance (error)"
+  }
+  if ("Power" %in% names(x)) {
+    x$Power <- format_value(x$Power, as_percent = TRUE, digits = 1)
+  }
+  x
+}
+
 
 
 
@@ -194,10 +233,22 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 .format_freq_stats <- function(x) {
   for (stats in c("t", "Chi2")) {
     if (stats %in% names(x) && "df" %in% names(x)) {
+      if (is.character(x$df)) {
+        x$df[x$df == ""] <- NA_character_
+      }
       df <- stats::na.omit(unique(x$df))
       if (length(df) == 1 && !all(is.infinite(df))) {
         names(x)[names(x) == stats] <- paste0(stats, "(", df, ")")
         x$df <- NULL
+      }
+    } else if (stats %in% names(x) && "df_error" %in% names(x)) {
+      if (is.character(x$df_error)) {
+        x$df_error[x$df_error == ""] <- NA_character_
+      }
+      df <- stats::na.omit(unique(x$df_error))
+      if (length(df) == 1 && !all(is.infinite(df))) {
+        names(x)[names(x) == stats] <- paste0(stats, "(", df, ")")
+        x$df_error <- NULL
       }
     }
   }
@@ -218,6 +269,7 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 
   x
 }
+
 
 
 
@@ -252,6 +304,7 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 
   x
 }
+
 
 
 
@@ -290,6 +343,7 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 
 
 
+
 .format_broom_ci_columns <- function(x, ci_digits, ci_width = "auto", ci_brackets = TRUE) {
   if (!any(grepl("conf.low", names(x), fixed = TRUE))) {
     return(x)
@@ -314,6 +368,7 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 
 
 
+
 .format_rope_columns <- function(x, ci_width = "auto", ci_brackets = TRUE) {
   if (all(c("ROPE_low", "ROPE_high") %in% names(x))) {
     x$ROPE_low <- format_ci(x$ROPE_low, x$ROPE_high, ci = NULL, width = ci_width, brackets = ci_brackets)
@@ -322,6 +377,7 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
   }
   x
 }
+
 
 
 
@@ -352,6 +408,7 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 
   x
 }
+
 
 
 
@@ -396,6 +453,7 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
 
 
 
+
 .format_performance_columns <- function(x) {
   if ("R2_adjusted" %in% names(x)) names(x)[names(x) == "R2_adjusted"] <- "R2 (adj.)"
   if ("R2_conditional" %in% names(x)) names(x)[names(x) == "R2_conditional"] <- "R2 (cond.)"
@@ -403,9 +461,10 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
   if ("R2_Tjur" %in% names(x)) names(x)[names(x) == "R2_Tjur"] <- "Tjur's R2"
   if ("R2_Nagelkerke" %in% names(x)) names(x)[names(x) == "R2_Nagelkerke"] <- "Nagelkerke's R2"
   if ("Performance_Score" %in% names(x)) names(x)[names(x) == "Performance_Score"] <- "Performance-Score"
+  if ("Wu_Hausman" %in% names(x)) names(x)[names(x) == "Wu_Hausman"] <- "Wu & Hausman"
+  if ("p(Wu_Hausman)" %in% names(x)) names(x)[names(x) == "p(Wu_Hausman)"] <- "p(Wu & Hausman)"
   x
 }
-
 
 
 
@@ -421,6 +480,7 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, 
   }
   x
 }
+
 
 
 

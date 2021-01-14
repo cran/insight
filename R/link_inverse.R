@@ -147,6 +147,9 @@ link_inverse.aovlist <- link_inverse.lm
 link_inverse.ivreg <- link_inverse.lm
 
 #' @export
+link_inverse.ivFixed <- link_inverse.lm
+
+#' @export
 link_inverse.iv_robust <- link_inverse.lm
 
 #' @export
@@ -260,6 +263,15 @@ link_inverse.BBmm <- link_inverse.gmnl
 link_inverse.coxph <- link_inverse.gmnl
 
 #' @export
+link_inverse.riskRegression <- link_inverse.gmnl
+
+#' @export
+link_inverse.comprisk <- link_inverse.gmnl
+
+#' @export
+link_inverse.coxr <- link_inverse.gmnl
+
+#' @export
 link_inverse.survfit <- link_inverse.gmnl
 
 #' @export
@@ -281,6 +293,18 @@ link_inverse.logistf <- link_inverse.gmnl
 link_inverse.multinom <- link_inverse.gmnl
 
 
+
+
+
+
+
+# Probit link ------------------------
+
+
+#' @export
+link_inverse.ivprobit <- function(x, ...) {
+  stats::make.link(link = "probit")$linkinv
+}
 
 
 

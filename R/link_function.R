@@ -143,6 +143,9 @@ link_function.feis <- link_function.lm
 link_function.ivreg <- link_function.lm
 
 #' @export
+link_function.ivFixed <- link_function.lm
+
+#' @export
 link_function.plm <- link_function.lm
 
 #' @export
@@ -216,11 +219,32 @@ link_function.mlogit <- link_function.multinom
 link_function.coxph <- link_function.multinom
 
 #' @export
+link_function.coxr <- link_function.multinom
+
+#' @export
 link_function.survfit <- link_function.multinom
 
 #' @export
 link_function.coxme <- link_function.multinom
 
+#' @export
+link_function.riskRegression <- link_function.multinom
+
+#' @export
+link_function.comprisk <- link_function.multinom
+
+
+
+
+
+
+# Probit link ------------------------
+
+
+#' @export
+link_function.ivprobit <- function(x, ...) {
+  stats::make.link(link = "probit")$linkfun
+}
 
 
 

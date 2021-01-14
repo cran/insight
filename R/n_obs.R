@@ -16,7 +16,7 @@
 #' data(mtcars)
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' n_obs(m)
-#' @importFrom stats model.frame nobs
+#' @importFrom stats model.frame nobs family
 #' @export
 n_obs <- function(x, ...) {
   UseMethod("n_obs")
@@ -30,6 +30,20 @@ n_obs.default <- function(x, ...) {
     class(x) <- c(class(x), c("glm", "lm"))
   }
 
+  is_binomial <- tryCatch(
+    {
+      fam <- stats::family(x)
+      fam$family == "binomial"
+    },
+    error = function(e) {
+      FALSE
+    }
+  )
+
+  if (isTRUE(is_binomial)) {
+    return(n_obs.glm(x, ...))
+  }
+
   tryCatch(
     {
       stats::nobs(x)
@@ -40,6 +54,36 @@ n_obs.default <- function(x, ...) {
   )
 }
 
+
+#' @importFrom stats nobs formula
+#' @export
+n_obs.glm <- function(x, ...) {
+  is_binomial <- tryCatch(
+    {
+      fam <- stats::family(x)
+      fam$family == "binomial"
+    },
+    error = function(e) {
+      FALSE
+    }
+  )
+  .nobs <- stats::nobs(x)
+
+  if (isTRUE(is_binomial)) {
+    resp <- deparse(stats::formula(x)[[2]])
+    if (grepl("^cbind\\(", resp)) {
+      trials <- trimws(sub("cbind\\((.*),(.*)\\)", "\\2", resp))
+      resp_data <- get_response(x)
+      if (grepl("-", trials, fixed = TRUE)) {
+        .nobs <- sum(resp_data[[2]])
+      } else {
+        .nobs <- sum(resp_data)
+      }
+    }
+  }
+
+  .nobs
+}
 
 #' @export
 n_obs.censReg <- n_obs.default
@@ -65,10 +109,22 @@ n_obs.gamm <- function(x, ...) {
 }
 
 
+#' @export
+n_obs.lavaan <- function(x, ...) {
+  x@SampleStats@ntotal
+}
+
 
 #' @export
 n_obs.merModList <- function(x, ...) {
   stats::nobs(x[[1]])
+}
+
+
+
+#' @export
+n_obs.summary.lm <- function(x, ...) {
+  length(x$residuals)
 }
 
 
@@ -95,8 +151,22 @@ n_obs.flexsurvreg <- function(x, ...) {
 
 
 #' @export
+n_obs.ivprobit <- function(x, ...) {
+  nrow(x$mr1)
+}
+
+
+
+#' @export
 n_obs.bamlss <- function(x, ...) {
   nrow(x$model.frame)
+}
+
+
+
+#' @export
+n_obs.coeftest <- function(x, ...) {
+  attributes(x)$nobs
 }
 
 
@@ -239,6 +309,13 @@ n_obs.cpglmm <- function(x, ...) {
 
 
 #' @export
+n_obs.lmodel2 <- function(x, ...) {
+  nrow(get_data(x))
+}
+
+
+
+#' @export
 n_obs.cpglm <- function(x, ...) {
   nrow(x$model.frame)
 }
@@ -255,7 +332,8 @@ n_obs.rq <- function(x, ...) {
   length(x$fitted.values)
 }
 
-
+#' @export
+n_obs.ivFixed <- n_obs.rq
 
 #' @export
 n_obs.BBreg <- function(x, ...) {
@@ -278,6 +356,18 @@ n_obs.crq <- function(x, ...) {
 
 #' @export
 n_obs.crqs <- n_obs.crq
+
+
+#' @export
+n_obs.comprisk <- function(x, ...) {
+  x$n
+}
+
+
+#' @export
+n_obs.riskRegression <- function(x, ...) {
+  nrow(x$response)
+}
 
 
 #' @export
@@ -324,6 +414,11 @@ n_obs.coxph <- n_obs.aareg
 #' @export
 n_obs.coxme <- n_obs.aareg
 
+
+#' @export
+n_obs.coxr <- function(x, ...) {
+  nrow(x$y)
+}
 
 
 #' @export

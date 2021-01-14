@@ -48,6 +48,7 @@ colour
 coloured
 comparator
 complmrob
+coxrobust
 cplm
 dirichlet
 doi
@@ -71,11 +72,16 @@ https
 intra
 intraclass
 io
+ivFixed
+ivprobit
 joss
 lavaan
 lme
 lmerModLmerTest
+lmodel
+lmtest
 logloss
+logLik
 lqmm
 mclogit
 merTools
@@ -99,6 +105,7 @@ poisson
 pre
 pscl
 quantreg
+riskRegression
 rms
 robmixglm
 rstanarm

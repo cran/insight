@@ -109,7 +109,7 @@
 
   # survival model --------
 
-  is.survival <- inherits(x, c("aareg", "survreg", "survfit", "survPresmooth", "flexsurvreg", "coxph", "coxme"))
+  is.survival <- inherits(x, c("aareg", "survreg", "survfit", "survPresmooth", "flexsurvreg", "coxph", "coxme", "coxr", "riskRegression", "comprisk"))
 
   # check if we have binomial models with trials instead of binary outcome
   # and check if we have truncated or censored brms-regression
@@ -180,22 +180,34 @@
   is_proptest <- FALSE
   is_binomtest <- FALSE
   is_chi2test <- FALSE
+  is_ranktest <- FALSE
+  is_xtab <- FALSE
 
   if (inherits(x, "htest")) {
-    if (grepl("t-test", x$method)) {
+    if (grepl("kruskal-wallis", tolower(x$method), fixed = TRUE) || grepl("wilcoxon", tolower(x$method), fixed = TRUE)) {
+      is_ranktest <- TRUE
+    } else if (grepl("t-test", x$method)) {
       is_ttest <- TRUE
     } else if (grepl("^One-way", x$method)) {
       is_oneway <- TRUE
     } else if (x$method == "Exact binomial test") {
       binom_fam <- TRUE
       is_binomtest <- TRUE
+      fitfam <- "binomial"
     } else if (grepl("\\d+-sample(.*)proportions(.*)", x$method)) {
       binom_fam <- TRUE
       is_proptest <- TRUE
-    } else if (grepl("Chi-squared", x$method)) {
+      fitfam <- "binomial"
+    } else if (any(grepl("chi-squared", c(tolower(x$method), tolower(attributes(x$statistic)$names)), fixed = TRUE)) ||
+               grepl("Fisher's Exact Test", x$method, fixed = TRUE)) {
       is_chi2test <- TRUE
+      is_xtab <- TRUE
+      fitfam <- "categorical"
     } else {
       is_correlation <- TRUE
+      if (grepl("Spearman's rank", x$method, fixed = TRUE)) {
+        is_ranktest <- TRUE
+      }
     }
   } else if (inherits(x, "BGGM")) {
     is_correlation <- TRUE
@@ -210,6 +222,7 @@
     is_correlation <- FALSE
     is_oneway <- FALSE
     is_proptest <- FALSE
+    is_xtab <- FALSE
 
     obj_type <- .classify_BFBayesFactor(x)
 
@@ -222,6 +235,10 @@
     } else if (obj_type == "proptest") {
       binom_fam <- TRUE
       is_proptest <- TRUE
+      fitfam <- "binomial"
+    } else if (obj_type == "xtable") {
+      is_xtab <- TRUE
+      fitfam <- "categorical"
     }
   }
 
@@ -241,8 +258,8 @@
 
   linear_model <- TRUE
   if (binom_fam | exponential_fam | poisson_fam | neg_bin_fam | logit.link |
-    dirichlet_fam | is.ordinal | zero.inf | is.censored | is.survival |
-    is.categorical | hurdle | is.multinomial) {
+    dirichlet_fam | is.ordinal | zero.inf | is.censored | is.survival | is_binomtest |
+    is.categorical | hurdle | is.multinomial | is_chi2test | is_proptest | is_xtab) {
     linear_model <- FALSE
   } else if (!(fitfam %in% c("Student's-t", "t Family", "gaussian", "Gaussian")) && !grepl("(\\st)$", fitfam)) {
     linear_model <- FALSE
@@ -284,7 +301,7 @@
     is_cumulative = is.ordinal,
     is_multinomial = is.multinomial | is.categorical,
     is_categorical = is.categorical,
-    is_mixed = .is_mixed_model(x),
+    is_mixed = is_mixed_model(x),
     is_multivariate = multi.var,
     is_trial = is.trial,
     is_bayesian = is.bayes,
@@ -294,6 +311,8 @@
     is_correlation = is_correlation,
     is_onewaytest = is_oneway,
     is_chi2test = is_chi2test,
+    is_ranktest = is_ranktest,
+    is_xtab = is_xtab,
     is_proptest = is_proptest,
     is_binomtest = is_binomtest,
     is_meta = is_meta,
@@ -368,12 +387,6 @@
   } else {
     class(x@denominator)
   }
-}
-
-
-
-.is_mixed_model <- function(x) {
-  !is.null(find_random(x))
 }
 
 

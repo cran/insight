@@ -44,10 +44,12 @@
 #'      \item \code{is_anova}: model is an Anova object
 #'      \item \code{is_ttest}: model is an an object of class \code{htest}, returned by \code{t.test()}
 #'      \item \code{is_correlation}: model is an an object of class \code{htest}, returned by \code{cor.test()}
+#'      \item \code{is_ranktest}: model is an an object of class \code{htest}, returned by \code{cor.test()} (if Spearman's rank correlation), \code{wilcox.text()} or \code{kruskal.test()}.
 #'      \item \code{is_onewaytest}: model is an an object of class \code{htest}, returned by \code{oneway.test()}
 #'      \item \code{is_proptest}: model is an an object of class \code{htest}, returned by \code{prop.test()}
 #'      \item \code{is_binomtest}: model is an an object of class \code{htest}, returned by \code{binom.test()}
 #'      \item \code{is_chi2test}: model is an an object of class \code{htest}, returned by \code{chisq.test()}
+#'      \item \code{is_xtab}: model is an an object of class \code{htest} or \code{BFBayesFactor}, and test-statistic stems from a contingency table (i.e. \code{chisq.test()} or \code{BayesFactor::contingencyTableBF()}).
 #'      \item \code{link_function}: the link-function
 #'      \item \code{family}: the family-object
 #'      \item \code{n_obs}: number of observations
@@ -236,6 +238,9 @@ model_info.feis <- model_info.mmclogit
 
 #' @export
 model_info.ivreg <- model_info.mmclogit
+
+#' @export
+model_info.ivFixed <- model_info.mmclogit
 
 #' @export
 model_info.aovlist <- model_info.mmclogit
@@ -523,6 +528,9 @@ model_info.coxph <- function(x, ...) {
 }
 
 #' @export
+model_info.coxr <- model_info.coxph
+
+#' @export
 model_info.aareg <- model_info.coxph
 
 #' @export
@@ -530,6 +538,12 @@ model_info.survfit <- model_info.coxph
 
 #' @export
 model_info.coxme <- model_info.coxph
+
+#' @export
+model_info.riskRegression <- model_info.coxph
+
+#' @export
+model_info.comprisk <- model_info.coxph
 
 
 
@@ -675,8 +689,26 @@ model_info.BGGM <- function(x, ...) {
 
 
 #' @export
+model_info.ivprobit <- function(x, ...) {
+  .make_family(
+    x = x,
+    fitfam = "binomial",
+    logit.link = FALSE,
+    link.fun = "probit",
+    ...
+  )
+}
+
+
+#' @export
 model_info.glht <- function(x, ...) {
   model_info(x$model, ...)
+}
+
+
+#' @export
+model_info.coeftest <- function(x, ...) {
+  NULL
 }
 
 
@@ -728,6 +760,10 @@ model_info.robmixglm <- function(x, ...) {
 model_info.Arima <- function(x, ...) {
   .make_family(x, ...)
 }
+
+
+#' @export
+model_info.summary.lm <- model_info.Arima
 
 
 #' @export

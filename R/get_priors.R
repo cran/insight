@@ -249,14 +249,22 @@ get_priors.meta_random <- function(x, ...) {
   fam1 <- attr(x$prior_d, "family")
   fam2 <- attr(x$prior_tau, "family")
 
-  data.frame(
+  loc1 <- which(names(prior_info1) %in% c("mean", "location", "shape"))[1]
+  loc2 <- which(names(prior_info2) %in% c("mean", "location", "shape"))[1]
+
+  scale1 <- which(names(prior_info1) %in% c("scale", "sd"))[1]
+  scale2 <- which(names(prior_info2) %in% c("scale", "sd"))[1]
+
+  out <- data.frame(
     Parameter = params,
     Distribution = c(fam1, fam2),
-    Location = c(prior_info1["mean"], prior_info2["shape"]),
-    Scale = c(prior_info1["sd"], prior_info2["scale"]),
+    Location = c(prior_info1[loc1], prior_info2[loc2]),
+    Scale = c(prior_info1[scale1], prior_info2[scale2]),
     stringsAsFactors = FALSE,
     row.names = NULL
   )
+
+  .fix_metabma_priorname(out)
 }
 
 
@@ -268,13 +276,18 @@ get_priors.meta_fixed <- function(x, ...) {
   prior_info <- attr(x$prior_d, "param")
   fam <- attr(x$prior_d, "family")
 
-  data.frame(
+  loc <- which(names(prior_info) %in% c("mean", "location", "shape"))[1]
+  scale <- which(names(prior_info) %in% c("scale", "sd"))[1]
+
+  out <- data.frame(
     Parameter = params,
     Distribution = fam,
-    Location = prior_info["mean"],
-    Scale = prior_info["sd"],
+    Location = prior_info[loc],
+    Scale = prior_info[scale],
     stringsAsFactors = FALSE
   )
+
+  .fix_metabma_priorname(out)
 }
 
 
@@ -314,14 +327,42 @@ get_priors.BFBayesFactor <- function(x, ...) {
     Distribution <- "cauchy"
   }
 
-  data.frame(
-    Parameter = prior_names,
-    Distribution = Distribution,
-    Location = 0,
-    Scale = prior_scale,
-    stringsAsFactors = FALSE,
-    row.names = NULL
-  )
+  if (bf_type == "linear") {
+    # find data types, to match priors
+    data_types <- x@numerator[[1]]@dataTypes
+    params <- find_parameters(x)
+
+    # create data frame of parameter names and components
+    out <- as.data.frame(utils::stack(params), stringsAsFactors = FALSE)
+    colnames(out) <- c("Parameter", "Component")
+    out$Distribution <- Distribution
+    out$Location <- 0
+    out$Scale <- NA
+
+    # find parameter names pattern to match data types
+    find_types <- do.call(rbind, strsplit(out$Parameter, "-", TRUE))[, 1, drop = TRUE]
+    interactions <- grepl(":", find_types, fixed = TRUE)
+    find_types[interactions] <- gsub("(.*):(.*)", "\\2", find_types[interactions])
+    cont_types <- data_types == "continuous"
+    data_types[cont_types] <- paste0(data_types[cont_types], ".", names(data_types[cont_types]))
+    for (i in 1:length(data_types)) {
+      out$Scale[find_types == names(data_types)[i]] <- prior_scale[data_types[i]]
+    }
+
+    # missing information to NA
+    out$Distribution[is.na(out$Scale)] <- NA
+    out$Location[is.na(out$Scale)] <- NA
+    out[c("Parameter", "Distribution", "Location", "Scale")]
+  } else {
+    data.frame(
+      Parameter = prior_names,
+      Distribution = Distribution,
+      Location = 0,
+      Scale = prior_scale,
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  }
 }
 
 
@@ -374,4 +415,13 @@ get_priors.mcmc.list <- function(x, ...) {
 .is_numeric_character <- function(x) {
   (is.character(x) && !anyNA(suppressWarnings(as.numeric(stats::na.omit(x))))) ||
     (is.factor(x) && !anyNA(suppressWarnings(as.numeric(levels(x)))))
+}
+
+
+
+.fix_metabma_priorname <- function(x) {
+  x$Distribution <- gsub("t", "Student's t", x$Distribution, fixed = TRUE)
+  x$Distribution <- gsub("norm", "Normal", x$Distribution, fixed = TRUE)
+  x$Distribution <- gsub("invgamma", "Inverse gamma", x$Distribution, fixed = TRUE)
+  x
 }

@@ -1,5 +1,10 @@
 #' @importFrom stats nobs
-.compute_variances <- function(x, component, name_fun = NULL, name_full = NULL, verbose = TRUE, tolerance = 1e-5) {
+.compute_variances <- function(x,
+                               component,
+                               name_fun = NULL,
+                               name_full = NULL,
+                               verbose = TRUE,
+                               tolerance = 1e-5) {
 
   ## Original code taken from GitGub-Repo of package glmmTMB
   ## Author: Ben Bolker, who used an cleaned-up/adapted
@@ -12,7 +17,7 @@
 
   if (faminfo$family %in% c("truncated_nbinom1")) {
     if (verbose) {
-      warning(sprintf("Truncated negative binomial families are currently not supported by `%s`.", name_fun), call. = F)
+      warning(sprintf("Truncated negative binomial families are currently not supported by `%s`.", name_fun), call. = FALSE)
     }
     return(NA)
   }
@@ -25,7 +30,7 @@
   no_random_variance <- FALSE
   if (.is_singular(x, vals, tolerance = tolerance) && !(component %in% c("slope", "intercept"))) {
     if (verbose) {
-      warning(sprintf("Can't compute %s. Some variance components equal zero. Your model may suffer from singulariy.\n  Solution: Respecify random structure!\n  You may also decrease the 'tolerance' level to enforce the calculation of random effect variances.", name_full), call. = F)
+      warning(sprintf("Can't compute %s. Some variance components equal zero. Your model may suffer from singulariy.\n  Solution: Respecify random structure!\n  You may also decrease the 'tolerance' level to enforce the calculation of random effect variances.", name_full), call. = FALSE)
     }
     no_random_variance <- TRUE
   }
@@ -57,7 +62,7 @@
   obs.terms <- names(nr[nr == n_obs(x)])
 
   # Variance of random effects
-  if (component %in% c("random", "all") && !isTRUE(no_random_variance)) {
+  if (component %in% c("random", "all") && isFALSE(no_random_variance)) {
     var.random <- .compute_variance_random(not.obs.terms, x = x, vals = vals)
   }
 
@@ -65,11 +70,22 @@
   # additive dispersion and the distribution-specific variance (Johnson et al. 2014)
 
   if (component %in% c("residual", "distribution", "all")) {
-    var.distribution <- .compute_variance_distribution(x, var.cor = vals$vc, faminfo, name = name_full, verbose = verbose)
+    var.distribution <- .compute_variance_distribution(
+      x = x,
+      var.cor = vals$vc,
+      faminfo,
+      name = name_full,
+      verbose = verbose
+    )
   }
 
   if (component %in% c("residual", "dispersion", "all")) {
-    var.dispersion <- .compute_variance_dispersion(x = x, vals = vals, faminfo = faminfo, obs.terms = obs.terms)
+    var.dispersion <- .compute_variance_dispersion(
+      x = x,
+      vals = vals,
+      faminfo = faminfo,
+      obs.terms = obs.terms
+    )
   }
 
   if (component %in% c("residual", "all")) {
@@ -477,7 +493,7 @@
 
   if (is.na(mu)) {
     if (verbose) {
-      warning("Can't calculate model's distribution-specific variance. Results are not reliable.", call. = F)
+      warning("Can't calculate model's distribution-specific variance. Results are not reliable.", call. = FALSE)
     }
     return(0)
   }
@@ -522,13 +538,13 @@
       )
 
       if (vv < 0 && isTRUE(verbose)) {
-        warning("Model's distribution-specific variance is negative. Results are not reliable.", call. = F)
+        warning("Model's distribution-specific variance is negative. Results are not reliable.", call. = FALSE)
       }
       vv / mu^2
     },
     error = function(x) {
       if (verbose) {
-        warning("Can't calculate model's distribution-specific variance. Results are not reliable.", call. = F)
+        warning("Can't calculate model's distribution-specific variance. Results are not reliable.", call. = FALSE)
       }
       0
     }
@@ -648,7 +664,7 @@
   # pearson residuals
   # pred <- predict(model, type = "response") ## (1 - p) * mu
   # pred <- stats::predict(model, type_pred = "response", type = "mean_subject")
-  # (insight::get_response(model) - pred) / sqrt(pvar)
+  # (get_response(model) - pred) / sqrt(pvar)
 }
 
 
@@ -703,7 +719,7 @@
     },
     error = function(x) {
       if (verbose) {
-        warning("Can't calculate model's distribution-specific variance. Results are not reliable.", call. = F)
+        warning("Can't calculate model's distribution-specific variance. Results are not reliable.", call. = FALSE)
       }
       0
     }

@@ -5,14 +5,26 @@ if (require("testthat") &&
   data(mtcars)
 
   m1 <- lm(Sepal.Length ~ Petal.Width + Species, data = iris)
-  m2 <-
-    lm(log(mpg) ~ log(hp) + cyl + I(cyl^2) + poly(wt, degree = 2, raw = TRUE),
-      data = mtcars
-    )
+  m2 <- lm(log(mpg) ~ log(hp) + cyl + I(cyl^2) + poly(wt, degree = 2, raw = TRUE),
+    data = mtcars
+  )
 
   test_that("model_info", {
     expect_true(model_info(m1)$is_linear)
     expect_false(model_info(m1)$is_bayesian)
+  })
+
+  test_that("get_residuals", {
+    expect_equal(
+      head(get_residuals(m2)),
+      head(stats::residuals(m2)),
+      tolerance = 1e-3,
+      ignore_attr = TRUE
+    )
+  })
+
+  test_that("get_sigma", {
+    expect_equal(get_sigma(m1), 0.4810113, tolerance = 1e-3, ignore_attr = TRUE)
   })
 
   test_that("find_predictors", {
@@ -38,6 +50,18 @@ if (require("testthat") &&
     expect_identical(link_inverse(m2)(.2), .2)
   })
 
+  test_that("loglik", {
+    expect_equal(get_loglikelihood(m1), logLik(m1), ignore_attr = TRUE)
+    expect_equal(get_loglikelihood(m2), logLik(m2), ignore_attr = TRUE)
+  })
+
+  test_that("get_df", {
+    expect_equal(get_df(m1), df.residual(m1), ignore_attr = TRUE)
+    expect_equal(get_df(m2), df.residual(m2), ignore_attr = TRUE)
+    expect_equal(get_df(m1, type = "model"), attr(logLik(m1), "df"), ignore_attr = TRUE)
+    expect_equal(get_df(m2, type = "model"), attr(logLik(m2), "df"), ignore_attr = TRUE)
+  })
+
   test_that("get_data", {
     expect_equal(nrow(get_data(m1)), 150)
     expect_equal(
@@ -46,6 +70,11 @@ if (require("testthat") &&
     )
     expect_equal(nrow(get_data(m2)), 32)
     expect_equal(colnames(get_data(m2)), c("mpg", "hp", "cyl", "wt"))
+  })
+
+  test_that("get_intercept", {
+    expect_equal(get_intercept(m1), as.vector(stats::coef(m1)[1]), ignore_attr = TRUE)
+    expect_equal(get_intercept(m2), as.vector(stats::coef(m2)[1]), ignore_attr = TRUE)
   })
 
   test_that("find_formula", {

@@ -17,6 +17,16 @@ if (require("testthat") &&
     expect_false(model_info(m1)$is_linear)
   })
 
+  test_that("loglik", {
+    expect_equal(get_loglikelihood(m1), logLik(m1), ignore_attr = TRUE)
+  })
+
+  test_that("get_df", {
+    expect_equal(get_df(m1), df.residual(m1), ignore_attr = TRUE)
+    expect_equal(get_df(m1, type = "model"), attr(logLik(m1), "df"), ignore_attr = TRUE)
+  })
+
+
   test_that("find_predictors", {
     expect_identical(find_predictors(m1), list(conditional = c("mined", "cover", "sample")))
     expect_identical(
@@ -60,6 +70,10 @@ if (require("testthat") &&
       colnames(get_data(m1)),
       c("count", "mined", "cover", "sample")
     )
+  })
+
+  test_that("get_call", {
+    expect_equal(class(get_call(m1)), "call")
   })
 
   test_that("find_formula", {

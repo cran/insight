@@ -57,10 +57,12 @@ Retrieve information from model objects.
      \item \code{is_anova}: model is an Anova object
      \item \code{is_ttest}: model is an an object of class \code{htest}, returned by \code{t.test()}
      \item \code{is_correlation}: model is an an object of class \code{htest}, returned by \code{cor.test()}
+     \item \code{is_ranktest}: model is an an object of class \code{htest}, returned by \code{cor.test()} (if Spearman's rank correlation), \code{wilcox.text()} or \code{kruskal.test()}.
      \item \code{is_onewaytest}: model is an an object of class \code{htest}, returned by \code{oneway.test()}
      \item \code{is_proptest}: model is an an object of class \code{htest}, returned by \code{prop.test()}
      \item \code{is_binomtest}: model is an an object of class \code{htest}, returned by \code{binom.test()}
      \item \code{is_chi2test}: model is an an object of class \code{htest}, returned by \code{chisq.test()}
+     \item \code{is_xtab}: model is an an object of class \code{htest} or \code{BFBayesFactor}, and test-statistic stems from a contingency table (i.e. \code{chisq.test()} or \code{BayesFactor::contingencyTableBF()}).
      \item \code{link_function}: the link-function
      \item \code{family}: the family-object
      \item \code{n_obs}: number of observations

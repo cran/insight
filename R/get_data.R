@@ -76,6 +76,20 @@ get_data.data.frame <- function(x, ...) {
 }
 
 
+#' @export
+get_data.summary.lm <- function(x, ...) {
+  mf <- tryCatch(
+    {
+      .get_data_from_env(x)[, all.vars(x$terms), drop = FALSE]
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+  .prepare_get_data(x, mf)
+}
+
+
 
 
 
@@ -581,6 +595,7 @@ get_data.glimML <- function(x, effects = c("all", "fixed", "random"), ...) {
 
 
 
+
 # sem models -------------------------------------
 
 #' @export
@@ -783,6 +798,12 @@ get_data.iv_robust <- get_data.ivreg
 
 
 #' @export
+get_data.ivprobit <- function(x, ...) {
+  .prepare_get_data(x, stats::na.omit(as.data.frame(x$mr1)))
+}
+
+
+#' @export
 get_data.bife <- function(x, effects = c("all", "fixed", "random"), ...) {
   effects <- match.arg(effects)
   mf <- as.data.frame(x$data)
@@ -880,7 +901,7 @@ get_data.MCMCglmm <- function(x, effects = c("all", "fixed", "random"), ...) {
         dat <- get(mf)
         switch(
           effects,
-          fixed = dat[, setdiff(colnames(dat), find_random(x, flatten = T)), drop = FALSE],
+          fixed = dat[, setdiff(colnames(dat), find_random(x, flatten = TRUE)), drop = FALSE],
           all = dat,
           random = dat[, find_random(x, flatten = TRUE), drop = FALSE]
         )
@@ -1294,6 +1315,10 @@ get_data.meta_fixed <- get_data.meta_random
 
 
 #' @export
+get_data.ivFixed <- get_data.rma
+
+
+#' @export
 get_data.mipo <- function(x, ...) {
   tryCatch(
     {
@@ -1311,36 +1336,10 @@ get_data.mipo <- function(x, ...) {
 get_data.htest <- function(x, ...) {
   out <- NULL
   if (!is.null(x$data.name)) {
-    out <- tryCatch(
-      {
-        data_name <- unlist(strsplit(x$data.name, " (and|by) "))
-        data_call <- lapply(data_name, str2lang)
-        columns <- lapply(data_call, eval)
-
-        if (!grepl(" (and|by) ", x$data.name) && grepl("^McNemar", x$method)) {
-          # preserve table data for McNemar
-          return(as.table(columns[[1]]))
-        } else {
-          max_len <- max(sapply(columns, length))
-          for (i in 1:length(columns)) {
-            columns[[i]] <- c(columns[[i]], rep(NA, max_len - length(columns[[i]])))
-          }
-          d <- as.data.frame(columns)
-        }
-
-        if (ncol(d) > 2) {
-          colnames(d) <- paste0("x", 1:ncol(d))
-        } else if (ncol(d) == 2) {
-          colnames(d) <- c("x", "y")
-        } else {
-          colnames(d) <- "x"
-        }
-        d
-      },
-      error = function(e) {
-        NULL
-      }
-    )
+    for (parent_level in 1:5) {
+      out <- .retrieve_htest_data(x, parent_level)
+      if (!is.null(out)) break
+    }
   }
   out
 }

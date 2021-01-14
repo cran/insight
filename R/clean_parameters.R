@@ -147,7 +147,7 @@ clean_parameters.BFBayesFactor <- function(x, ...) {
   })
 
   out <- .remove_backticks_from_parameter_names(do.call(rbind, l))
-  out <- .remove_empty_columns_from_pars(out)
+  out <- .remove_empty_columns_from_pars(.clean_bfbayesfactor_params(out))
   .fix_random_effect_smooth(x, out)
 }
 
@@ -292,6 +292,19 @@ clean_parameters.stanreg <- function(x, ...) {
 
 
 #' @export
+clean_parameters.bamlss <- function(x, ...) {
+  pars <- find_parameters(x, effects = "all", component = "all", flatten = FALSE)
+  l <- .get_stan_params(pars)
+
+  out <- do.call(rbind, l)
+  out <- .remove_empty_columns_from_pars(.clean_bamlss_params(out))
+  class(out) <- c("clean_parameters", class(out))
+  out
+}
+
+
+
+#' @export
 clean_parameters.stanmvreg <- function(x, ...) {
   pars <- find_parameters(x, effects = "all", component = "all", flatten = FALSE)
 
@@ -371,6 +384,12 @@ clean_parameters.mlm <- function(x, ...) {
       "sigma"
     } else if (grepl("priors", i, fixed = TRUE)) {
       "priors"
+    } else if (grepl("smooth_terms", i, fixed = TRUE)) {
+      "smooth_terms"
+    } else if (grepl("alpha", i, fixed = TRUE)) {
+      "distributional"
+    } else if (grepl("beta", i, fixed = TRUE)) {
+      "distributional"
     } else {
       "conditional"
     }
@@ -565,6 +584,59 @@ clean_parameters.mlm <- function(x, ...) {
     out$Function[smooth] <- "smooth"
   }
 
+  out
+}
+
+
+
+#' @importFrom stats na.omit
+.clean_bfbayesfactor_params <- function(out) {
+  pars <- do.call(rbind, strsplit(out$Parameter, "-", TRUE))
+
+  if (ncol(pars) == 1) {
+    return(out)
+  }
+
+  out$Cleaned_Parameter <- tryCatch(
+    {
+      apply(pars, 1, function(i) {
+        if (i[1] == i[2]) {
+          i[2] <- ""
+        } else if (i[1] != i[2] && !grepl(":", i[1], fixed = TRUE)) {
+          i[1] <- paste0(i[1], " [", i[2], "]")
+          i[2] <- ""
+        } else if (grepl(":", i[1], fixed = TRUE)) {
+          f <- unlist(strsplit(i[1], ":", fixed = TRUE))
+          l <- unlist(strsplit(i[2], ".&.", fixed = TRUE))
+
+          matches <- stats::na.omit(match(f, l))
+          l[matches] <- ""
+          l[-matches] <- paste0("[", l[-matches], "]")
+          i[1] <- paste0(f, l, collapse = " * ")
+        }
+        as.vector(i[1])
+      })
+    },
+    error = function(e) {
+      out$Cleaned_Parameter
+    }
+  )
+
+  out
+}
+
+
+
+.clean_bamlss_params <- function(out) {
+  out$Cleaned_Parameter <- out$Parameter
+  out$Cleaned_Parameter <- gsub("^(mu\\.p\\.|pi\\.p\\.)(.*)", "\\2", out$Cleaned_Parameter)
+  out$Cleaned_Parameter <- gsub("^(mu\\.s\\.|pi\\.s\\.)(.*)", "s\\(\\2\\)", out$Cleaned_Parameter)
+  out$Cleaned_Parameter <- gsub("^sigma\\.p\\.(.*)", "sigma \\(\\1\\)", out$Cleaned_Parameter)
+  out$Cleaned_Parameter <- gsub("..", ".", out$Cleaned_Parameter, fixed = TRUE)
+  out$Cleaned_Parameter <- gsub(".)", ")", out$Cleaned_Parameter, fixed = TRUE)
+  out$Cleaned_Parameter <- gsub("(.", "(", out$Cleaned_Parameter, fixed = TRUE)
+  out$Cleaned_Parameter <- gsub(".Intercept.", "Intercept", out$Cleaned_Parameter, fixed = TRUE)
+  out$Cleaned_Parameter <- gsub("(\\.$)", "", out$Cleaned_Parameter)
   out
 }
 

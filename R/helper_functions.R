@@ -151,8 +151,7 @@
     )
   )
 
-  if (identical(.safe_deparse(f), "~0") ||
-    identical(.safe_deparse(f), "~1")) {
+  if (identical(.safe_deparse(f), "~0") || identical(.safe_deparse(f), "~1")) {
     return(NULL)
   }
 
@@ -236,14 +235,44 @@
 
 
 # to reduce redundant code, I extract this part which is used several
-# times accross this package
+# times across this package
 .get_elements <- function(effects, component) {
-  elements <- c("conditional", "conditional2", "conditional3", "precision", "nonlinear", "random", "zero_inflated", "zero_inflated_random", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes", "cluster", "extra", "scale", "marginal")
+
+  # all elements of a model
+  elements <- c("conditional", "conditional2", "conditional3", "precision",
+                "nonlinear", "random", "zero_inflated", "zero_inflated_random",
+                "dispersion", "instruments", "interactions", "simplex",
+                "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes",
+                "cluster", "extra", "scale", "marginal", "alpha", "beta")
+
+  # auxiliary parameters
+  auxiliary_parameters <- c("sigma", "alpha", "beta", "dispersion", "precision", "nu", "tau", "shape", "phi", "ndt", "hu", "xi", "coi", "zoi")
+
+  # random parameters
+  random_parameters <- c("random", "zero_inflated_random")
+
+  # location parameters
+  location_parameters <- if (effects == "fixed") {
+    setdiff(elements, c(auxiliary_parameters, random_parameters))
+  } else {
+    setdiff(elements, auxiliary_parameters)
+  }
+
+  # fixed pattern?
+  if (all(component == "location")) {
+    return(location_parameters)
+  }
+
+  # fixed pattern?
+  if (all(component %in% c("distributional", "auxiliary"))) {
+    return(auxiliary_parameters)
+  }
+
 
   elements <- switch(
     effects,
     all = elements,
-    fixed = elements[elements %in% c("conditional", "conditional2", "conditional3", "precision", "zero_inflated", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "correlation", "slopes", "sigma", "nonlinear", "cluster", "extra", "scale", "marginal")],
+    fixed = elements[elements %in% c("conditional", "conditional2", "conditional3", "precision", "zero_inflated", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "correlation", "slopes", "sigma", "nonlinear", "cluster", "extra", "scale", "marginal", "beta")],
     random = elements[elements %in% c("random", "zero_inflated_random")]
   )
 
@@ -258,6 +287,8 @@
     interactions = elements[elements == "interactions"],
     simplex = elements[elements == "simplex"],
     sigma = elements[elements == "sigma"],
+    beta = elements[elements == "beta"],
+    alpha = elements[elements == "alpha"],
     smooth_terms = elements[elements == "smooth_terms"],
     correlation = elements[elements == "correlation"],
     cluster = elements[elements == "cluster"],
@@ -546,6 +577,48 @@
   }
   post.beta <- methods::slot(x, "post.beta")
   !(all(dim(post.beta) == 1) && is.na(post.beta))
+}
+
+
+
+
+# safe conversion from factor to numeric
+#' @importFrom stats na.omit
+.factor_to_numeric <- function(x, lowest = NULL) {
+  if (is.data.frame(x)) {
+    as.data.frame(lapply(x, .factor_to_numeric_helper, lowest = lowest))
+  } else {
+    .factor_to_numeric_helper(x, lowest = lowest)
+  }
+}
+
+
+#' @importFrom stats na.omit
+.factor_to_numeric_helper <- function(x, lowest = NULL) {
+  if (is.numeric(x)) {
+    return(x)
+  }
+
+  if (is.logical(x)) {
+    return(as.numeric(x))
+  }
+
+  if (anyNA(suppressWarnings(as.numeric(as.character(stats::na.omit(x)))))) {
+    if (is.character(x)) {
+      x <- as.factor(x)
+    }
+    x <- droplevels(x)
+    levels(x) <- 1:nlevels(x)
+  }
+
+  out <- as.numeric(as.character(x))
+
+  if (!is.null(lowest)) {
+    difference <- min(out) - lowest
+    out <- out - difference
+  }
+
+  out
 }
 
 

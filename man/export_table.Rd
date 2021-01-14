@@ -2,7 +2,6 @@
 % Please edit documentation in R/export_table.R
 \name{export_table}
 \alias{export_table}
-\alias{format_table}
 \title{Data frame and Tables Pretty Formatting}
 \usage{
 export_table(
@@ -16,24 +15,9 @@ export_table(
   format = NULL,
   caption = NULL,
   subtitle = NULL,
-  align = NULL,
   footer = NULL,
-  zap_small = FALSE
-)
-
-format_table(
-  x,
-  sep = " | ",
-  header = "-",
-  digits = 2,
-  protect_integers = TRUE,
-  missing = "",
-  width = NULL,
-  format = NULL,
-  caption = NULL,
-  subtitle = NULL,
   align = NULL,
-  footer = NULL,
+  group_by = NULL,
   zap_small = FALSE
 )
 }
@@ -53,26 +37,33 @@ format_table(
 \item{width}{Minimum width of the returned string. If not \code{NULL} and \code{width} is larger than the string's length, leading whitespaces are added to the string.}
 
 \item{format}{Name of output-format, as string. If \code{NULL} (or \code{"text"}),
-returned output is used for basic printing. Currently, only \code{"markdown"} is
-supported, or \code{NULL} (the default) resp. \code{"text"} for plain text.}
+returned output is used for basic printing. Can be one of \code{NULL} (the
+default) resp. \code{"text"} for plain text, \code{"markdown"} (or
+\code{"md"}) for markdown and \code{"html"} for HTML output.}
 
 \item{caption, subtitle}{Table caption and subtitle, as string. If \code{NULL},
 no caption or subtitle is printed.}
 
-\item{align}{Column alignment. Only applies to markdown-formatted tables.
-By default \code{align = NULL}, numeric columns are right-aligned,
-and other columns are left-aligned. May be a string to indicate alignment
-rules for the complete table, like \code{"left"}, \code{"right"},
-\code{"center"} or \code{"firstleft"} (to left-align first column,
-center remaining); or maybe a string with abbreviated alignment characters,
-where the length of the string must equal the number of columns, for
-instance, \code{align = "lccrl"} would left-align the first column, center
-the second and third, right-align column four and left-align the fifth
-column.}
-
 \item{footer}{Table footer, as string. For markdown-formatted tables, table
 footers, due to the limitation in markdown rendering, are actually just a
 new text line under the table.}
+
+\item{align}{Column alignment. For markdown-formatted tables, the default
+\code{align = NULL} will right-align numeric columns, while all other
+columns will be left-aligned. If \code{format = "html"}, the default is
+left-align first column and center all remaining. May be a string to
+indicate alignment rules for the complete table, like \code{"left"},
+\code{"right"}, \code{"center"} or \code{"firstleft"} (to left-align first
+column, center remaining); or maybe a string with abbreviated alignment
+characters, where the length of the string must equal the number of columns,
+for instance, \code{align = "lccrl"} would left-align the first column, center
+the second and third, right-align column four and left-align the fifth
+column. For HTML-tables, may be one of \code{"center"}, \code{"left"} or
+\code{"right"}.}
+
+\item{group_by}{Name of column in \code{x} that indicates grouping for tables.
+Only applies when \code{format = "html"}. \code{group_by} is passed down
+to \code{gt::gt(groupname_col = group_by)}.}
 
 \item{zap_small}{Logical, if \code{TRUE}, small values are rounded after \code{digits} decimal places. If \code{FALSE}, values with more decimal places than \code{digits} are printed in scientific notation.}
 }

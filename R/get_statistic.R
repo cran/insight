@@ -23,6 +23,7 @@
 #' @param ci Confidence Interval (CI) level. Default to 0.95 (95\%). Currently only applies to objects of class \code{emmGrid}.
 #' @param ... Currently not used.
 #' @inheritParams get_parameters
+#' @inheritParams get_parameters.emmGrid
 #'
 #' @return A data frame with the model's parameter names and the related test statistic.
 #'
@@ -42,12 +43,36 @@ get_statistic <- function(x, ...) {
 
 #' @rdname get_statistic
 #' @export
-get_statistic.default <- function(x, column_index = 3, ...) {
+get_statistic.default <- function(x, column_index = 3, verbose = TRUE, ...) {
   cs <- stats::coef(summary(x))
+
+  if (column_index > ncol(cs)) {
+    if (isTRUE(verbose)) {
+      warning("Could not access test statistic of model parameters.", call. = FALSE)
+    }
+    return(NULL)
+  }
 
   out <- data.frame(
     Parameter = rownames(cs),
     Statistic = as.vector(cs[, column_index]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  out <- .remove_backticks_from_parameter_names(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
+get_statistic.summary.lm <- function(x, ...) {
+  cs <- stats::coef(x)
+
+  out <- data.frame(
+    Parameter = rownames(cs),
+    Statistic = as.vector(cs[, 3]),
     stringsAsFactors = FALSE,
     row.names = NULL
   )
@@ -420,6 +445,24 @@ get_statistic.coxph <- function(x, ...) {
 }
 
 
+#' @export
+get_statistic.coxr <- function(x, ...) {
+  parms <- get_parameters(x)
+  vc <- get_varcov(x)
+  se <- sqrt(diag(vc))
+
+  out <- data.frame(
+    Parameter = parms$Parameter,
+    Statistic = parms$Estimate / se,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
 #' @importFrom stats vcov
 #' @export
 get_statistic.coxme <- function(x, ...) {
@@ -441,6 +484,23 @@ get_statistic.coxme <- function(x, ...) {
   out
 }
 
+
+
+#' @export
+get_statistic.riskRegression <- function(x, ...) {
+  junk <- utils::capture.output(cs <- stats::coef(x))
+
+  out <- data.frame(
+    Parameter = as.vector(cs[, 1]),
+    Statistic = as.numeric(cs[, "z"]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  out <- .remove_backticks_from_parameter_names(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
 
 
 #' @export
@@ -773,6 +833,29 @@ get_statistic.negbinirr <- get_statistic.logitor
 #' @export
 get_statistic.ridgelm <- function(x, ...) {
   NULL
+}
+
+
+#' @export
+get_statistic.lmodel2 <- function(x, ...) {
+  NULL
+}
+
+
+#' @export
+get_statistic.ivFixed <- get_statistic.coxr
+
+
+  #' @export
+get_statistic.ivprobit <- function(x, ...) {
+  out <- data.frame(
+    Parameter = x$names,
+    Statistic = as.vector(x$tval),
+    stringsAsFactors = FALSE
+  )
+  out <- .remove_backticks_from_parameter_names(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
 }
 
 
@@ -1293,6 +1376,35 @@ get_statistic.rq <- function(x, ...) {
   out
 }
 
+
+#' @export
+get_statistic.rqs <- function(x, ...) {
+  stat <- tryCatch(
+    {
+      s <- suppressWarnings(summary(x, covariance = TRUE))
+      cs <- do.call(rbind, lapply(s, stats::coef))
+      cs[, "t value"]
+    },
+    error = function(e) {
+      NULL
+    }
+  )
+
+  params <- get_parameters(x)
+
+  out <- data.frame(
+    Parameter = params$Parameter,
+    Statistic = stat,
+    Component = params$Component,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
 #' @export
 get_statistic.crq <- function(x, ...) {
   sc <- summary(x)
@@ -1739,4 +1851,17 @@ get_statistic.bife <- function(x, ...) {
 #' @export
 get_statistic.mediate <- function(x, ...) {
   NULL
+}
+
+
+#' @export
+get_statistic.coeftest <- function(x, ...) {
+  out <- data.frame(
+    Parameter = row.names(x),
+    Statistic = x[, 3],
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+  attr(out, "statistic") <- find_statistic(x)
+  out
 }

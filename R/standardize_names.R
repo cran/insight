@@ -75,10 +75,7 @@ standardize_names.effectsize_table <- standardize_names.parameters_model
 standardize_names.data.frame <- standardize_names.parameters_model
 
 #' @export
-standardize_names.parameters_distribution <- function(data, style = c("easystats", "broom"), ...) {
-  style <- match.arg(style)
-  .standardize_names(data, style, ignore_estimate = TRUE, ...)
-}
+standardize_names.parameters_distribution <- standardize_names.parameters_model
 
 
 
@@ -105,11 +102,11 @@ standardize_names.parameters_distribution <- function(data, style = c("easystats
 
 
 .names_to_easystats <- function(cn, ignore_estimate) {
-  cn[cn %in% c("t", "z", "F", "Chi2", "chisq", "Chisq", "chi-sq", "t / F", "z / Chisq", "z / Chi2")] <- "Statistic"
-  if (!isTRUE(ignore_estimate)) {
+  cn[cn %in% c("t", "z", "F", "Chi2", "chisq", "Chisq", "chi-sq", "t / F", "z / Chisq", "z / Chi2", "W")] <- "Statistic"
+  if (isFALSE(ignore_estimate)) {
     cn[cn %in% c("Median", "Mean", "MAP", "rho", "r", "tau", "Difference")] <- "Coefficient"
   }
-  cn[cn %in% c("df_residual", "df.residual", "df.error", "df_error")] <- "df"
+  cn[cn %in% c("df_residual", "df.residual", "Resid..Df", "df.error", "df_error")] <- "df"
 
   # convert broom-style to easystats
   cn[cn == "term"] <- "Parameter"
@@ -129,6 +126,7 @@ standardize_names.parameters_distribution <- function(data, style = c("easystats
   # anova
   cn[cn == "sumsq"] <- "Sum_Squares"
   cn[cn == "meansq"] <- "Mean_Square"
+  cn[cn == "Resid..Dev"] <- "Deviance_error"
 
   cn
 }
@@ -154,24 +152,31 @@ standardize_names.parameters_distribution <- function(data, style = c("easystats
   cn[cn == "df_error"] <- "df.error"
   cn[cn == "df_residual"] <- "df.residual"
   cn[cn == "n_Obs"] <- "n.obs"
+
   # anova
   cn[cn == "Sum_Squares"] <- "sumsq"
   cn[cn == "Mean_Square"] <- "meansq"
+  cn[cn == "Deviance_error"] <- "Resid..Dev"
+
   # name of coefficient column for (Bayesian) models
-  if (!isTRUE(ignore_estimate)) {
-    cn[cn %in% c("Coefficient", "Std_Coefficient", "Median", "Mean", "MAP")] <- "estimate"
+  if (isFALSE(ignore_estimate)) {
+    cn[cn %in% c("Coefficient", "Std_Coefficient", "Median", "Mean", "MAP", "Psihat", "Trimmed_Mean")] <- "estimate"
   }
+
   # name of coefficient column htest
   cn[cn %in% c("rho", "r", "tau")] <- "estimate"
   if (("Difference" %in% cn) && !("estimate" %in% cn)) {
     cn[cn == "Difference"] <- "estimate"
   }
-  cn[cn %in% c("S", "t", "z", "F", "Chi2", "chisq", "chi-sq", "Chisq", "t / F", "z / Chisq", "z / Chi2")] <- "statistic"
+
+  cn[cn %in% c("W", "S", "t", "z", "F", "Chi2", "chisq", "chi-sq", "Chisq", "t / F", "z / Chisq", "z / Chi2")] <- "statistic"
+
   # fancy regex replacements
   cn <- gsub("^CI_low", "conf.low", cn)
   cn <- gsub("^CI_high", "conf.high", cn)
   cn <- gsub("(.*)CI_low$", "\\1conf.low", cn)
   cn <- gsub("(.*)CI_high$", "\\1conf.high", cn)
+
   # from package effectisze
   if (requireNamespace("effectsize", quietly = TRUE)) {
     effectsize_names <- effectsize::is_effectsize_name(cn)
@@ -179,7 +184,9 @@ standardize_names.parameters_distribution <- function(data, style = c("easystats
       cn[effectsize_names] <- "estimate"
     }
   }
+
   # lowercase for everything
   cn <- gsub(tolower(cn), pattern = "_", replacement = ".", fixed = TRUE)
+
   cn
 }
