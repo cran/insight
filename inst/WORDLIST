@@ -19,6 +19,7 @@ MCSE
 MuMIn
 Nakagawa
 Newburgh
+Rchoice
 Savel'ev
 Schielzeth
 Schielzeth’s
@@ -40,10 +41,12 @@ blavaan
 brglm
 brms
 brmsfit
+btergm
 cgam
 cglm
 clmm
 cloglog
+cmprsk
 colour
 coloured
 comparator
@@ -55,6 +58,7 @@ doi
 easystats
 emm
 emmGrid
+ergm
 estimatr
 et
 fixest
@@ -68,6 +72,7 @@ glmm
 glmmADMB
 glmmTMB
 glmx
+htest
 https
 intra
 intraclass
@@ -81,7 +86,6 @@ lmerModLmerTest
 lmodel
 lmtest
 logloss
-logLik
 lqmm
 mclogit
 merTools
@@ -116,6 +120,7 @@ specificities
 stanfit
 stanreg
 tranformations
+tseries
 tweedie
 unformatted
 untransformed

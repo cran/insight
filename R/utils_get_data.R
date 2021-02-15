@@ -273,8 +273,7 @@
   response <- unlist(model.terms$response)
 
   if (is_mv) {
-    fixed.component.data <- switch(
-      component,
+    fixed.component.data <- switch(component,
       all = c(
         sapply(model.terms[-1], function(i) i$conditional),
         sapply(model.terms[-1], function(i) i$zero_inflated),
@@ -286,8 +285,7 @@
       dispersion = sapply(model.terms[-1], function(i) i$dispersion)
     )
 
-    random.component.data <- switch(
-      component,
+    random.component.data <- switch(component,
       all = c(
         sapply(model.terms[-1], function(i) i$random),
         sapply(model.terms[-1], function(i) i$zero_inflated_random)
@@ -300,8 +298,7 @@
     fixed.component.data <- unlist(fixed.component.data)
     random.component.data <- unlist(random.component.data)
   } else {
-    fixed.component.data <- switch(
-      component,
+    fixed.component.data <- switch(component,
       all = c(model.terms$conditional, model.terms$zero_inflated, model.terms$dispersion),
       conditional = model.terms$conditional,
       zi = ,
@@ -309,8 +306,7 @@
       dispersion = model.terms$dispersion
     )
 
-    random.component.data <- switch(
-      component,
+    random.component.data <- switch(component,
       all = c(model.terms$random, model.terms$zero_inflated_random),
       conditional = model.terms$random,
       zi = ,
@@ -335,8 +331,7 @@
   #   weights <- c(weights, "(weights)")
   # }
 
-  vars <- switch(
-    effects,
+  vars <- switch(effects,
     all = unique(c(response, fixed.component.data, random.component.data, weights)),
     fixed = unique(c(response, fixed.component.data, weights)),
     random = unique(random.component.data)
@@ -423,8 +418,7 @@
   # add variables from other model components
   mf <- .add_zeroinf_data(x, mf, model.terms$zero_inflated)
 
-  fixed.data <- switch(
-    component,
+  fixed.data <- switch(component,
     all = c(model.terms$conditional, model.terms$zero_inflated, model.terms$offset),
     conditional = c(model.terms$conditional, model.terms$offset),
     zi = ,
@@ -448,8 +442,7 @@
   }
   cn <- clean_names(colnames(dat))
 
-  ft <- switch(
-    effects,
+  ft <- switch(effects,
     fixed = find_variables(x, effects = "fixed", flatten = TRUE),
     all = find_variables(x, flatten = TRUE),
     random = find_random(x, split_nested = TRUE, flatten = TRUE)
@@ -656,7 +649,7 @@
 }
 
 
-.retrieve_htest_data <- function(x, parent_level) {
+.retrieve_htest_data <- function(x) {
   out <- tryCatch(
     {
       # split by "and" and "by". E.g., for t.test(1:3, c(1,1:3)), we have
@@ -677,13 +670,13 @@
 
       # exeception: list for kruskal-wallis
       if (grepl("Kruskal-Wallis", x$method, fixed = TRUE) && grepl("^list\\(", data_name)) {
-        l <- eval(str2lang(x$data.name), envir = parent.frame(n = parent_level))
+        l <- eval(.str2lang(x$data.name))
         names(l) <- paste0("x", 1:length(l))
         return(l)
       }
 
-      data_call <- lapply(data_name, str2lang)
-      columns <- lapply(data_call, eval, envir = parent.frame(n = parent_level))
+      data_call <- lapply(data_name, .str2lang)
+      columns <- lapply(data_call, eval)
 
       # preserve table data for McNemar
       if (!grepl(" (and|by) ", x$data.name) && (grepl("^McNemar", x$method) || (length(columns) == 1 && is.matrix(columns[[1]])))) {
@@ -719,15 +712,18 @@
 
   # 2nd try
   if (is.null(out)) {
-    out <- tryCatch(
-      {
-        data_name <- trimws(unlist(strsplit(x$data.name, "(and|,|by)")))
-        as.table(get(data_name, envir = parent.frame(n = parent_level)))
-      },
-      error = function(e) {
-        NULL
-      }
-    )
+    for (parent_level in 1:5) {
+      out <- tryCatch(
+        {
+          data_name <- trimws(unlist(strsplit(x$data.name, "(and|,|by)")))
+          as.table(get(data_name, envir = parent.frame(n = parent_level)))
+        },
+        error = function(e) {
+          NULL
+        }
+      )
+      if (!is.null(out)) break
+    }
   }
 
   out

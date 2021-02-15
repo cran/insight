@@ -19,6 +19,7 @@
 #'   applies to models of class \code{mixor}.
 #' @param complete Logical, if \code{TRUE}, for \code{aov}, returns the full
 #'   variance-covariance matrix.
+#' @param verbose Toggle warnings.
 #' @param ... Currently not used.
 #'
 #' @note \code{get_varcov()} tries to return the nearest positive definite matrix
@@ -40,10 +41,11 @@ get_varcov <- function(x, ...) {
 # Default models ----------------------------------------------------
 
 
+#' @rdname get_varcov
 #' @export
-get_varcov.default <- function(x, ...) {
+get_varcov.default <- function(x, verbose = TRUE, ...) {
   vc <- suppressWarnings(stats::vcov(x))
-  .process_vcov(vc)
+  .process_vcov(vc, verbose)
 }
 
 
@@ -75,22 +77,21 @@ get_varcov.mlm <- function(x, ...) {
 
 #' @rdname get_varcov
 #' @export
-get_varcov.betareg <- function(x, component = c("conditional", "precision", "all"), ...) {
+get_varcov.betareg <- function(x, component = c("conditional", "precision", "all"), verbose = TRUE, ...) {
   component <- match.arg(component)
 
-  vc <- switch(
-    component,
+  vc <- switch(component,
     "conditional" = stats::vcov(object = x, model = "mean"),
     "precision" = stats::vcov(object = x, model = "precision"),
     stats::vcov(object = x)
   )
-  .process_vcov(vc)
+  .process_vcov(vc, verbose)
 }
 
 
 #' @rdname get_varcov
 #' @export
-get_varcov.DirichletRegModel <- function(x, component = c("conditional", "precision", "all"), ...) {
+get_varcov.DirichletRegModel <- function(x, component = c("conditional", "precision", "all"), verbose = TRUE, ...) {
   component <- match.arg(component)
   if (x$parametrization == "common") {
     vc <- stats::vcov(x)
@@ -107,7 +108,7 @@ get_varcov.DirichletRegModel <- function(x, component = c("conditional", "precis
       vc <- stats::vcov(x)
     }
   }
-  .process_vcov(vc)
+  .process_vcov(vc, verbose)
 }
 
 
@@ -126,8 +127,7 @@ get_varcov.clm2 <- function(x, component = c("all", "conditional", "scale"), ...
     vc <- .fix_negative_matrix(vc)
   }
 
-  range <- switch(
-    component,
+  range <- switch(component,
     "all" = 1:(n_scale + n_intercepts + n_location),
     "conditional" = 1:(n_intercepts + n_location),
     "scale" = (1 + n_intercepts + n_location):(n_scale + n_intercepts + n_location)
@@ -197,8 +197,7 @@ get_varcov.gamlss <- function(x, component = c("conditional", "all"), ...) {
 get_varcov.hurdle <- function(x, component = c("conditional", "zero_inflated", "zi", "all"), ...) {
   component <- match.arg(component)
 
-  vc <- switch(
-    component,
+  vc <- switch(component,
     "conditional" = stats::vcov(object = x, model = "count"),
     "zi" = ,
     "zero_inflated" = stats::vcov(object = x, model = "zero"),
@@ -226,8 +225,7 @@ get_varcov.zcpglm <- function(x, component = c("conditional", "zero_inflated", "
   tweedie <- which(grepl("^tw_", rownames(vc)))
   zero <- which(grepl("^zero_", rownames(vc)))
 
-  vc <- switch(
-    component,
+  vc <- switch(component,
     "conditional" = vc[tweedie, tweedie, drop = FALSE],
     "zi" = ,
     "zero_inflated" = vc[zero, zero, drop = FALSE],
@@ -250,8 +248,7 @@ get_varcov.zcpglm <- function(x, component = c("conditional", "zero_inflated", "
 get_varcov.MixMod <- function(x, component = c("conditional", "zero_inflated", "zi", "all"), ...) {
   component <- match.arg(component)
 
-  vc <- switch(
-    component,
+  vc <- switch(component,
     "conditional" = stats::vcov(x, parm = "fixed-effects"),
     "zi" = ,
     "zero_inflated" = stats::vcov(x, parm = "zero_part"),
@@ -266,8 +263,7 @@ get_varcov.MixMod <- function(x, component = c("conditional", "zero_inflated", "
 get_varcov.glmmTMB <- function(x, component = c("conditional", "zero_inflated", "zi", "dispersion", "all"), ...) {
   component <- match.arg(component)
 
-  vc <- switch(
-    component,
+  vc <- switch(component,
     "conditional" = stats::vcov(x)[["cond"]],
     "zi" = ,
     "zero_inflated" = stats::vcov(x)[["zi"]],
@@ -395,6 +391,15 @@ get_varcov.robmixglm <- function(x, ...) {
 
 
 #' @export
+get_varcov.Rchoice <- function(x, ...) {
+  vc <- stats::vcov(x)
+  params <- find_parameters(x, flatten = TRUE)
+  dimnames(vc) <- list(params, params)
+  .process_vcov(vc)
+}
+
+
+#' @export
 get_varcov.rq <- function(x, ...) {
   s <- summary(x, covariance = TRUE)
   vc <- as.matrix(s$cov)
@@ -404,6 +409,15 @@ get_varcov.rq <- function(x, ...) {
   }
 
   .remove_backticks_from_matrix_names(as.matrix(vc))
+}
+
+
+#' @export
+get_varcov.crr <- function(x, ...) {
+  vc <- as.matrix(x$var)
+  params <- find_parameters(x, flatten = TRUE)
+  dimnames(vc) <- list(params, params)
+  .process_vcov(vc)
 }
 
 
@@ -652,12 +666,12 @@ get_varcov.LORgee <- get_varcov.gee
 # helper-functions -----------------------------------------------------
 
 
-.process_vcov <- function(vc) {
+.process_vcov <- function(vc, verbose = TRUE) {
   if (.is_negativ_matrix(vc)) {
     vc <- .fix_negative_matrix(vc)
   }
   # fix possible missings due to rank deficient model matrix
-  vc <- .fix_rank_deficiency(vc)
+  vc <- .fix_rank_deficiency(vc, verbose)
   .remove_backticks_from_matrix_names(as.matrix(vc))
 }
 
@@ -691,10 +705,22 @@ get_varcov.LORgee <- get_varcov.gee
 }
 
 
-.fix_rank_deficiency <- function(m) {
+.fix_rank_deficiency <- function(m, verbose = TRUE) {
   if (anyNA(m)) {
-    warning("Model matrix is rank deficient. Some variance-covariance parameters are missing.", call. = FALSE)
-    m <- m[!is.na]
+    if (isTRUE(verbose)) {
+      warning("Model matrix is rank deficient. Some variance-covariance parameters are missing.", call. = FALSE)
+    }
+    mm <- m[!is.na(m)]
+    if (!is.matrix(mm)) {
+      mm <- matrix(mm, nrow = sqrt(length(mm)))
+      na_cols <- apply(m, 2, function(i) all(is.na(i)))
+      rownames(mm) <- rownames(m)[!na_cols]
+      colnames(mm) <- rownames(m)[!na_cols]
+      attr(mm, "na_columns_name") <- na_cols[na_cols]
+      attr(mm, "na_columns_index") <- which(na_cols)
+      attr(mm, "rank_deficient") <- TRUE
+    }
+    m <- mm
   }
   m
 }

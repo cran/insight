@@ -16,10 +16,10 @@
 #'      \item \code{zero_inflated}, the "fixed effects" part from the zero-inflation component of the model
 #'      \item \code{zero_inflated_random}, the "random effects" part from the zero-inflation component of the model
 #'      \item \code{dispersion}, the dispersion formula
-#'      \item \code{instruments}, for fixed-effects regressions like \code{ivreg}, \code{felm} or \code{plm}, the instrumental variables
-#'      \item \code{cluster}, for fixed-effects regressions like \code{felm}, the cluster specification
-#'      \item \code{correlation}, for models with correlation-component like \code{gls}, the formula that describes the correlation structure
-#'      \item \code{slopes}, for fixed-effects individual-slope models like \code{feis}, the formula for the slope parameters
+#'      \item \code{instruments}, for fixed-effects regressions like \code{ivreg::ivreg()}, \code{lfe::felm()} or \code{plm::plm()}, the instrumental variables
+#'      \item \code{cluster}, for fixed-effects regressions like \code{lfe::felm()}, the cluster specification
+#'      \item \code{correlation}, for models with correlation-component like \code{nlme::gls()}, the formula that describes the correlation structure
+#'      \item \code{slopes}, for fixed-effects individual-slope models like \code{feisr::feis()}, the formula for the slope parameters
 #'      \item \code{precision}, for \code{DirichletRegModel} models from \pkg{DirichletReg}, when parametrization (i.e. \code{model}) is \code{"alternative"}.
 #'    }
 #'
@@ -88,7 +88,7 @@ find_formula.list <- function(x, ...) {
 
 #' @export
 find_formula.data.frame <- function(x, ...) {
-  stop("A data frame is no valid object for this function")
+  stop("A data frame is not a valid object for this function.")
 }
 
 
@@ -263,6 +263,13 @@ find_formula.maxLik <- find_formula.default
 
 #' @export
 find_formula.maxim <- find_formula.default
+
+
+#' @export
+find_formula.btergm <- function(x, ...) {
+  f <- list(conditional = x@formula)
+  .find_formula_return(f)
+}
 
 
 #' @export
@@ -899,12 +906,12 @@ find_formula.glmmTMB <- function(x, ...) {
   f.disp <- stats::formula(x, component = "disp")
 
   if (identical(.safe_deparse(f.zi), "~0") ||
-      identical(.safe_deparse(f.zi), "~1")) {
+    identical(.safe_deparse(f.zi), "~1")) {
     f.zi <- NULL
   }
 
   if (identical(.safe_deparse(f.disp), "~0") ||
-      identical(.safe_deparse(f.disp), "~1")) {
+    identical(.safe_deparse(f.disp), "~1")) {
     f.disp <- NULL
   }
 
@@ -1311,6 +1318,13 @@ find_formula.BFBayesFactor <- function(x, ...) {
 
 
 
+# tidymodels --------------------------------------------------------------
+
+#' @export
+find_formula.model_fit <- function(x, ...) {
+  find_formula(x$fit)
+}
+
 
 
 
@@ -1490,7 +1504,9 @@ find_formula.BFBayesFactor <- function(x, ...) {
 
 
 .find_formula_return <- function(f) {
-  if (is.null(f)) return(NULL)
+  if (is.null(f)) {
+    return(NULL)
+  }
   class(f) <- c("insight_formula", class(f))
   f
 }
@@ -1511,7 +1527,7 @@ format.insight_formula <- function(x, what = c("conditional", "random"), ...) {
 
   # Add all the components
   for (part in what[-1]) {
-    if(part %in% names(x)){
+    if (part %in% names(x)) {
       ft <- paste0(ft, " + ", format(x[[part]]))
     }
   }

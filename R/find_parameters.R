@@ -289,6 +289,48 @@ find_parameters.rms <- find_parameters.default
 find_parameters.tobit <- find_parameters.default
 
 
+#' @export
+find_parameters.Rchoice <- function(x, flatten = FALSE, ...) {
+  cf <- names(stats::coef(x))
+  if (cf[1] == "constant") {
+    cf[1] <- "(Intercept)"
+  }
+  out <- list(conditional = cf)
+
+  if (flatten) {
+    unique(unlist(out))
+  } else {
+    out
+  }
+}
+
+
+#' @export
+find_parameters.btergm <- function(x, flatten = FALSE, ...) {
+  cf <- x@coef
+  out <- list(conditional = names(cf))
+
+  if (flatten) {
+    unique(unlist(out))
+  } else {
+    out
+  }
+}
+
+
+#' @export
+find_parameters.crr <- function(x, flatten = FALSE, ...) {
+  cs <- x$coef
+  out <- list(conditional = names(cs))
+
+  if (flatten) {
+    unique(unlist(out))
+  } else {
+    out
+  }
+}
+
+
 #' @importFrom utils capture.output
 #' @importFrom stats coef
 #' @export
@@ -417,8 +459,7 @@ find_parameters.mle <- find_parameters.mle2
 #' @export
 find_parameters.glht <- function(x, flatten = FALSE, ...) {
   s <- summary(x)
-  alt <- switch(
-    x$alternative,
+  alt <- switch(x$alternative,
     two.sided = "==",
     less = ">=",
     greater = "<="

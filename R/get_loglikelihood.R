@@ -111,8 +111,7 @@ get_loglikelihood.glm <- function(x, ...) {
   }
 
   # Calculate Log Likelihoods depending on the family
-  lls <- switch(
-    fam,
+  lls <- switch(fam,
     binomial = {
       stats::dbinom(round(n * resp), round(n), predicted, log = TRUE) * w
     },
@@ -200,6 +199,14 @@ get_loglikelihood.iv_robust <- function(x, ...) {
 #' @export
 get_loglikelihood.svycoxph <- function(x, ...) {
   .loglikelihood_prep_output(x, lls = x$ll[2], df = x$degf.resid)
+}
+
+
+
+
+#' @export
+get_loglikelihood.crr <- function(x, ...) {
+  x$loglik
 }
 
 

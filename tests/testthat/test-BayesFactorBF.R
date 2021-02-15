@@ -108,6 +108,16 @@ if (require("testthat") && require("insight") && require("stats") && require("Ba
       expect_equal(colnames(get_parameters(x)), c("mu", "supp-OJ", "supp-VC", "sig2", "g_supp"))
     })
 
+    test_that("clean_parameters", {
+      cp <- clean_parameters(x)
+      expect_equal(cp$Cleaned_Parameter,
+                   c("supp [OJ]", "supp [VC]", "dose [Low]", "dose [Medium]",
+                     "dose [High]", "mu", "sig2", "g_supp"))
+      expect_equal(cp$Component,
+                   c("conditional", "conditional", "conditional", "conditional",
+                     "conditional", "extra", "extra", "extra"))
+    })
+
 
     # ---------------------------
     data(puzzles)
@@ -191,18 +201,26 @@ if (require("testthat") && require("insight") && require("stats") && require("Ba
       expect_equal(
         get_priors(x),
         data.frame(
-          Parameter = c("shape-round", "shape-square", "color-color",
-                        "color-monochromatic", "ID-1", "ID-2", "ID-3", "ID-4", "ID-5",
-                        "ID-6", "ID-7", "ID-8", "ID-9", "ID-10", "ID-11", "ID-12", "mu",
-                        "sig2", "g_shape", "g_ID"),
-          Distribution = c("cauchy", "cauchy",
-                           NA, NA, "cauchy", "cauchy", "cauchy", "cauchy", "cauchy", "cauchy",
-                           "cauchy", "cauchy", "cauchy", "cauchy", "cauchy", "cauchy", NA,
-                           NA, NA, NA),
-          Location = c(0, 0, NA, NA, 0, 0, 0, 0, 0, 0, 0,
-                       0, 0, 0, 0, 0, NA, NA, NA, NA),
-          Scale = c(0.5, 0.5, NA, NA, 1,
-                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, NA, NA, NA, NA),
+          Parameter = c(
+            "shape-round", "shape-square", "color-color",
+            "color-monochromatic", "ID-1", "ID-2", "ID-3", "ID-4", "ID-5",
+            "ID-6", "ID-7", "ID-8", "ID-9", "ID-10", "ID-11", "ID-12", "mu",
+            "sig2", "g_shape", "g_ID"
+          ),
+          Distribution = c(
+            "cauchy", "cauchy",
+            NA, NA, "cauchy", "cauchy", "cauchy", "cauchy", "cauchy", "cauchy",
+            "cauchy", "cauchy", "cauchy", "cauchy", "cauchy", "cauchy", NA,
+            NA, NA, NA
+          ),
+          Location = c(
+            0, 0, NA, NA, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, NA, NA, NA, NA
+          ),
+          Scale = c(
+            0.5, 0.5, NA, NA, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, NA, NA, NA, NA
+          ),
           stringsAsFactors = FALSE,
           row.names = NULL
         ),
@@ -333,8 +351,8 @@ if (require("testthat") && require("insight") && require("stats") && require("Ba
     expect_equal(
       get_priors(corr_BF1),
       structure(list(
-        Parameter = "rho", Distribution = "cauchy", Location = 0,
-        Scale = 0.333333333333333
+        Parameter = "rho", Distribution = "beta", Location = 3,
+        Scale = 3
       ), class = "data.frame", row.names = c(
         NA,
         -1L

@@ -2,20 +2,23 @@
 % Please edit documentation in R/get_weights.R
 \name{get_weights}
 \alias{get_weights}
+\alias{get_weights.default}
 \title{Get the values from model weights}
 \usage{
-get_weights(x, na_rm = FALSE, null_as_ones = FALSE, ...)
+get_weights(x, ...)
+
+\method{get_weights}{default}(x, na_rm = FALSE, null_as_ones = FALSE, ...)
 }
 \arguments{
 \item{x}{A fitted model.}
+
+\item{...}{Currently not used.}
 
 \item{na_rm}{Logical, if \code{TRUE}, removes possible missing values.}
 
 \item{null_as_ones}{Logical, if \code{TRUE}, will return a vector of \code{1}
 if no weights were specified in the model (as if the weights were all set
 to 1).}
-
-\item{...}{Currently not used.}
 }
 \value{
 The weighting variable, or \code{NULL} if no weights were specified
@@ -37,7 +40,7 @@ get_weights(m)
 get_weights(lm(mpg ~ wt, data = mtcars), null_as_ones = TRUE)
 
 # GLMs
-m <- glm(vs ~ disp + mpg, data = mtcars, weights = weight, family=quasibinomial)
+m <- glm(vs ~ disp + mpg, data = mtcars, weights = weight, family = quasibinomial)
 get_weights(m)
 m <- glm(cbind(cyl, gear) ~ mpg, data = mtcars, weights = weight, family = binomial)
 get_weights(m)

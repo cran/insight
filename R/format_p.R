@@ -21,6 +21,23 @@
 #' format_p(p, digits = "scientific")
 #' @export
 format_p <- function(p, stars = FALSE, stars_only = FALSE, name = "p", missing = "", digits = 3, ...) {
+
+  # only convert p if it's a valid numeric, or at least coercible to
+  # valid numeric values...
+  if (!is.numeric(p)) {
+    if (.is_numeric_character(p)) {
+      p <- .factor_to_numeric(p)
+    } else {
+      return(p)
+    }
+  }
+
+
+  if (identical(stars, "only")) {
+    stars <- TRUE
+    stars_only <- TRUE
+  }
+
   if (digits == "apa") {
     text <- ifelse(is.na(p), NA,
       ifelse(p < 0.001, "< .001***",

@@ -4,6 +4,9 @@
 \alias{display}
 \alias{print_md}
 \alias{print_html}
+\alias{display.data.frame}
+\alias{print_md.data.frame}
+\alias{print_html.data.frame}
 \title{Generic export of data frames into formatted tables}
 \usage{
 display(object, ...)
@@ -11,14 +14,26 @@ display(object, ...)
 print_md(x, ...)
 
 print_html(x, ...)
+
+\method{display}{data.frame}(object, format = "markdown", ...)
+
+\method{print_md}{data.frame}(x, ...)
+
+\method{print_html}{data.frame}(x, ...)
 }
 \arguments{
 \item{object, x}{A data frame.}
 
 \item{...}{Arguments passed to other methods.}
+
+\item{format}{String, indicating the output format. Can be \code{"markdown"} or \code{"html"}.}
 }
 \value{
-A data frame.
+Depending on \code{format}, either an object of class \code{gt_tbl}
+  or a character vector of class \code{knitr_kable}.
+
+ @examples
+display(iris[1:5, ])
 }
 \description{
 \code{display()} is a generic function to export data frames

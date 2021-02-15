@@ -8,12 +8,14 @@ export_table(
   x,
   sep = " | ",
   header = "-",
+  empty_line = NULL,
   digits = 2,
   protect_integers = TRUE,
   missing = "",
   width = NULL,
   format = NULL,
-  caption = NULL,
+  title = NULL,
+  caption = title,
   subtitle = NULL,
   footer = NULL,
   align = NULL,
@@ -28,6 +30,9 @@ export_table(
 
 \item{header}{Header separator. Can be \code{NULL}.}
 
+\item{empty_line}{Separator used for empty lines. If \code{NULL}, line remains
+empty (i.e. filled with whitespaces).}
+
 \item{digits}{Number of significant digits.}
 
 \item{protect_integers}{Should integers be kept as integers (i.e., without decimals)?}
@@ -41,8 +46,9 @@ returned output is used for basic printing. Can be one of \code{NULL} (the
 default) resp. \code{"text"} for plain text, \code{"markdown"} (or
 \code{"md"}) for markdown and \code{"html"} for HTML output.}
 
-\item{caption, subtitle}{Table caption and subtitle, as string. If \code{NULL},
-no caption or subtitle is printed.}
+\item{title, caption, subtitle}{Table title (same as caption) and subtitle, as strings. If \code{NULL},
+no title or subtitle is printed, unless it is stored as attributes (\code{table_title},
+or its alias \code{table_caption}, and \code{table_subtitle}).}
 
 \item{footer}{Table footer, as string. For markdown-formatted tables, table
 footers, due to the limitation in markdown rendering, are actually just a
@@ -83,7 +89,6 @@ The values for \code{caption}, \code{subtitle} and \code{footer}
 \examples{
 cat(export_table(iris))
 cat(export_table(iris, sep = " ", header = "*", digits = 1))
-
 \dontrun{
 # colored footers
 data(iris)

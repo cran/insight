@@ -15,6 +15,11 @@ if (.runThisTest) {
       expect_true(model_info(m3)$is_multivariate)
     })
 
+    test_that("n_parameters", {
+      expect_equal(n_parameters(m1), 5)
+      expect_equal(n_parameters(m1, component = "conditional"), 1)
+    })
+
     test_that("clean_names", {
       expect_equal(clean_names(m1), c("y", "x0", "x1", "x2", "x3"))
       expect_equal(clean_names(m2), c("y", "x2", "x3", "x0", "x1"))
@@ -42,6 +47,14 @@ if (.runThisTest) {
       expect_identical(find_response(m1), "y")
       expect_identical(find_response(m2), "y")
       expect_identical(find_response(m3), c(y0 = "y0", y1 = "y1"))
+    })
+
+    test_that("find_smooth", {
+      expect_identical(find_smooth(m1), list(conditional = c("s(x0)", "s(x1)", "s(x2)", "s(x3)")))
+    })
+
+    test_that("get_call", {
+      expect_identical(deparse(get_call(m1)), "mgcv::gam(formula = y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)")
     })
 
     test_that("get_response", {

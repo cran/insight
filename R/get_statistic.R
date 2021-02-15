@@ -53,8 +53,14 @@ get_statistic.default <- function(x, column_index = 3, verbose = TRUE, ...) {
     return(NULL)
   }
 
+  # edge cases: check for NULL
+  params <- rownames(cs)
+  if (is.null(params)) {
+    params <- paste(1:nrow(cs))
+  }
+
   out <- data.frame(
-    Parameter = rownames(cs),
+    Parameter = params,
     Statistic = as.vector(cs[, column_index]),
     stringsAsFactors = FALSE,
     row.names = NULL
@@ -463,6 +469,10 @@ get_statistic.coxr <- function(x, ...) {
 }
 
 
+#' @export
+get_statistic.crr <- get_statistic.coxr
+
+
 #' @importFrom stats vcov
 #' @export
 get_statistic.coxme <- function(x, ...) {
@@ -831,6 +841,66 @@ get_statistic.negbinirr <- get_statistic.logitor
 
 
 #' @export
+get_statistic.Rchoice <- function(x, verbose = TRUE, ...) {
+  cs <- summary(x)$CoefTable
+  out <- data.frame(
+    Parameter = find_parameters(x, flatten = TRUE),
+    Statistic = as.vector(cs[, 3]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
+get_statistic.garch <- function(x, verbose = TRUE, ...) {
+  cs <- summary(x)$coef
+  out <- data.frame(
+    Parameter = find_parameters(x, flatten = TRUE),
+    Statistic = as.vector(cs[, 3]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
+get_statistic.ergm <- function(x, verbose = TRUE, ...) {
+  get_statistic.default(x = x, column_index = 4, verbose = verbose, ...)
+}
+
+
+#' @export
+get_statistic.btergm <- function(x, verbose = TRUE, ...) {
+  params <- x@coef
+  bootstraps <- x@boot$t
+
+  # standard error
+  sdev <- sapply(1:ncol(bootstraps), function(i) {
+    cur <- (bootstraps[, i] - params[i])^2
+    sqrt(sum(cur) / length(cur))
+  })
+  stat <- (0 - colMeans(bootstraps)) / sdev
+
+  out <- data.frame(
+    Parameter = names(stat),
+    Statistic = stat,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
 get_statistic.ridgelm <- function(x, ...) {
   NULL
 }
@@ -846,7 +916,7 @@ get_statistic.lmodel2 <- function(x, ...) {
 get_statistic.ivFixed <- get_statistic.coxr
 
 
-  #' @export
+#' @export
 get_statistic.ivprobit <- function(x, ...) {
   out <- data.frame(
     Parameter = x$names,
@@ -955,8 +1025,7 @@ get_statistic.mle <- get_statistic.mle2
 #' @export
 get_statistic.glht <- function(x, ...) {
   s <- summary(x)
-  alt <- switch(
-    x$alternative,
+  alt <- switch(x$alternative,
     two.sided = "==",
     less = ">=",
     greater = "<="

@@ -1,6 +1,19 @@
-if (require("testthat") &&
-  require("insight") &&
-  require("fixest")) {
+osx <- tryCatch({
+  si <- Sys.info()
+  if (!is.null(si["sysname"])) {
+    si["sysname"] == "Darwin" || grepl("^darwin", R.version$os)
+  } else {
+    FALSE
+  }
+})
+
+
+if (!osx &&
+    require("testthat") &&
+    require("insight") &&
+    require("fixest") &&
+    getRversion() >= "3.6.0") {
+
   data(trade)
   m1 <- femlm(Euros ~ log(dist_km) | Origin + Destination + Product, data = trade)
   m2 <- femlm(log1p(Euros) ~ log(dist_km) | Origin + Destination + Product, data = trade, family = "gaussian")

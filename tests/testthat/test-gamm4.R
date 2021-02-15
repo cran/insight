@@ -1,6 +1,15 @@
+osx <- tryCatch({
+  si <- Sys.info()
+  if (!is.null(si["sysname"])) {
+    si["sysname"] == "Darwin" || grepl("^darwin", R.version$os)
+  } else {
+    FALSE
+  }
+})
+
 unloadNamespace("gam")
 
-if (require("testthat") && require("insight") && require("gamm4")) {
+if (!osx && require("testthat") && require("insight") && require("gamm4")) {
   set.seed(0)
   dat <- gamSim(1, n = 400, scale = 2) ## simulate 4 term additive truth
   dat$fac <- fac <- as.factor(sample(1:20, 400, replace = TRUE))
@@ -62,8 +71,10 @@ if (require("testthat") && require("insight") && require("gamm4")) {
     expect_length(find_formula(m1), 2)
     expect_equal(
       find_formula(m1),
-      list(conditional = as.formula("y ~ s(x0) + x1 + s(x2)"),
-           random = as.formula("~1 | fac")),
+      list(
+        conditional = as.formula("y ~ s(x0) + x1 + s(x2)"),
+        random = as.formula("~1 | fac")
+      ),
       ignore_attr = TRUE
     )
   })

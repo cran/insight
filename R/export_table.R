@@ -3,12 +3,15 @@
 #' @param x A data frame.
 #' @param sep Column separator.
 #' @param header Header separator. Can be \code{NULL}.
+#' @param empty_line Separator used for empty lines. If \code{NULL}, line remains
+#'   empty (i.e. filled with whitespaces).
 #' @param format Name of output-format, as string. If \code{NULL} (or \code{"text"}),
 #'   returned output is used for basic printing. Can be one of \code{NULL} (the
 #'   default) resp. \code{"text"} for plain text, \code{"markdown"} (or
 #'   \code{"md"}) for markdown and \code{"html"} for HTML output.
-#' @param caption,subtitle Table caption and subtitle, as string. If \code{NULL},
-#'   no caption or subtitle is printed.
+#' @param title,caption,subtitle Table title (same as caption) and subtitle, as strings. If \code{NULL},
+#'   no title or subtitle is printed, unless it is stored as attributes (\code{table_title},
+#'   or its alias \code{table_caption}, and \code{table_subtitle}).
 #' @param footer Table footer, as string. For markdown-formatted tables, table
 #'   footers, due to the limitation in markdown rendering, are actually just a
 #'   new text line under the table.
@@ -39,7 +42,6 @@
 #' @examples
 #' cat(export_table(iris))
 #' cat(export_table(iris, sep = " ", header = "*", digits = 1))
-#'
 #' \dontrun{
 #' # colored footers
 #' data(iris)
@@ -65,12 +67,14 @@
 export_table <- function(x,
                          sep = " | ",
                          header = "-",
+                         empty_line = NULL,
                          digits = 2,
                          protect_integers = TRUE,
                          missing = "",
                          width = NULL,
                          format = NULL,
-                         caption = NULL,
+                         title = NULL,
+                         caption = title,
                          subtitle = NULL,
                          footer = NULL,
                          align = NULL,
@@ -86,10 +90,25 @@ export_table <- function(x,
     format <- "markdown"
   }
 
+  # if we have a list of data frame and HTML format, create a single
+  # data frame now...
+  if (identical(format, "html") && !is.data.frame(x) && is.list(x)) {
+    x <- do.call(rbind, lapply(x, function(i) {
+      attr_name <- .check_caption_attr_name(i)
+      i$Component <- attr(i, attr_name)[1]
+      i
+    }))
+  }
+
+
   # single data frame
   if (is.data.frame(x)) {
+    if (!is.null(title)) {
+      caption <- title
+    }
     if (is.null(caption)) {
-      caption <- attributes(x)$table_caption
+      attr_name <- .check_caption_attr_name(x)
+      caption <- attributes(x)[[attr_name]]
     }
     if (is.null(subtitle)) {
       subtitle <- attributes(x)$table_subtitle
@@ -111,11 +130,13 @@ export_table <- function(x,
       footer = footer,
       align = align,
       group_by = group_by,
-      zap_small = zap_small
+      zap_small = zap_small,
+      empty_line = empty_line
     )
   } else if (is.list(x)) {
     # list of data frames
     tmp <- lapply(.compact_list(x), function(i) {
+      attr_name <- .check_caption_attr_name(i)
       .export_table(
         x = i,
         sep = sep,
@@ -125,12 +146,13 @@ export_table <- function(x,
         missing = missing,
         width = width,
         format = format,
-        caption = attributes(i)$table_caption,
+        caption = attributes(i)[[attr_name]],
         subtitle = attributes(i)$table_subtitle,
         footer = attributes(i)$table_footer,
         align = align,
         group_by = group_by,
-        zap_small = zap_small
+        zap_small = zap_small,
+        empty_line = empty_line
       )
     })
     out <- c()
@@ -158,11 +180,21 @@ export_table <- function(x,
 
 
 
+# check whether "table_caption" or its alias "table_title" is used as attribute
+.check_caption_attr_name <- function(x) {
+  attr_name <- "table_caption"
+  if (is.null(attr(x, attr_name, exact = TRUE)) && !is.null(attr(x, "table_title", exact = TRUE))) {
+    attr_name <- "table_title"
+  }
+  attr_name
+}
+
+
 
 # create matrix of raw table layout --------------------
 
 
-.export_table <- function(x, sep = " | ", header = "-", digits = 2, protect_integers = TRUE, missing = "", width = NULL, format = NULL, caption = NULL, subtitle = NULL, footer = NULL, align = NULL, group_by = NULL, zap_small = FALSE) {
+.export_table <- function(x, sep = " | ", header = "-", digits = 2, protect_integers = TRUE, missing = "", width = NULL, format = NULL, caption = NULL, subtitle = NULL, footer = NULL, align = NULL, group_by = NULL, zap_small = FALSE, empty_line = NULL) {
   df <- as.data.frame(x)
 
   # round all numerics
@@ -204,7 +236,7 @@ export_table <- function(x,
     }
 
     if (format == "text") {
-      out <- .format_basic_table(final, header, sep, caption = caption, subtitle = subtitle, footer = footer, align = align)
+      out <- .format_basic_table(final, header, sep, caption = caption, subtitle = subtitle, footer = footer, align = align, empty_line = empty_line)
     } else if (format == "markdown") {
       out <- .format_markdown_table(final, x, caption = caption, subtitle = subtitle, footer = footer, align = align)
     }
@@ -221,11 +253,10 @@ export_table <- function(x,
 # plain text formatting ------------------------
 
 
-.format_basic_table <- function(final, header, sep, caption = NULL, subtitle = NULL, footer = NULL, align = NULL) {
+.format_basic_table <- function(final, header, sep, caption = NULL, subtitle = NULL, footer = NULL, align = NULL, empty_line = NULL) {
 
   # align table, if requested
   if (!is.null(align) && length(align) == 1) {
-
     for (i in 1:ncol(final)) {
       align_char <- ""
       if (align %in% c("left", "right", "center", "firstleft")) {
@@ -253,7 +284,12 @@ export_table <- function(x,
   rows <- c()
   for (row in 1:nrow(final)) {
     final_row <- paste0(final[row, ], collapse = sep)
-    rows <- paste0(rows, final_row, sep = "\n")
+    # check if we have an empty row
+    if (!is.null(empty_line) && all(nchar(trimws(final[row, ])) == 0)) {
+      rows <- paste0(rows, paste0(rep_len(empty_line, nchar(final_row)), collapse = ""), sep = "\n")
+    } else {
+      rows <- paste0(rows, final_row, sep = "\n")
+    }
 
     # First row separation
     if (row == 1) {
@@ -437,9 +473,10 @@ export_table <- function(x,
       col_align <- c()
       for (i in 1:nchar(align)) {
         col_align <- c(col_align, switch(substr(align, i, i),
-                                         "l" = "left",
-                                         "r" = "right",
-                                         "center"))
+          "l" = "left",
+          "r" = "right",
+          "center"
+        ))
       }
       out[["_boxhead"]]$column_align[1] <- col_align
     }

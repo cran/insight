@@ -137,6 +137,13 @@ n_obs.mediate <- function(x, ...) {
 
 
 #' @export
+n_obs.garch <- function(x, ...) {
+  x$n.used
+}
+
+
+
+#' @export
 n_obs.bayesx <- function(x, ...) {
   length(x$response)
 }
@@ -202,6 +209,13 @@ n_obs.sem <- function(x, ...) {
 #' @export
 n_obs.LORgee <- function(x, ...) {
   x$nobs
+}
+
+
+
+#' @export
+n_obs.crr <- function(x, ...) {
+  x$n
 }
 
 
@@ -517,6 +531,13 @@ n_obs.wbm <- function(x, ...) {
 n_obs.wbgee <- function(x, ...) {
   stats::nobs(x)
 }
+
+
+#' @export
+n_obs.Rchoice <- function(x, ...) {
+  nrow(x$mf)
+}
+
 
 
 

@@ -182,6 +182,7 @@
   is_chi2test <- FALSE
   is_ranktest <- FALSE
   is_xtab <- FALSE
+  is_levenetest <- FALSE
 
   if (inherits(x, "htest")) {
     if (grepl("kruskal-wallis", tolower(x$method), fixed = TRUE) || grepl("wilcoxon", tolower(x$method), fixed = TRUE)) {
@@ -199,7 +200,7 @@
       is_proptest <- TRUE
       fitfam <- "binomial"
     } else if (any(grepl("chi-squared", c(tolower(x$method), tolower(attributes(x$statistic)$names)), fixed = TRUE)) ||
-               grepl("Fisher's Exact Test", x$method, fixed = TRUE)) {
+      grepl("Fisher's Exact Test", x$method, fixed = TRUE)) {
       is_chi2test <- TRUE
       is_xtab <- TRUE
       fitfam <- "categorical"
@@ -213,6 +214,10 @@
     is_correlation <- TRUE
   }
 
+  # exceptions: car::leveneTest
+  if (inherits(x, "anova") && !is.null(attributes(x)$heading) && grepl("Levene's Test", attributes(x)$heading, fixed = TRUE)) {
+    is_levenetest <- TRUE
+  }
 
   # Bayesfactors terms --------
 
@@ -301,7 +306,7 @@
     is_cumulative = is.ordinal,
     is_multinomial = is.multinomial | is.categorical,
     is_categorical = is.categorical,
-    is_mixed = is_mixed_model(x),
+    is_mixed = !is_levenetest && is_mixed_model(x),
     is_multivariate = multi.var,
     is_trial = is.trial,
     is_bayesian = is.bayes,
@@ -312,6 +317,7 @@
     is_onewaytest = is_oneway,
     is_chi2test = is_chi2test,
     is_ranktest = is_ranktest,
+    is_levenetest = is_levenetest,
     is_xtab = is_xtab,
     is_proptest = is_proptest,
     is_binomtest = is_binomtest,
@@ -324,8 +330,7 @@
 }
 
 .get_ordinal_link <- function(x) {
-  switch(
-    x$link,
+  switch(x$link,
     logistic = "logit",
     cloglog = "log",
     x$link
@@ -342,8 +347,7 @@
       dist <- x$dist
     }
   }
-  f <- switch(
-    dist,
+  f <- switch(dist,
     gaussian = stats::gaussian("identity"),
     logistic = stats::binomial("logit"),
     llogis = ,

@@ -29,7 +29,9 @@
 #'   model <- stan_glm(Sepal.Length ~ Species, data = iris, refresh = 0, seed = 123)
 #'   x <- model_parameters(model, ci = c(0.69, 0.89, 0.95))
 #'   as.data.frame(format_table(x))
-#' }}
+#' }
+#' }
+#'
 #' @return A data frame.
 #' @export
 format_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, ci_width = "auto", ci_brackets = TRUE, ci_digits = 2, p_digits = 3, rope_digits = 2, preserve_attributes = FALSE, ...) {
@@ -41,11 +43,11 @@ format_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, ci_w
   if (missing(rope_digits)) rope_digits <- .additional_arguments(x, "rope_digits", 2)
 
   att <- attributes(x)
-  x <- as.data.frame(x)
+  x <- as.data.frame(x, stringsAsFactors = FALSE)
 
 
   # Format parameters names ----
-  if (pretty_names & !is.null(att$pretty_names)) {
+  if (pretty_names && !is.null(att$pretty_names)) {
     # remove strings with NA names
     att$pretty_names <- att$pretty_names[!is.na(names(att$pretty_names))]
     if (length(att$pretty_names) != length(x$Parameter)) {
@@ -140,11 +142,12 @@ format_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, ci_w
     x$To <- x$Operator <- x$From <- NULL
   }
 
+  x[] <- lapply(x, as.character)
+
   # restore attributes
   if (isTRUE(preserve_attributes)) {
     attributes(x) <- utils::modifyList(att, attributes(x))
   }
-
   x
 }
 
@@ -176,7 +179,7 @@ parameters_table <- format_table
       x[[stats]] <- format_p(x[[stats]], stars = stars, name = NULL, missing = "", digits = p_digits)
       x[[stats]] <- format(x[[stats]], justify = "left")
       p_name <- gsub("(.*)_p$", "\\1", gsub("^p_(.*)", "\\1", stats))
-      names(x)[names(x) == stats] <- paste0("p(", p_name, ")")
+      names(x)[names(x) == stats] <- paste0("p (", p_name, ")")
     }
   }
   x
@@ -278,28 +281,40 @@ parameters_table <- format_table
   # Main CI
   ci_low <- names(x)[grep("^CI_low", names(x))]
   ci_high <- names(x)[grep("^CI_high", names(x))]
-  if (length(ci_low) >= 1 & length(ci_low) == length(ci_high)) {
+  if (length(ci_low) >= 1 && length(ci_low) == length(ci_high)) {
     if (!is.null(att$ci)) {
       if (length(unique(stats::na.omit(att$ci))) > 1) {
-        ci_colname <- "?% CI"
+        ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(att$ci)) * 100)
       } else {
         ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(att$ci))[1] * 100)
       }
+      x$CI <- NULL
     } else if (!is.null(x$CI)) {
       ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(x$CI))[1] * 100)
       x$CI <- NULL
     } else {
-      ci_colname <- "CI"
+      # all these edge cases... for some objects in "parameters::model_parameters()",
+      # when we have multiple ci-levels, column names can be "CI_low_0.8" or
+      # "CI_low_0.95" etc. - this is handled here, if we have no ci-attribute
+      if (grepl("CI_low_(\\d)\\.(\\d)", ci_low) && grepl("CI_high_(\\d)\\.(\\d)", ci_high)) {
+        ci_levels <- as.numeric(gsub("CI_low_(\\d)\\.(\\d)", "\\1.\\2", ci_low))
+        ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(ci_levels)) * 100)
+        x$CI <- NULL
+      } else {
+        ci_colname <- "CI"
+      }
     }
 
     # Get characters to align the CI
     for (i in 1:length(ci_colname)) {
-      x[ci_colname[i]] <- format_ci(x[[ci_low[i]]], x[[ci_high[i]]], ci = NULL, digits = ci_digits, width = ci_width, brackets = ci_brackets)
+      x[[ci_low[i]]] <- format_ci(x[[ci_low[i]]], x[[ci_high[i]]], ci = NULL, digits = ci_digits, width = ci_width, brackets = ci_brackets)
+      # rename lower CI into final CI column
+      ci_position <- which(names(x) == ci_low[i])
+      colnames(x)[ci_position] <- ci_colname[i]
+      # remove upper CI column
+      ci_position <- which(names(x) == ci_high[i])
+      x[[ci_position]] <- NULL
     }
-    # Replace at initial position
-    ci_position <- which(names(x) == ci_low[1])
-    x <- x[c(names(x)[0:(ci_position - 1)][!names(x)[0:(ci_position - 1)] %in% ci_colname], ci_colname, names(x)[ci_position:(length(names(x)) - 1)][!names(x)[ci_position:(length(names(x)) - 1)] %in% ci_colname])]
-    x <- x[!names(x) %in% c(ci_low, ci_high)]
   }
 
   x
@@ -312,7 +327,7 @@ parameters_table <- format_table
 .format_other_ci_columns <- function(x, att, ci_digits, ci_width = "auto", ci_brackets = TRUE) {
   other_ci_low <- names(x)[grep("_CI_low$", names(x))]
   other_ci_high <- names(x)[grep("_CI_high$", names(x))]
-  if (length(other_ci_low) >= 1 & length(other_ci_low) == length(other_ci_high)) {
+  if (length(other_ci_low) >= 1 && length(other_ci_low) == length(other_ci_high)) {
     other <- unlist(strsplit(other_ci_low, "_CI_low$"))
 
     # CI percentage
@@ -320,8 +335,10 @@ parameters_table <- format_table
       other_ci_colname <- sprintf("%s %i%% CI", other, unique(stats::na.omit(att[[paste0("ci_", other)]])) * 100)
     } else if (!is.null(att$ci)) {
       other_ci_colname <- sprintf("%s %i%% CI", other, unique(stats::na.omit(att$ci)) * 100)
+    } else if (length(other == 1) && paste0(other, "_CI") %in% colnames(x)) {
+      other_ci_colname <- sprintf("%s %i%% CI", other, unique(stats::na.omit(x[[paste0(other, "_CI")]])) * 100)
     } else {
-      other_ci_colname <- paste(other, "CI")
+      other_ci_colname <- paste(other, " CI")
     }
 
     # Get characters to align the CI
@@ -333,6 +350,10 @@ parameters_table <- format_table
       # remove upper CI column
       other_ci_position <- which(names(x) == other_ci_high[i])
       x[[other_ci_position]] <- NULL
+    }
+    # remove columns with CI level
+    for (i in other) {
+      x[[paste0(i, "_CI")]] <- NULL
     }
   } else {
     other_ci_colname <- c()
@@ -419,12 +440,13 @@ parameters_table <- format_table
   if ("Rhat" %in% names(x)) x$Rhat <- format_value(x$Rhat, digits = 3)
   if ("ESS" %in% names(x)) x$ESS <- format_value(x$ESS, protect_integers = TRUE)
 
-  # ROPE
+  if ("ROPE_Equivalence" %in% names(x)) names(x)[names(x) == "ROPE_Equivalence"] <- "Equivalence (ROPE)"
   if ("ROPE_Percentage" %in% names(x)) {
     x$ROPE_Percentage <- format_rope(x$ROPE_Percentage, name = NULL, digits = rope_digits)
     names(x)[names(x) == "ROPE_Percentage"] <- "% in ROPE"
   }
   x <- .format_rope_columns(x)
+
 
   # Priors
   if ("Prior_Location" %in% names(x)) x$Prior_Location <- format_value(x$Prior_Location, protect_integers = TRUE)
@@ -445,8 +467,6 @@ parameters_table <- format_table
     x <- x[c(names(x)[0:(col_position - 1)], "Prior", names(x)[col_position:(length(names(x)) - 1)])] # Replace at initial position
     x$Prior_Distribution <- x$Prior_Location <- x$Prior_Scale <- NULL
   }
-
-
 
   x
 }

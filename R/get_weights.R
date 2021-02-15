@@ -26,17 +26,18 @@
 #' get_weights(lm(mpg ~ wt, data = mtcars), null_as_ones = TRUE)
 #'
 #' # GLMs
-#' m <- glm(vs ~ disp + mpg, data = mtcars, weights = weight, family=quasibinomial)
+#' m <- glm(vs ~ disp + mpg, data = mtcars, weights = weight, family = quasibinomial)
 #' get_weights(m)
 #' m <- glm(cbind(cyl, gear) ~ mpg, data = mtcars, weights = weight, family = binomial)
 #' get_weights(m)
 #' @importFrom stats na.omit
 #' @export
-get_weights <- function(x, na_rm = FALSE, null_as_ones = FALSE, ...) {
+get_weights <- function(x, ...) {
   UseMethod("get_weights")
 }
 
 
+#' @rdname get_weights
 #' @export
 get_weights.default <- function(x, na_rm = FALSE, null_as_ones = FALSE, ...) {
   w <- NULL
@@ -127,4 +128,11 @@ get_weights.brmsfit <- function(x, na_rm = FALSE, null_as_ones = FALSE, ...) {
   }
 
   w
+}
+
+
+
+#' @export
+get_weights.btergm <- function(x, null_as_ones = FALSE, ...) {
+  x@weights
 }

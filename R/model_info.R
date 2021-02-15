@@ -45,6 +45,7 @@
 #'      \item \code{is_ttest}: model is an an object of class \code{htest}, returned by \code{t.test()}
 #'      \item \code{is_correlation}: model is an an object of class \code{htest}, returned by \code{cor.test()}
 #'      \item \code{is_ranktest}: model is an an object of class \code{htest}, returned by \code{cor.test()} (if Spearman's rank correlation), \code{wilcox.text()} or \code{kruskal.test()}.
+#'      \item \code{is_levenetest}: model is an an object of class \code{anova}, returned by \code{car::leveneTest()}.
 #'      \item \code{is_onewaytest}: model is an an object of class \code{htest}, returned by \code{oneway.test()}
 #'      \item \code{is_proptest}: model is an an object of class \code{htest}, returned by \code{prop.test()}
 #'      \item \code{is_binomtest}: model is an an object of class \code{htest}, returned by \code{binom.test()}
@@ -92,7 +93,7 @@ model_info <- function(x, ...) {
 
 #' @export
 model_info.data.frame <- function(x, ...) {
-  stop("A data frame is no valid object for this function")
+  stop("A data frame is no valid object for this function.", call. = FALSE)
 }
 
 
@@ -139,6 +140,16 @@ model_info.default <- function(x, verbose = TRUE, ...) {
 
 
 # Models with general handling, Gaussian ----------------------------------
+
+
+#' @export
+model_info.anova <- function(x, ...) {
+  if (!is.null(attributes(x)$heading) && grepl("Levene's Test", attributes(x)$heading, fixed = TRUE)) {
+    .make_family(x)
+  } else {
+    NULL
+  }
+}
 
 
 #' @export
@@ -479,15 +490,13 @@ model_info.fixest <- function(x, ...) {
       ...
     )
   } else {
-    fitfam <- switch(
-      faminfo,
+    fitfam <- switch(faminfo,
       "negbin" = "negative binomial",
       "logit" = "binomial",
       faminfo
     )
 
-    link <- switch(
-      faminfo,
+    link <- switch(faminfo,
       "poisson" = ,
       "negbin" = "log",
       "logit" = "logit",
@@ -561,8 +570,7 @@ model_info.zeroinfl <- function(x, ...) {
   } else {
     dist <- x$dist
   }
-  fitfam <- switch(
-    dist,
+  fitfam <- switch(dist,
     poisson = "poisson",
     negbin = "negative binomial",
     "poisson"
@@ -587,8 +595,7 @@ model_info.hurdle <- function(x, ...) {
   } else {
     dist <- x$dist
   }
-  fitfam <- switch(
-    dist,
+  fitfam <- switch(dist,
     poisson = "poisson",
     negbin = "negative binomial",
     "poisson"
@@ -656,14 +663,12 @@ model_info.stanmvreg <- function(x, ...) {
 
 #' @export
 model_info.BGGM <- function(x, ...) {
-  link <- switch(
-    x$type,
+  link <- switch(x$type,
     "continuous" = stats::gaussian(),
     stats::binomial()
   )
 
-  family <- switch(
-    x$type,
+  family <- switch(x$type,
     "continuous" = "gaussian",
     "binary" = "binomial",
     "ordinal"
@@ -686,6 +691,27 @@ model_info.BGGM <- function(x, ...) {
 
 
 # Other models ----------------------------
+
+
+#' @export
+model_info.garch <- function(x, ...) {
+  .make_family(
+    x = x,
+    ...
+  )
+}
+
+
+#' @export
+model_info.Rchoice <- function(x, ...) {
+  .make_family(
+    x = x,
+    fitfam = x$family,
+    logit.link = x$link == "logit",
+    link.fun = x$link,
+    ...
+  )
+}
 
 
 #' @export
@@ -714,8 +740,7 @@ model_info.coeftest <- function(x, ...) {
 
 #' @export
 model_info.glmm <- function(x, ...) {
-  f <- switch(
-    tolower(x$family.glmm$family.glmm),
+  f <- switch(tolower(x$family.glmm$family.glmm),
     "bernoulli.glmm" = ,
     "binomial.glmm" = stats::binomial("logit"),
     "poisson.glmm" = stats::poisson("log"),
@@ -734,8 +759,7 @@ model_info.glmm <- function(x, ...) {
 
 #' @export
 model_info.robmixglm <- function(x, ...) {
-  f <- switch(
-    tolower(x$family),
+  f <- switch(tolower(x$family),
     gaussian = stats::gaussian("identity"),
     binomial = stats::binomial("logit"),
     poisson = stats::poisson("log"),
@@ -927,7 +951,10 @@ model_info.bcplm <- model_info.cpglmm
 
 #' @export
 model_info.glimML <- function(x, ...) {
-  fitfam <- switch(x@method, BB = "betabinomial", NB = "negative binomial")
+  fitfam <- switch(x@method,
+    BB = "betabinomial",
+    NB = "negative binomial"
+  )
   .make_family(
     x = x,
     fitfam = fitfam,
@@ -1034,8 +1061,7 @@ model_info.DirichletRegModel <- function(x, ...) {
 
 #' @export
 model_info.gbm <- function(x, ...) {
-  faminfo <- switch(
-    x$distribution$name,
+  faminfo <- switch(x$distribution$name,
     laplace = ,
     tdist = ,
     gaussian = list(name = "gaussian", logit = FALSE, link = NULL),
@@ -1102,7 +1128,10 @@ model_info.orm <- function(x, ...) {
 
 #' @export
 model_info.svyolr <- function(x, ...) {
-  l <- switch(x$method, logistic = "logit", x$method)
+  l <- switch(x$method,
+    logistic = "logit",
+    x$method
+  )
   faminfo <- stats::binomial(link = l)
   .make_family(
     x = x,
