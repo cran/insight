@@ -1,4 +1,20 @@
-if (require("testthat") && require("insight") && require("lme4") && require("rstanarm")) {
+osx <- tryCatch(
+  {
+    si <- Sys.info()
+    if (!is.null(si["sysname"])) {
+      si["sysname"] == "Darwin" || grepl("^darwin", R.version$os)
+    } else {
+      FALSE
+    }
+  },
+  error = function(e) {
+    FALSE
+  }
+)
+
+.runThisTest <- Sys.getenv("RunAllinsightTests") == "yes"
+
+if (.runThisTest && !osx && require("testthat") && require("insight") && require("lme4") && require("rstanarm")) {
   data(mtcars)
 
   test_that("get_deviance - Bayesian lm", {

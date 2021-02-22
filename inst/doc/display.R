@@ -3,6 +3,10 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+if (!requireNamespace("dplyr", quietly = TRUE)) {
+  knitr::opts_chunk$set(eval = FALSE)
+}
+
 
 ## ---- warning=FALSE, message=FALSE--------------------------------------------
 library(insight)
@@ -29,7 +33,7 @@ knitr::kable(df, format = "markdown")
 knitr::kable(df, format = "html")
 
 ## -----------------------------------------------------------------------------
-insight::format_table(df)
+format_table(df)
 
 ## -----------------------------------------------------------------------------
 df %>% 
@@ -38,4 +42,15 @@ df %>%
 
 ## -----------------------------------------------------------------------------
 cat(export_table(df))
+
+## -----------------------------------------------------------------------------
+export_table(df, format = "md")
+
+## -----------------------------------------------------------------------------
+export_table(df, format = "html")
+
+## -----------------------------------------------------------------------------
+df %>% 
+  format_table(ci_brackets = c("(", ")")) %>% 
+  export_table(format = "html")
 

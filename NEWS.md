@@ -1,3 +1,32 @@
+# insight 0.13.1
+
+## General
+
+* Improved handling for GAMs.
+
+## New supported model classes
+
+* Support for `elm`, `eglm` (*eflm*)
+
+## Changes to functions
+
+* `get_residuals(..., weighted = TRUE)` doesn't throw warnings if weights are 1
+  (no weights specified).
+  
+* `n_parameters()` gains a `only_estimable` argument, to remove non-estimable
+  parameters from counting the number of parameters for models with 
+  rank-deficient model matrix.
+
+* `format_ci()` also gains a `zap_small` argument.
+
+## Bug fixed
+
+* Fix or disable failing tests on Mac OS.
+
+* Fixed issues in `get_variance()` with non-correlated
+  random-slope-intercepts for *lme4* models.
+
+
 # insight 0.13.0
 
 ## General

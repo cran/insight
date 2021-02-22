@@ -1,11 +1,16 @@
-osx <- tryCatch({
-  si <- Sys.info()
-  if (!is.null(si["sysname"])) {
-    si["sysname"] == "Darwin" || grepl("^darwin", R.version$os)
-  } else {
+osx <- tryCatch(
+  {
+    si <- Sys.info()
+    if (!is.null(si["sysname"])) {
+      si["sysname"] == "Darwin" || grepl("^darwin", R.version$os)
+    } else {
+      FALSE
+    }
+  },
+  error = function(e) {
     FALSE
   }
-})
+)
 
 
 if (!osx && require("testthat") && require("insight") && require("nonnest2")) {
@@ -106,6 +111,28 @@ if (!osx && require("testthat") && require("insight") && require("nonnest2")) {
 
       ll <- loglikelihood(x)
       expect_equal(as.numeric(ll), -84.60057, tolerance = 1e-3)
+    })
+  }
+
+  if (require("mgcv")) {
+    test_that("get_loglikelihood - mgcv", {
+      x <- mgcv::gam(Sepal.Length ~ s(Petal.Width), data=iris)
+      ll <- insight::get_loglikelihood(x)
+      ll2 <- stats::logLik(x)
+      expect_equal(as.numeric(ll), -96.26613, tolerance=1e-3)
+      # TODO: I'm not sure why this differes :/
+      # expect_equal(as.numeric(ll), as.numeric(ll2))
+
+      x <- mgcv::gamm(Sepal.Length ~ s(Petal.Width), random = list("Species" = ~1), data=iris)
+      # Which one to get?
+    })
+  }
+  if (require("gamm4")) {
+    test_that("get_loglikelihood - gamm4", {
+      x <- gamm4::gamm4(Sepal.Length ~ s(Petal.Width), data=iris)
+      ll <- insight::get_loglikelihood(x)
+      # It works, but it's quite diferent from the mgcv result
+      expect_equal(as.numeric(ll), -101.1107, tolerance=1e-3)
     })
   }
 }

@@ -757,6 +757,11 @@
     vars <- lapply(vals$vc, function(i) i)[1]
   } else {
     vars <- lapply(vals$vc, function(i) i[1])
+    # check for uncorrelated random slopes-intercept
+    non_intercepts <- which(sapply(vals$vc, function(i) dimnames(i)[[1]][1]) != "(Intercept)")
+    if (length(non_intercepts)) {
+      vars <- vars[-non_intercepts]
+    }
   }
 
   sapply(vars, function(i) i)
@@ -766,13 +771,23 @@
 
 
 # random slope-variances (tau 11)
+#' @importFrom stats setNames
 .random_slope_variance <- function(vals, x) {
   if (inherits(x, "MixMod")) {
     diag(vals$vc)[-1]
   } else if (inherits(x, "lme")) {
     unlist(lapply(vals$vc, function(x) diag(x)[-1]))
   } else {
-    unlist(lapply(vals$vc, function(x) diag(x)[-1]))
+    out <- unlist(lapply(vals$vc, function(x) diag(x)[-1]))
+    # check for uncorrelated random slopes-intercept
+    non_intercepts <- which(sapply(vals$vc, function(i) dimnames(i)[[1]][1]) != "(Intercept)")
+    if (length(non_intercepts)) {
+      dn <- unlist(lapply(vals$vc, function(i) dimnames(i)[1])[non_intercepts])
+      rndslopes <- unlist(lapply(vals$vc, function(i) i[1])[non_intercepts])
+      names(rndslopes) <- gsub("(.*)\\.\\d+$", "\\1", names(rndslopes))
+      out <- c(out, stats::setNames(rndslopes, paste0(names(rndslopes), ".", dn)))
+    }
+    out
   }
 }
 
