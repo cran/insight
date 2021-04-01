@@ -25,7 +25,7 @@ get_priors <- function(x, ...) {
 
 
 #' @export
-get_priors.stanreg <- function(x, ...) {
+get_priors.stanreg <- function(x, verbose = TRUE, ...) {
   if (!requireNamespace("rstanarm", quietly = TRUE)) {
     stop("To use this function, please install package 'rstanarm'.")
   }
@@ -73,7 +73,23 @@ get_priors.stanreg <- function(x, ...) {
     prior_info$adjusted_scale[flat] <- NA
   }
 
-  prior_info$parameter <- find_parameters(x)$conditional
+
+  params <- find_parameters(x, parameters = "^(?!(R2|log-fit_ratio))")$conditional
+
+  # this is a particular fix for the "R2" prior, which conveys prior
+  # information about *all* the parameters. In this case, number of
+  # parameters doesn't match number of priors
+
+  if (length(params) != nrow(prior_info)) {
+    if (length(params) == 1) {
+      prior_info$parameter <- "(Intercept)"
+    } else if ("R2" %in% prior_info$dist) {
+      prior_info$parameter <- prior_info$dist
+      prior_info$parameter[prior_info$dist != "R2"] <- "(Intercept)"
+    }
+  } else {
+    prior_info$parameter <- params
+  }
   prior_info <- prior_info[, intersect(c("parameter", "dist", "location", "scale", "adjusted_scale"), colnames(prior_info))]
 
   colnames(prior_info) <- gsub("dist", "distribution", colnames(prior_info))
@@ -182,18 +198,32 @@ get_priors.brmsfit <- function(x, verbose = TRUE, ...) {
   }
 
 
-  prior_info <- x$prior[x$prior$coef != "" & x$prior$class %in% c("b", "(Intercept)"), ]
+  prior_info <- x$prior[x$prior$coef != "" & x$prior$class %in% c("b", "Intercept", "(Intercept)"), ]
   # find additional components, avoid duplicated coef-names
   components <- prior_info$dpar != ""
   prior_info$dpar[components] <- paste0(prior_info$dpar[components], "_")
   prior_info$coef <- paste0(prior_info$dpar, prior_info$coef)
 
   prior_info$Distribution <- gsub("(.*)\\(.*", "\\1", prior_info$prior)
-  prior_info$Location <- gsub("(.*)\\((.*)\\,(.*)", "\\2", prior_info$prior)
-  prior_info$Scale <- gsub("(.*)\\,(.*)\\)(.*)", "\\2", prior_info$prior)
+  student_t <- prior_info$Distribution %in% c("t", "student_t", "Student's t")
+  if (any(student_t)) {
+    prior_info$Location[student_t] <- gsub("(.*)\\((.*)\\,(.*)\\,(.*)\\)", "\\3", prior_info$prior[student_t])
+    prior_info$Location[!student_t] <- gsub("(.*)\\(([[:alnum:]]+)\\,(.*)", "\\2", prior_info$prior[!student_t])
+  } else {
+    prior_info$Location <- gsub("(.*)\\(([[:alnum:]]+)\\,(.*)", "\\2", prior_info$prior)
+  }
+  if (any(student_t)) {
+    prior_info$Scale[student_t] <- gsub("(.*)\\((.*)\\,(.*)\\,(.*)\\)", "\\4", prior_info$prior[student_t])
+    prior_info$Scale[!student_t] <- gsub("(.*)\\,(.*)\\)(.*)", "\\2", prior_info$prior[!student_t])
+  } else {
+    prior_info$Scale <- gsub("(.*)\\,(.*)\\)(.*)", "\\2", prior_info$prior)
+  }
+  if (any(student_t)) {
+    prior_info$df <- NA
+    prior_info$df[student_t] <- gsub("(.*)\\((.*)\\,(.*)\\,(.*)\\)", "\\2", prior_info$prior[student_t])
+  }
   prior_info$Parameter <- prior_info$coef
-
-  prior_info <- prior_info[, c("Parameter", "Distribution", "Location", "Scale")]
+  prior_info <- prior_info[, intersect(c("Parameter", "Distribution", "df", "Location", "Scale"), colnames(prior_info))]
 
   pinfo <- as.data.frame(lapply(prior_info, function(x) {
     if (.is_numeric_character(x)) {
@@ -202,6 +232,16 @@ get_priors.brmsfit <- function(x, verbose = TRUE, ...) {
       as.character(x)
     }
   }), stringsAsFactors = FALSE)
+
+  # fix uniform
+  pinfo$Distribution[pinfo$Distribution == "" & is.na(pinfo$Location)] <- "uniform"
+  pinfo$Location[pinfo$Distribution == "uniform" & is.na(pinfo$Location)] <- 0
+
+  # move intercept parameters to top
+  row_order <- c(which(grepl("(Intercept|\\(Intercept\\))", pinfo$Parameter)),
+                 which(!grepl("(Intercept|\\(Intercept\\))", pinfo$Parameter)))
+  pinfo <- pinfo[row_order, ]
+  rownames(pinfo) <- NULL
 
   if (.is_empty_string(pinfo$Distribution)) {
     if (verbose) {
@@ -430,7 +470,7 @@ get_priors.mcmc.list <- function(x, ...) {
 
 #' @importFrom stats na.omit
 .is_numeric_character <- function(x) {
-  (is.character(x) && !anyNA(suppressWarnings(as.numeric(stats::na.omit(x))))) ||
+  (is.character(x) && !anyNA(suppressWarnings(as.numeric(stats::na.omit(x[nchar(x) > 0]))))) ||
     (is.factor(x) && !anyNA(suppressWarnings(as.numeric(levels(x)))))
 }
 

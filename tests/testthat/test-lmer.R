@@ -1,6 +1,7 @@
 .runThisTest <- Sys.getenv("RunAllinsightTests") == "yes"
 
-if (require("testthat") &&
+if (.runThisTest &&
+  require("testthat") &&
   require("insight") &&
   require("lme4")) {
   data(sleepstudy)

@@ -37,7 +37,10 @@ find_parameters.averaging <- function(x, component = c("conditional", "full"), f
 
 #' @rdname find_parameters.averaging
 #' @export
-find_parameters.betareg <- function(x, component = c("all", "conditional", "precision", "location", "distributional", "auxiliary"), flatten = FALSE, ...) {
+find_parameters.betareg <- function(x,
+                                    component = c("all", "conditional", "precision", "location", "distributional", "auxiliary"),
+                                    flatten = FALSE,
+                                    ...) {
   component <- match.arg(component)
   pars <- list(
     conditional = names(x$coefficients$mean),
@@ -45,14 +48,23 @@ find_parameters.betareg <- function(x, component = c("all", "conditional", "prec
   )
 
   pars$conditional <- .remove_backticks_from_string(pars$conditional)
-  .filter_parameters(pars, effects = "all", component = component, flatten = flatten, recursive = FALSE)
+  .filter_parameters(
+    pars,
+    effects = "all",
+    component = component,
+    flatten = flatten,
+    recursive = FALSE
+  )
 }
 
 
 
 #' @rdname find_parameters.averaging
 #' @export
-find_parameters.DirichletRegModel <- function(x, component = c("all", "conditional", "precision", "location", "distributional", "auxiliary"), flatten = FALSE, ...) {
+find_parameters.DirichletRegModel <- function(x,
+                                              component = c("all", "conditional", "precision", "location", "distributional", "auxiliary"),
+                                              flatten = FALSE,
+                                              ...) {
   component <- match.arg(component)
   if (x$parametrization == "common") {
     pars <- list(conditional = names(unlist(stats::coef(x))))
@@ -65,5 +77,67 @@ find_parameters.DirichletRegModel <- function(x, component = c("all", "condition
   }
 
   pars$conditional <- .remove_backticks_from_string(pars$conditional)
-  .filter_parameters(pars, effects = "all", component = component, flatten = flatten, recursive = FALSE)
+
+  .filter_parameters(
+    pars,
+    effects = "all",
+    component = component,
+    flatten = flatten,
+    recursive = FALSE
+  )
+}
+
+
+
+#' @rdname find_parameters.averaging
+#' @export
+find_parameters.mjoint <- function(x,
+                                   component = c("all", "conditional", "survival"),
+                                   flatten = FALSE,
+                                   ...) {
+  component <- match.arg(component)
+  s <- summary(x)
+
+  out <- list(
+    conditional = .remove_backticks_from_string(rownames(s$coefs.long)),
+    survival = .remove_backticks_from_string(rownames(s$coefs.surv))
+  )
+
+  .filter_parameters(
+    out,
+    effects = "all",
+    component = component,
+    flatten = flatten,
+    recursive = FALSE
+  )
+}
+
+
+
+#' @rdname find_parameters.averaging
+#' @export
+find_parameters.glmx <- function(x,
+                                 component = c("all", "conditional", "extra"),
+                                 flatten = FALSE,
+                                 ...) {
+  cf <- stats::coef(summary(x))
+
+  out <- list(
+    conditional = .remove_backticks_from_string(names(cf$glm[, 1])),
+    extra = .remove_backticks_from_string(rownames(cf$extra))
+  )
+
+  .filter_parameters(
+    out,
+    effects = "all",
+    component = component,
+    flatten = flatten,
+    recursive = FALSE
+  )
+}
+
+
+#' @export
+find_parameters.model_fit <- function(x, flatten = FALSE, ...) {
+  find_parameters(x$fit, flatten = flatten, ...)
 }

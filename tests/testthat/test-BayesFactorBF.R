@@ -1,6 +1,6 @@
-if (require("testthat") && require("insight") && require("stats") && require("BayesFactor")) {
-  .runThisTest <- Sys.getenv("RunAllinsightTests") == "yes"
+.runThisTest <- Sys.getenv("RunAllinsightTests") == "yes"
 
+if (.runThisTest && require("testthat") && require("insight") && require("stats") && require("BayesFactor")) {
   x <- correlationBF(y = iris$Sepal.Length, x = iris$Sepal.Width)
   test_that("get_data", {
     expect_true(is.data.frame(get_data(x)))
@@ -86,8 +86,7 @@ if (require("testthat") && require("insight") && require("stats") && require("Ba
   }
 
   # ---------------------------
-  # if (.runThisTest) {
-  if (TRUE) {
+  if (.runThisTest) {
     data(ToothGrowth)
     ToothGrowth$dose <- factor(ToothGrowth$dose)
     levels(ToothGrowth$dose) <- c("Low", "Medium", "High")
@@ -110,12 +109,20 @@ if (require("testthat") && require("insight") && require("stats") && require("Ba
 
     test_that("clean_parameters", {
       cp <- clean_parameters(x)
-      expect_equal(cp$Cleaned_Parameter,
-                   c("supp [OJ]", "supp [VC]", "dose [Low]", "dose [Medium]",
-                     "dose [High]", "mu", "sig2", "g_supp"))
-      expect_equal(cp$Component,
-                   c("conditional", "conditional", "conditional", "conditional",
-                     "conditional", "extra", "extra", "extra"))
+      expect_equal(
+        cp$Cleaned_Parameter,
+        c(
+          "supp [OJ]", "supp [VC]", "dose [Low]", "dose [Medium]",
+          "dose [High]", "mu", "sig2", "g_supp"
+        )
+      )
+      expect_equal(
+        cp$Component,
+        c(
+          "conditional", "conditional", "conditional", "conditional",
+          "conditional", "extra", "extra", "extra"
+        )
+      )
     })
 
 

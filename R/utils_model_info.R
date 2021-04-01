@@ -97,14 +97,21 @@
   is.categorical <- fitfam == "categorical"
 
 
+  # special handling of rms --------------
+
+  if (inherits(x, c("lrm", "blrm"))) {
+    resp <- get_response(x)
+    if (.n_unique(resp) == 2) {
+      binom_fam <- TRUE
+    } else {
+      is.ordinal <- TRUE
+    }
+  }
+
+
   # Bayesian model --------
 
-  is.bayes <- inherits(x, c(
-    "brmsfit", "stanfit", "MCMCglmm", "stanreg",
-    "stanmvreg", "bmerMod", "BFBayesFactor", "bamlss",
-    "bayesx", "mcmc", "bcplm", "bayesQR", "BGGM",
-    "meta_random", "meta_fixed", "meta_bma", "blavaan"
-  ))
+  is.bayes <- .is_bayesian_model(x)
 
 
   # survival model --------
@@ -310,6 +317,7 @@
     is_multivariate = multi.var,
     is_trial = is.trial,
     is_bayesian = is.bayes,
+    is_gam = is_gam_model(x),
     is_anova = inherits(x, c("aov", "aovlist", "MANOVA", "RM")),
     is_timeseries = inherits(x, c("Arima")),
     is_ttest = is_ttest,

@@ -120,6 +120,28 @@ get_parameters.tobit <- get_parameters.default
 
 
 #' @export
+get_parameters.model_fit <- function(x, ...) {
+  get_parameters(x$fit, ...)
+}
+
+
+#' @export
+get_parameters.epi.2by2 <- function(x, ...) {
+  coef_names <- grepl(".strata.wald", names(x$massoc), fixed = TRUE)
+  cf <- x$massoc[coef_names]
+  names(cf) <- gsub(".strata.wald", "", names(cf), fixed = TRUE)
+
+  params <- data.frame(
+    Parameter = names(cf),
+    Estimate = unname(unlist(lapply(cf, function(i) i["est"]))),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+  .remove_backticks_from_parameter_names(params)
+}
+
+
+#' @export
 get_parameters.Rchoice <- function(x, ...) {
   cf <- stats::coef(x)
   params <- data.frame(
@@ -495,7 +517,7 @@ get_parameters.metaplus <- function(x, ...) {
 
 
 #' @export
-get_parameters.blavaan <- function(x, ...) {
+get_parameters.blavaan <- function(x, summary = FALSE, centrality = "mean", ...) {
   if (!requireNamespace("lavaan", quietly = TRUE)) {
     stop("Package 'lavaan' required for this function to work. Please install it.")
   }
@@ -507,7 +529,31 @@ get_parameters.blavaan <- function(x, ...) {
   draws <- blavaan::blavInspect(x, "draws")
   posteriors <- as.data.frame(as.matrix(draws))
 
-  names(posteriors) <- names(lavaan::coef(x))
+  param_tab <- lavaan::parameterEstimates(x)
+  params <- paste0(param_tab$lhs, param_tab$op, param_tab$rhs)
+
+  coef_labels <- names(lavaan::coef(x))
+  are_labels <- !coef_labels %in% params
+  if (any(are_labels)) {
+    unique_labels <- unique(coef_labels[are_labels])
+    for (ll in seq_along(unique_labels)) {
+      coef_labels[coef_labels == unique_labels[ll]] <-
+        params[param_tab$label == unique_labels[ll]]
+    }
+  }
+
+  colnames(posteriors) <- coef_labels
+
+  if (isTRUE(summary)) {
+    posteriors <- .summary_of_posteriors(posteriors, centrality = centrality)
+    posteriors$Component <- NA
+
+    posteriors$Component[grepl("=~", posteriors$Parameter, fixed = TRUE)] <- "latent"
+    posteriors$Component[grepl("~~", posteriors$Parameter, fixed = TRUE)] <- "residual"
+    posteriors$Component[grepl("~1", posteriors$Parameter, fixed = TRUE)] <- "intercept"
+    posteriors$Component[is.na(posteriors$Component)] <- "regression"
+  }
+
   posteriors
 }
 

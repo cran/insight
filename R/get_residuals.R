@@ -136,6 +136,11 @@ get_residuals.vgam <- function(x, weighted = FALSE, verbose = TRUE, ...) {
 get_residuals.vglm <- get_residuals.vgam
 
 
+#' @export
+get_residuals.model_fit <- function(x, weighted = FALSE, verbose = TRUE, ...) {
+  get_residuals(x$fit, weighted = weighted, verbose = verbose, ...)
+}
+
 
 #' @export
 get_residuals.coxph <- function(x, weighted = FALSE, verbose = TRUE, ...) {
@@ -190,8 +195,8 @@ get_residuals.slm <- function(x, weighted = FALSE, verbose = TRUE, ...) {
   w <- get_weights(x, null_as_ones = TRUE)
   tryCatch(
     {
-      res_resp <- as.vector(get_residuals(x, weighted = FALSE, type = "response"))
-      res_dev <- as.vector(get_residuals(x, weighted = FALSE, type = "deviance"))
+      res_resp <- as.vector(get_residuals(x, weighted = FALSE, type = "response", verbose = verbose))
+      res_dev <- as.vector(get_residuals(x, weighted = FALSE, type = "deviance", verbose = verbose))
 
       if (!is.null(w) && !is.null(res_dev) && !all(w == 1)) {
         if (!is.null(res_resp) && identical(res_resp, res_dev)) {

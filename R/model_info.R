@@ -41,6 +41,7 @@
 #'      \item \code{is_multivariate}: model is a multivariate response model (currently only works for \emph{brmsfit} objects)
 #'      \item \code{is_trial}: model response contains additional information about the trials
 #'      \item \code{is_bayesian}: model is a Bayesian model
+#'      \item \code{is_gam}: model is a generalized additive model
 #'      \item \code{is_anova}: model is an Anova object
 #'      \item \code{is_ttest}: model is an an object of class \code{htest}, returned by \code{t.test()}
 #'      \item \code{is_correlation}: model is an an object of class \code{htest}, returned by \code{cor.test()}
@@ -136,6 +137,10 @@ model_info.default <- function(x, verbose = TRUE, ...) {
 }
 
 
+#' @export
+model_info.model_fit <- function(x, verbose = TRUE, ...) {
+  model_info(x$fit, verbose = verbose, ...)
+}
 
 
 
@@ -159,6 +164,9 @@ model_info.mmclogit <- function(x, ...) {
 
 #' @export
 model_info.maxLik <- model_info.mmclogit
+
+#' @export
+model_info.mjoint <- model_info.mmclogit
 
 #' @export
 model_info.censReg <- model_info.mmclogit
@@ -310,6 +318,9 @@ model_info.logistf <- function(x, ...) {
 
 #' @export
 model_info.lrm <- model_info.logistf
+
+#' @export
+model_info.blrm <- model_info.logistf
 
 #' @export
 model_info.multinom <- model_info.logistf
@@ -609,6 +620,19 @@ model_info.hurdle <- function(x, ...) {
     ...
   )
 }
+
+
+#' @export
+model_info.mhurdle <- function(x, ...) {
+  .make_family(
+    x = x,
+    zero.inf = TRUE,
+    hurdle = TRUE,
+    ...
+  )
+}
+
+
 
 
 
@@ -1010,6 +1034,11 @@ model_info.vgam <- function(x, ...) {
 #' @export
 model_info.vglm <- model_info.vgam
 
+
+#' @export
+model_info.svy_vglm <- function(x, ...) {
+  model_info(x$fit)
+}
 
 
 #' @export

@@ -357,6 +357,9 @@ link_function.poissonirr <- link_function.logitmfx
 #' @export
 link_function.logitor <- link_function.logitmfx
 
+#' @export
+link_function.model_fit <- link_function.logitmfx
+
 
 
 
@@ -625,6 +628,12 @@ link_function.vgam <- function(x, ...) {
 #' @export
 link_function.vglm <- function(x, ...) {
   x@family@linkfun
+}
+
+
+#' @export
+link_function.svy_vglm <- function(x, ...) {
+  link_function(x$fit)
 }
 
 

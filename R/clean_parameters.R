@@ -92,7 +92,7 @@ clean_parameters.default <- function(x, group = "", ...) {
           Component = com,
           Group = j,
           Function = fun,
-          Cleaned_Parameter = pars[[i]][[j]],
+          Cleaned_Parameter = clean_names(pars[[i]][[j]]),
           stringsAsFactors = FALSE,
           row.names = NULL
         )
@@ -105,7 +105,7 @@ clean_parameters.default <- function(x, group = "", ...) {
         Component = com,
         Group = group,
         Function = fun,
-        Cleaned_Parameter = pars[[i]],
+        Cleaned_Parameter = clean_names(pars[[i]]),
         stringsAsFactors = FALSE,
         row.names = NULL
       )
@@ -117,6 +117,30 @@ clean_parameters.default <- function(x, group = "", ...) {
   .fix_random_effect_smooth(x, out)
 }
 
+
+
+#' @export
+clean_parameters.emmGrid <- function(x, ...) {
+  pars <- find_parameters(x, flatten = FALSE)
+
+  l <- lapply(names(pars), function(i) {
+    data.frame(
+      Parameter = pars[[i]],
+      Component = i,
+      Cleaned_Parameter = .clean_names(x = pars[[i]], is_emmeans = TRUE),
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  })
+
+  out <- .remove_backticks_from_parameter_names(do.call(rbind, l))
+  out <- .remove_empty_columns_from_pars(out)
+  out
+}
+
+
+#' @export
+clean_parameters.emm_list <- clean_parameters.emmGrid
 
 
 #' @export
@@ -201,6 +225,12 @@ clean_parameters.merModList <- function(x, ...) {
 
 
 #' @export
+clean_parameters.model_fit <- function(x, ...) {
+  clean_parameters(x$fit, ...)
+}
+
+
+#' @export
 clean_parameters.glmm <- function(x, ...) {
   pars <- find_parameters(x, effects = "all", component = "all", flatten = FALSE)
 
@@ -222,6 +252,9 @@ clean_parameters.glmm <- function(x, ...) {
 }
 
 
+#' @export
+clean_parameters.MCMCglmm <- clean_parameters.glmm
+
 
 #' @export
 clean_parameters.lavaan <- function(x, ...) {
@@ -242,17 +275,12 @@ clean_parameters.lavaan <- function(x, ...) {
 
 #' @export
 clean_parameters.blavaan <- function(x, ...) {
-  params <- get_parameters.lavaan(x)
-
-  data.frame(
-    Parameter = params$Parameter,
-    Component = params$Component,
-    Group = "",
-    Function = "",
-    Cleaned_Parameter = params$Parameter,
-    stringsAsFactors = FALSE,
-    row.names = NULL
-  )
+  params <- get_parameters(x, summary = TRUE)
+  params$Estimate <- NULL
+  params$Group <- ""
+  params$Function <- ""
+  params$Cleaned_Parameter = params$Parameter
+  params
 }
 
 
@@ -352,7 +380,7 @@ clean_parameters.mlm <- function(x, ...) {
       Effects = eff,
       Component = com,
       Response = i,
-      Cleaned_Parameter = pars[[i]]$conditional,
+      Cleaned_Parameter = clean_names(pars[[i]]$conditional),
       stringsAsFactors = FALSE,
       row.names = NULL
     )

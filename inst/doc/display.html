@@ -348,8 +348,8 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<div id="the-difference-between-a-dataframe-and-its-render" class="section level1">
-<h1>The difference between a dataframe and its render</h1>
+<div id="the-difference-between-a-dataframe-and-its-render" class="section level2">
+<h2>The difference between a dataframe and its render</h2>
 <p>Most of objects encountered throughout the <strong>easystats</strong> packages are “tables”, i.e., a 2D matrix with columns and rows. In R, these objects are often, at their core, <em>data frames</em>. Let’s create one to use as an example:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(insight)</span>
 <span id="cb1-2"><a href="#cb1-2"></a><span class="kw">library</span>(dplyr)</span>
@@ -372,63 +372,15 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb1-19"><a href="#cb1-19"></a><span class="co">#&gt; 5        1     B 0.95  1.230   3.610 0.3400</span></span></code></pre></div>
 <p>When I display in in the console (calling an object - e.g. <code>df</code> - is actually equivalent to calling <code>print(df)</code>), the output looks alright, but it could be improved. Some packages, such as <strong>knitr</strong>, have functions to create a nicer output. For instance, in markdown, so that it can be nicely rendered in markdown documents when copied:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>knitr<span class="op">::</span><span class="kw">kable</span>(df, <span class="dt">format =</span> <span class="st">&quot;markdown&quot;</span>)</span></code></pre></div>
-<table>
-<thead>
-<tr class="header">
-<th align="right">Variable</th>
-<th align="left">Group</th>
-<th align="right">CI</th>
-<th align="right">CI_low</th>
-<th align="right">CI_high</th>
-<th align="right">p</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="right">1</td>
-<td align="left">A</td>
-<td align="right">0.95</td>
-<td align="right">3.350</td>
-<td align="right">4.230</td>
-<td align="right">0.0010</td>
-</tr>
-<tr class="even">
-<td align="right">3</td>
-<td align="left">A</td>
-<td align="right">0.95</td>
-<td align="right">2.425</td>
-<td align="right">5.310</td>
-<td align="right">0.0456</td>
-</tr>
-<tr class="odd">
-<td align="right">5</td>
-<td align="left">A</td>
-<td align="right">0.95</td>
-<td align="right">6.213</td>
-<td align="right">7.123</td>
-<td align="right">0.4500</td>
-</tr>
-<tr class="even">
-<td align="right">3</td>
-<td align="left">B</td>
-<td align="right">0.95</td>
-<td align="right">12.100</td>
-<td align="right">13.500</td>
-<td align="right">0.0042</td>
-</tr>
-<tr class="odd">
-<td align="right">1</td>
-<td align="left">B</td>
-<td align="right">0.95</td>
-<td align="right">1.230</td>
-<td align="right">3.610</td>
-<td align="right">0.3400</td>
-</tr>
-</tbody>
-</table>
-<p>Or HTML, which again makes it look great in HTML files. For instance, this code:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>knitr<span class="op">::</span><span class="kw">kable</span>(df, <span class="dt">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
-<p>Will be rendered like this:</p>
+<pre><code>| Variable|Group |   CI| CI_low| CI_high|      p|
+|--------:|:-----|----:|------:|-------:|------:|
+|        1|A     | 0.95|  3.350|   4.230| 0.0010|
+|        3|A     | 0.95|  2.425|   5.310| 0.0456|
+|        5|A     | 0.95|  6.213|   7.123| 0.4500|
+|        3|B     | 0.95| 12.100|  13.500| 0.0042|
+|        1|B     | 0.95|  1.230|   3.610| 0.3400|</code></pre>
+<p>Or HTML, which again makes it look great in HTML files (such as this webpage you’re reading):</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>knitr<span class="op">::</span><span class="kw">kable</span>(df, <span class="dt">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
 <table>
 <thead>
 <tr>
@@ -556,44 +508,44 @@ B
 </tbody>
 </table>
 </div>
-<div id="the-insight-workflow" class="section level1">
-<h1>The <em>insight</em> workflow</h1>
+<div id="the-insight-workflow" class="section level2">
+<h2>The <em>insight</em> workflow</h2>
 <p>The <strong>insight</strong> package also contains function to improve the “printing”, or rendering, of tables. Its design dissociates two separate and independent steps: <em>formatting</em> and <em>exporting</em>.</p>
-<div id="formatting" class="section level2">
-<h2>Formatting</h2>
+<div id="formatting" class="section level3">
+<h3>Formatting</h3>
 <p>The purpose of formatting is to improve a given table, while still keeping it as a regular R data frame, so that it can be for instance further modified by the user.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">format_table</span>(df)</span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="co">#&gt;   Variable Group         95% CI     p</span></span>
-<span id="cb4-3"><a href="#cb4-3"></a><span class="co">#&gt; 1     1.00     A [ 3.35,  4.23] 0.001</span></span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="co">#&gt; 2     3.00     A [ 2.42,  5.31] 0.046</span></span>
-<span id="cb4-5"><a href="#cb4-5"></a><span class="co">#&gt; 3     5.00     A [ 6.21,  7.12] 0.450</span></span>
-<span id="cb4-6"><a href="#cb4-6"></a><span class="co">#&gt; 4     3.00     B [12.10, 13.50] 0.004</span></span>
-<span id="cb4-7"><a href="#cb4-7"></a><span class="co">#&gt; 5     1.00     B [ 1.23,  3.61] 0.340</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">format_table</span>(df)</span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="co">#&gt;   Variable Group         95% CI     p</span></span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="co">#&gt; 1     1.00     A [ 3.35,  4.23] 0.001</span></span>
+<span id="cb5-4"><a href="#cb5-4"></a><span class="co">#&gt; 2     3.00     A [ 2.42,  5.31] 0.046</span></span>
+<span id="cb5-5"><a href="#cb5-5"></a><span class="co">#&gt; 3     5.00     A [ 6.21,  7.12] 0.450</span></span>
+<span id="cb5-6"><a href="#cb5-6"></a><span class="co">#&gt; 4     3.00     B [12.10, 13.50] 0.004</span></span>
+<span id="cb5-7"><a href="#cb5-7"></a><span class="co">#&gt; 5     1.00     B [ 1.23,  3.61] 0.340</span></span></code></pre></div>
 <p>As you can see, <code>format_table()</code> modifies columns, turning number into characters (so that it has the same amount of digits), and detecting confidence intervals. This is usually combined with column-specific formatting functions, like <code>format_p()</code>:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>df <span class="op">%&gt;%</span><span class="st"> </span></span>
-<span id="cb5-2"><a href="#cb5-2"></a><span class="st">  </span><span class="kw">mutate</span>(<span class="dt">p =</span> <span class="kw">format_p</span>(p, <span class="dt">stars =</span> <span class="ot">TRUE</span>)) <span class="op">%&gt;%</span><span class="st"> </span></span>
-<span id="cb5-3"><a href="#cb5-3"></a><span class="st">  </span><span class="kw">format_table</span>()</span>
-<span id="cb5-4"><a href="#cb5-4"></a><span class="co">#&gt;   Variable Group         95% CI           p</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a><span class="co">#&gt; 1     1.00     A [ 3.35,  4.23] p = 0.001**</span></span>
-<span id="cb5-6"><a href="#cb5-6"></a><span class="co">#&gt; 2     3.00     A [ 2.42,  5.31] p = 0.046* </span></span>
-<span id="cb5-7"><a href="#cb5-7"></a><span class="co">#&gt; 3     5.00     A [ 6.21,  7.12] p = 0.450  </span></span>
-<span id="cb5-8"><a href="#cb5-8"></a><span class="co">#&gt; 4     3.00     B [12.10, 13.50] p = 0.004**</span></span>
-<span id="cb5-9"><a href="#cb5-9"></a><span class="co">#&gt; 5     1.00     B [ 1.23,  3.61] p = 0.340</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>df <span class="op">%&gt;%</span><span class="st"> </span></span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="st">  </span><span class="kw">mutate</span>(<span class="dt">p =</span> <span class="kw">format_p</span>(p, <span class="dt">stars =</span> <span class="ot">TRUE</span>)) <span class="op">%&gt;%</span><span class="st"> </span></span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="st">  </span><span class="kw">format_table</span>()</span>
+<span id="cb6-4"><a href="#cb6-4"></a><span class="co">#&gt;   Variable Group         95% CI           p</span></span>
+<span id="cb6-5"><a href="#cb6-5"></a><span class="co">#&gt; 1     1.00     A [ 3.35,  4.23] p = 0.001**</span></span>
+<span id="cb6-6"><a href="#cb6-6"></a><span class="co">#&gt; 2     3.00     A [ 2.42,  5.31] p = 0.046* </span></span>
+<span id="cb6-7"><a href="#cb6-7"></a><span class="co">#&gt; 3     5.00     A [ 6.21,  7.12] p = 0.450  </span></span>
+<span id="cb6-8"><a href="#cb6-8"></a><span class="co">#&gt; 4     3.00     B [12.10, 13.50] p = 0.004**</span></span>
+<span id="cb6-9"><a href="#cb6-9"></a><span class="co">#&gt; 5     1.00     B [ 1.23,  3.61] p = 0.340</span></span></code></pre></div>
 </div>
-<div id="exporting" class="section level2">
-<h2>Exporting</h2>
+<div id="exporting" class="section level3">
+<h3>Exporting</h3>
 <p>The next step is <em>exporting</em>, which takes a data frame and renders it in a given format, so that it looks good in the console, or in markdown, HTML or latex.</p>
-<p>For text output, we need to <code>cat()</code> the returned result to get nice output in the console.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">cat</span>(<span class="kw">export_table</span>(df))</span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="co">#&gt; Variable | Group |   CI | CI_low | CI_high |        p</span></span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="co">#&gt; -----------------------------------------------------</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a><span class="co">#&gt;        1 |     A | 0.95 |   3.35 |    4.23 | 1.00e-03</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a><span class="co">#&gt;        3 |     A | 0.95 |   2.42 |    5.31 |     0.05</span></span>
-<span id="cb6-6"><a href="#cb6-6"></a><span class="co">#&gt;        5 |     A | 0.95 |   6.21 |    7.12 |     0.45</span></span>
-<span id="cb6-7"><a href="#cb6-7"></a><span class="co">#&gt;        3 |     B | 0.95 |  12.10 |   13.50 | 4.20e-03</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a><span class="co">#&gt;        1 |     B | 0.95 |   1.23 |    3.61 |     0.34</span></span></code></pre></div>
-<p>For markdown or HTML, simply use the <code>format</code> argument.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">export_table</span>(df, <span class="dt">format =</span> <span class="st">&quot;md&quot;</span>)</span></code></pre></div>
+<p>For console output, we need to <code>cat()</code> the returned result to get nicely printed code:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">cat</span>(<span class="kw">export_table</span>(df))</span>
+<span id="cb7-2"><a href="#cb7-2"></a><span class="co">#&gt; Variable | Group |   CI | CI_low | CI_high |        p</span></span>
+<span id="cb7-3"><a href="#cb7-3"></a><span class="co">#&gt; -----------------------------------------------------</span></span>
+<span id="cb7-4"><a href="#cb7-4"></a><span class="co">#&gt;        1 |     A | 0.95 |   3.35 |    4.23 | 1.00e-03</span></span>
+<span id="cb7-5"><a href="#cb7-5"></a><span class="co">#&gt;        3 |     A | 0.95 |   2.42 |    5.31 |     0.05</span></span>
+<span id="cb7-6"><a href="#cb7-6"></a><span class="co">#&gt;        5 |     A | 0.95 |   6.21 |    7.12 |     0.45</span></span>
+<span id="cb7-7"><a href="#cb7-7"></a><span class="co">#&gt;        3 |     B | 0.95 |  12.10 |   13.50 | 4.20e-03</span></span>
+<span id="cb7-8"><a href="#cb7-8"></a><span class="co">#&gt;        1 |     B | 0.95 |   1.23 |    3.61 |     0.34</span></span></code></pre></div>
+<p>For markdown or HTML, simply modify the <code>format</code> argument to markdown (“md”)…</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">export_table</span>(df, <span class="dt">format =</span> <span class="st">&quot;md&quot;</span>)</span></code></pre></div>
 <table>
 <thead>
 <tr class="header">
@@ -648,13 +600,13 @@ B
 </tr>
 </tbody>
 </table>
-<p>…or HTML.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">export_table</span>(df, <span class="dt">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
+<p>…or HTML format.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">export_table</span>(df, <span class="dt">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
 <style>html {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#oxlloaomht .gt_table {
+#vjqzcvglnw .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -679,7 +631,7 @@ B
   border-left-color: #D3D3D3;
 }
 
-#oxlloaomht .gt_heading {
+#vjqzcvglnw .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -691,7 +643,7 @@ B
   border-right-color: #D3D3D3;
 }
 
-#oxlloaomht .gt_title {
+#vjqzcvglnw .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -701,7 +653,7 @@ B
   border-bottom-width: 0;
 }
 
-#oxlloaomht .gt_subtitle {
+#vjqzcvglnw .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -711,13 +663,13 @@ B
   border-top-width: 0;
 }
 
-#oxlloaomht .gt_bottom_border {
+#vjqzcvglnw .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#oxlloaomht .gt_col_headings {
+#vjqzcvglnw .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -732,7 +684,7 @@ B
   border-right-color: #D3D3D3;
 }
 
-#oxlloaomht .gt_col_heading {
+#vjqzcvglnw .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -752,7 +704,7 @@ B
   overflow-x: hidden;
 }
 
-#oxlloaomht .gt_column_spanner_outer {
+#vjqzcvglnw .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -764,15 +716,15 @@ B
   padding-right: 4px;
 }
 
-#oxlloaomht .gt_column_spanner_outer:first-child {
+#vjqzcvglnw .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#oxlloaomht .gt_column_spanner_outer:last-child {
+#vjqzcvglnw .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#oxlloaomht .gt_column_spanner {
+#vjqzcvglnw .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -784,7 +736,7 @@ B
   width: 100%;
 }
 
-#oxlloaomht .gt_group_heading {
+#vjqzcvglnw .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -806,7 +758,7 @@ B
   vertical-align: middle;
 }
 
-#oxlloaomht .gt_empty_group_heading {
+#vjqzcvglnw .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -821,15 +773,15 @@ B
   vertical-align: middle;
 }
 
-#oxlloaomht .gt_from_md > :first-child {
+#vjqzcvglnw .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#oxlloaomht .gt_from_md > :last-child {
+#vjqzcvglnw .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#oxlloaomht .gt_row {
+#vjqzcvglnw .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -848,7 +800,7 @@ B
   overflow-x: hidden;
 }
 
-#oxlloaomht .gt_stub {
+#vjqzcvglnw .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -860,7 +812,7 @@ B
   padding-left: 12px;
 }
 
-#oxlloaomht .gt_summary_row {
+#vjqzcvglnw .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -870,7 +822,7 @@ B
   padding-right: 5px;
 }
 
-#oxlloaomht .gt_first_summary_row {
+#vjqzcvglnw .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -880,7 +832,7 @@ B
   border-top-color: #D3D3D3;
 }
 
-#oxlloaomht .gt_grand_summary_row {
+#vjqzcvglnw .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -890,7 +842,7 @@ B
   padding-right: 5px;
 }
 
-#oxlloaomht .gt_first_grand_summary_row {
+#vjqzcvglnw .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -900,11 +852,11 @@ B
   border-top-color: #D3D3D3;
 }
 
-#oxlloaomht .gt_striped {
+#vjqzcvglnw .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#oxlloaomht .gt_table_body {
+#vjqzcvglnw .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -913,7 +865,7 @@ B
   border-bottom-color: #D3D3D3;
 }
 
-#oxlloaomht .gt_footnotes {
+#vjqzcvglnw .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -927,13 +879,13 @@ B
   border-right-color: #D3D3D3;
 }
 
-#oxlloaomht .gt_footnote {
+#vjqzcvglnw .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#oxlloaomht .gt_sourcenotes {
+#vjqzcvglnw .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -947,46 +899,46 @@ B
   border-right-color: #D3D3D3;
 }
 
-#oxlloaomht .gt_sourcenote {
+#vjqzcvglnw .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#oxlloaomht .gt_left {
+#vjqzcvglnw .gt_left {
   text-align: left;
 }
 
-#oxlloaomht .gt_center {
+#vjqzcvglnw .gt_center {
   text-align: center;
 }
 
-#oxlloaomht .gt_right {
+#vjqzcvglnw .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#oxlloaomht .gt_font_normal {
+#vjqzcvglnw .gt_font_normal {
   font-weight: normal;
 }
 
-#oxlloaomht .gt_font_bold {
+#vjqzcvglnw .gt_font_bold {
   font-weight: bold;
 }
 
-#oxlloaomht .gt_font_italic {
+#vjqzcvglnw .gt_font_italic {
   font-style: italic;
 }
 
-#oxlloaomht .gt_super {
+#vjqzcvglnw .gt_super {
   font-size: 65%;
 }
 
-#oxlloaomht .gt_footnote_marks {
+#vjqzcvglnw .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 </style>
-<div id="oxlloaomht" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+<div id="vjqzcvglnw" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
   
   <thead class="gt_col_headings">
     <tr>
@@ -1044,14 +996,14 @@ B
   
 </table></div>
 <p>This can be combined with <code>format_table()</code>.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>df <span class="op">%&gt;%</span><span class="st"> </span></span>
-<span id="cb9-2"><a href="#cb9-2"></a><span class="st">  </span><span class="kw">format_table</span>(<span class="dt">ci_brackets =</span> <span class="kw">c</span>(<span class="st">&quot;(&quot;</span>, <span class="st">&quot;)&quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span></span>
-<span id="cb9-3"><a href="#cb9-3"></a><span class="st">  </span><span class="kw">export_table</span>(<span class="dt">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>df <span class="op">%&gt;%</span><span class="st"> </span></span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="st">  </span><span class="kw">format_table</span>(<span class="dt">ci_brackets =</span> <span class="kw">c</span>(<span class="st">&quot;(&quot;</span>, <span class="st">&quot;)&quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span></span>
+<span id="cb10-3"><a href="#cb10-3"></a><span class="st">  </span><span class="kw">export_table</span>(<span class="dt">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
 <style>html {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#emdnefkqeq .gt_table {
+#owjdublygz .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -1076,7 +1028,7 @@ B
   border-left-color: #D3D3D3;
 }
 
-#emdnefkqeq .gt_heading {
+#owjdublygz .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1088,7 +1040,7 @@ B
   border-right-color: #D3D3D3;
 }
 
-#emdnefkqeq .gt_title {
+#owjdublygz .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1098,7 +1050,7 @@ B
   border-bottom-width: 0;
 }
 
-#emdnefkqeq .gt_subtitle {
+#owjdublygz .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1108,13 +1060,13 @@ B
   border-top-width: 0;
 }
 
-#emdnefkqeq .gt_bottom_border {
+#owjdublygz .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#emdnefkqeq .gt_col_headings {
+#owjdublygz .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1129,7 +1081,7 @@ B
   border-right-color: #D3D3D3;
 }
 
-#emdnefkqeq .gt_col_heading {
+#owjdublygz .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1149,7 +1101,7 @@ B
   overflow-x: hidden;
 }
 
-#emdnefkqeq .gt_column_spanner_outer {
+#owjdublygz .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1161,15 +1113,15 @@ B
   padding-right: 4px;
 }
 
-#emdnefkqeq .gt_column_spanner_outer:first-child {
+#owjdublygz .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#emdnefkqeq .gt_column_spanner_outer:last-child {
+#owjdublygz .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#emdnefkqeq .gt_column_spanner {
+#owjdublygz .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1181,7 +1133,7 @@ B
   width: 100%;
 }
 
-#emdnefkqeq .gt_group_heading {
+#owjdublygz .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1203,7 +1155,7 @@ B
   vertical-align: middle;
 }
 
-#emdnefkqeq .gt_empty_group_heading {
+#owjdublygz .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1218,15 +1170,15 @@ B
   vertical-align: middle;
 }
 
-#emdnefkqeq .gt_from_md > :first-child {
+#owjdublygz .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#emdnefkqeq .gt_from_md > :last-child {
+#owjdublygz .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#emdnefkqeq .gt_row {
+#owjdublygz .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1245,7 +1197,7 @@ B
   overflow-x: hidden;
 }
 
-#emdnefkqeq .gt_stub {
+#owjdublygz .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1257,7 +1209,7 @@ B
   padding-left: 12px;
 }
 
-#emdnefkqeq .gt_summary_row {
+#owjdublygz .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1267,7 +1219,7 @@ B
   padding-right: 5px;
 }
 
-#emdnefkqeq .gt_first_summary_row {
+#owjdublygz .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1277,7 +1229,7 @@ B
   border-top-color: #D3D3D3;
 }
 
-#emdnefkqeq .gt_grand_summary_row {
+#owjdublygz .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1287,7 +1239,7 @@ B
   padding-right: 5px;
 }
 
-#emdnefkqeq .gt_first_grand_summary_row {
+#owjdublygz .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1297,11 +1249,11 @@ B
   border-top-color: #D3D3D3;
 }
 
-#emdnefkqeq .gt_striped {
+#owjdublygz .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#emdnefkqeq .gt_table_body {
+#owjdublygz .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1310,7 +1262,7 @@ B
   border-bottom-color: #D3D3D3;
 }
 
-#emdnefkqeq .gt_footnotes {
+#owjdublygz .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1324,13 +1276,13 @@ B
   border-right-color: #D3D3D3;
 }
 
-#emdnefkqeq .gt_footnote {
+#owjdublygz .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#emdnefkqeq .gt_sourcenotes {
+#owjdublygz .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1344,46 +1296,46 @@ B
   border-right-color: #D3D3D3;
 }
 
-#emdnefkqeq .gt_sourcenote {
+#owjdublygz .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#emdnefkqeq .gt_left {
+#owjdublygz .gt_left {
   text-align: left;
 }
 
-#emdnefkqeq .gt_center {
+#owjdublygz .gt_center {
   text-align: center;
 }
 
-#emdnefkqeq .gt_right {
+#owjdublygz .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#emdnefkqeq .gt_font_normal {
+#owjdublygz .gt_font_normal {
   font-weight: normal;
 }
 
-#emdnefkqeq .gt_font_bold {
+#owjdublygz .gt_font_bold {
   font-weight: bold;
 }
 
-#emdnefkqeq .gt_font_italic {
+#owjdublygz .gt_font_italic {
   font-style: italic;
 }
 
-#emdnefkqeq .gt_super {
+#owjdublygz .gt_super {
   font-size: 65%;
 }
 
-#emdnefkqeq .gt_footnote_marks {
+#owjdublygz .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 </style>
-<div id="emdnefkqeq" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+<div id="owjdublygz" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
   
   <thead class="gt_col_headings">
     <tr>

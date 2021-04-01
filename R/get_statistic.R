@@ -183,6 +183,39 @@ get_statistic.feis <- get_statistic.default
 # Models with zero-inflation component --------------------------------------
 
 
+#' @export
+get_statistic.mhurdle <- function(x, component = c("all", "conditional", "zi", "zero_inflated", "infrequent_purchase", "ip", "auxiliary"), ...) {
+  component <- match.arg(component)
+
+  s <- summary(x)
+  params <- get_parameters(x, component = "all")
+
+  stats <- data.frame(
+    Parameter = rownames(s$coefficients),
+    Statistic = as.vector(s$coefficients[, 3]),
+    Component = NA,
+    stringsAsFactors = FALSE
+  )
+
+  cond_pars <- which(grepl("^h2\\.", rownames(s$coefficients)))
+  zi_pars <- which(grepl("^h1\\.", rownames(s$coefficients)))
+  ip_pars <- which(grepl("^h3\\.", rownames(s$coefficients)))
+  aux_pars <- (1:length(rownames(s$coefficients)))[-c(cond_pars, zi_pars, ip_pars)]
+
+  stats$Component[cond_pars] <- "conditional"
+  stats$Component[zi_pars] <- "zero_inflated"
+  stats$Component[ip_pars] <- "infrequent_purchase"
+  stats$Component[aux_pars] <- "auxiliary"
+
+  params <- merge(params, stats, sort = FALSE)
+  params <- .filter_component(params, component)[intersect(c("Parameter", "Statistic", "Component"), colnames(params))]
+  params <- .remove_backticks_from_parameter_names(params)
+  attr(params, "statistic") <- find_statistic(x)
+
+  params
+}
+
+
 #' @importFrom stats coef
 #' @rdname get_statistic
 #' @export
@@ -448,6 +481,21 @@ get_statistic.cgam <- function(x, component = c("all", "conditional", "smooth_te
 #' @export
 get_statistic.coxph <- function(x, ...) {
   get_statistic.default(x, column_index = 4)
+}
+
+
+#' @export
+get_statistic.svy_vglm <- function(x, verbose = TRUE, ...) {
+  cs <- summary(x)$coeftable
+  out <- data.frame(
+    Parameter = find_parameters(x, flatten = TRUE),
+    Statistic = as.vector(cs[, 3]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
 }
 
 
@@ -841,6 +889,67 @@ get_statistic.negbinirr <- get_statistic.logitor
 
 
 #' @export
+get_statistic.model_fit <- function(x, ...) {
+  get_statistic(x$fit, ...)
+}
+
+
+#' @export
+get_statistic.sarlm <- function(x, ...) {
+  s <- summary(x)
+  # add rho, if present
+  if (!is.null(s$rho)) {
+    rho <- as.numeric(s$rho) / as.numeric(s$rho.se)
+  } else {
+    rho <- NULL
+  }
+  stat <- data.frame(
+    Parameter = find_parameters(x, flatten = TRUE),
+    Statistic = c(rho, as.vector(s$Coef[, 3])),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  stat <- .remove_backticks_from_parameter_names(stat)
+  attr(stat, "statistic") <- find_statistic(x)
+
+  stat
+}
+
+
+#' @rdname get_statistic
+#' @export
+get_statistic.mjoint <- function(x, component = c("all", "conditional", "survival"), ...) {
+  component <- match.arg(component)
+  s <- summary(x)
+
+  params <- rbind(
+    data.frame(
+      Parameter = rownames(s$coefs.long),
+      Statistic = unname(s$coefs.long[, 3]),
+      Component = "conditional",
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    ),
+    data.frame(
+      Parameter = rownames(s$coefs.surv),
+      Statistic = unname(s$coefs.surv[, 3]),
+      Component = "survival",
+      stringsAsFactors = FALSE,
+      row.names = NULL
+    )
+  )
+
+  if (component != "all") {
+    params <- params[params$Component == component, , drop = FALSE]
+  }
+
+  attr(params, "statistic") <- find_statistic(x)
+  params
+}
+
+
+#' @export
 get_statistic.Rchoice <- function(x, verbose = TRUE, ...) {
   cs <- summary(x)$CoefTable
   out <- data.frame(
@@ -1075,16 +1184,32 @@ get_statistic.emmGrid <- function(x, ci = .95, adjust = "none", merge_parameters
 
     fac <- stats::qt((1 + ci_level) / 2, df = s$df)
 
-    if ("asymp.LCL" %in% colnames(s)) {
-      se <- (s$asymp.UCL - s$asymp.LCL) / (2 * fac)
-    } else {
-      se <- (s$upper.CL - s$lower.CL) / (2 * fac)
-    }
-    stat <- s[[x@misc$estName]] / se
+    stat <- tryCatch(
+      {
+        if (!"SE" %in% colnames(s)) {
+          if ("asymp.LCL" %in% colnames(s)) {
+            se <- (s$asymp.UCL - s$asymp.LCL) / (2 * fac)
+          } else {
+            se <- (s$upper.CL - s$lower.CL) / (2 * fac)
+          }
+        } else {
+          se <- s$SE
+        }
+        s[[x@misc$estName]] / se
+      },
+      error = function(e) {
+        NULL
+      }
+    )
 
     # 2nd try
     if (.is_empty_object(stat)) {
       stat <- s[["t.ratio"]]
+    }
+
+    # 3rd try
+    if (.is_empty_object(stat)) {
+      stat <- s[["z.ratio"]]
     }
 
     # quit
@@ -1719,6 +1844,22 @@ get_statistic.logistf <- function(x, ...) {
 
 
 
+#' @export
+get_statistic.epi.2by2 <- function(x, ...) {
+  stat <- x$massoc$chisq.strata
+  out <- data.frame(
+    Parameter = "Chi2",
+    Statistic = stat$test.statistic,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+
 #' @importFrom stats vcov
 #' @export
 get_statistic.svyglm.nb <- function(x, ...) {
@@ -1852,11 +1993,25 @@ get_statistic.ols <- get_statistic.lrm
 get_statistic.rms <- get_statistic.lrm
 
 #' @export
-get_statistic.orm <- get_statistic.lrm
-
-#' @export
 get_statistic.psm <- get_statistic.lrm
 
+#' @export
+get_statistic.orm <- function(x, ...) {
+  parms <- get_parameters(x)
+  vc <- stats::vcov(x)
+  parms <- parms[parms$Parameter %in% dimnames(vc)[[1]], ]
+  stat <- parms$Estimate / sqrt(diag(vc))
+
+  out <- data.frame(
+    Parameter = parms$Parameter,
+    Statistic = as.vector(stat),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
 
 
 #' @export

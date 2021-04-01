@@ -25,7 +25,6 @@ n_obs <- function(x, ...) {
 
 #' @export
 n_obs.default <- function(x, ...) {
-
   is_binomial <- tryCatch(
     {
       fam <- stats::family(x)
@@ -97,6 +96,16 @@ n_obs.svyolr <- function(x, weighted = FALSE, ...) {
 
 
 #' @export
+n_obs.svy_vglm <- function(x, ...) {
+  n_obs(x$fit)
+}
+
+
+#' @export
+n_obs.model_fit <- n_obs.svy_vglm
+
+
+#' @export
 n_obs.gam <- function(x, ...) {
   if (!is.null(dim(x$y))) {
     dim(x$y)[1]
@@ -109,7 +118,7 @@ n_obs.gam <- function(x, ...) {
 n_obs.gamm <- function(x, ...) {
   if (.obj_has_name(x, "gam")) {
     n_obs(x$gam, ...)
-  } else{
+  } else {
     stop("Cannot find n_obs for this object. Please an open an issue!")
   }
 }
@@ -121,6 +130,18 @@ n_obs.list <- n_obs.gamm
 #' @export
 n_obs.lavaan <- function(x, ...) {
   x@SampleStats@ntotal
+}
+
+
+#' @export
+n_obs.mjoint <- function(x, ...) {
+  nrow(x$data[[1]])
+}
+
+
+#' @export
+n_obs.joint <- function(x, ...) {
+  nrow(x$data$longitudinal)
 }
 
 
@@ -242,6 +263,9 @@ n_obs.biglm <- function(x, ...) {
 
 #' @export
 n_obs.bigglm <- n_obs.biglm
+
+#' @export
+n_obs.eglm <- n_obs.biglm
 
 #' @export
 n_obs.rqss <- n_obs.biglm
@@ -413,6 +437,13 @@ n_obs.nlrq <- function(x, ...) {
 #' @export
 n_obs.survfit <- function(x, ...) {
   length(x$n.event)
+}
+
+
+
+#' @export
+n_obs.mhurdle <- function(x, ...) {
+  nrow(x$model)
 }
 
 

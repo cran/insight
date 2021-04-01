@@ -9,6 +9,7 @@
 #'      \item{\link[=find_parameters.BGGM]{Bayesian models} (\pkg{rstanarm}, \pkg{brms}, \pkg{MCMCglmm}, ...)}
 #'      \item{\link[=find_parameters.gamlss]{Generalized additive models} (\pkg{mgcv}, \pkg{VGAM}, ...)}
 #'      \item{\link[=find_parameters.betamfx]{Marginal effects models} (\pkg{mfx})}
+#'      \item{\link[=find_parameters.emmGrid]{Estimated marginal means} (\pkg{emmeans})}
 #'      \item{\link[=find_parameters.glmmTMB]{Mixed models} (\pkg{lme4}, \pkg{glmmTMB}, \pkg{GLMMadaptive}, ...)}
 #'      \item{\link[=find_parameters.zeroinfl]{Zero-inflated and hurdle models} (\pkg{pscl}, ...)}
 #'      \item{\link[=find_parameters.averaging]{Models with special components} (\pkg{betareg}, \pkg{MuMIn}, ...)}
@@ -194,30 +195,33 @@ find_parameters.blavaan <- function(x, flatten = FALSE, ...) {
     stop("Package 'lavaan' required for this function to work. Please install it.")
   }
 
+  param_tab <- lavaan::parameterEstimates(x)
+  params <- paste0(param_tab$lhs, param_tab$op, param_tab$rhs)
+
+  coef_labels <- names(lavaan::coef(x))
+  are_labels <- !coef_labels %in% params
+  if (any(are_labels)) {
+    unique_labels <- unique(coef_labels[are_labels])
+    for (ll in seq_along(unique_labels)) {
+      coef_labels[coef_labels == unique_labels[ll]] <-
+        params[param_tab$label == unique_labels[ll]]
+    }
+  }
+
   pars <- data.frame(
-    pars = names(lavaan::coef(x)),
+    pars = coef_labels,
     comp = NA,
     stringsAsFactors = FALSE
   )
 
-  pars$comp[grepl("~", pars$pars, fixed = TRUE)] <- "regression"
   pars$comp[grepl("=~", pars$pars, fixed = TRUE)] <- "latent"
   pars$comp[grepl("~~", pars$pars, fixed = TRUE)] <- "residual"
   pars$comp[grepl("~1", pars$pars, fixed = TRUE)] <- "intercept"
+  pars$comp[is.na(pars$comp)] <- "regression"
 
-  pos_latent <- grep("=~", pars$pars, fixed = TRUE)
-  pos_residual <- grep("~~", pars$pars, fixed = TRUE)
-  pos_intercept <- grep("~1", pars$pars, fixed = TRUE)
-  pos_regression <- setdiff(1:nrow(pars), c(pos_latent, pos_residual, pos_intercept))
-
-  pos <- c(min(pos_latent), min(pos_residual), min(pos_intercept), min(pos_regression))
-
-  comp_levels <- c("latent", "residual", "intercept", "regression")
-  comp_levels <- comp_levels[order(pos)]
-
-  pars$comp <- factor(pars$comp, levels = comp_levels)
+  pars$comp <- factor(pars$comp, levels = unique(pars$comp))
   pars <- split(pars, pars$comp)
-  pars <- lapply(pars, function(i) i$pars)
+  pars <- .compact_list(lapply(pars, function(i) i$pars))
 
   if (flatten) {
     unique(unlist(pars))
@@ -475,34 +479,6 @@ find_parameters.glht <- function(x, flatten = FALSE, ...) {
 }
 
 
-#' @export
-find_parameters.emmGrid <- function(x, flatten = TRUE, ...) {
-  s <- summary(x)
-  estimate_pos <- which(colnames(s) == x@misc$estName)
-  out <- list(conditional = colnames(s)[1:(estimate_pos - 1)])
-
-  if (flatten) {
-    unique(unlist(out))
-  } else {
-    out
-  }
-}
-
-
-#' @export
-find_parameters.emm_list <- function(x, flatten = TRUE, ...) {
-  s <- summary(x)[[1]]
-  estimate_pos <- which(colnames(s) == x[[1]]@misc$estName)
-  out <- list(conditional = colnames(s)[1:(estimate_pos - 1)])
-
-  if (flatten) {
-    unique(unlist(out))
-  } else {
-    out
-  }
-}
-
-
 #' @importFrom stats na.omit coef
 #' @export
 find_parameters.manova <- function(x, flatten = FALSE, ...) {
@@ -540,24 +516,6 @@ find_parameters.mlm <- function(x, flatten = FALSE, ...) {
 
   names(out) <- gsub("^Response (.*)", "\\1", names(cs))
   attr(out, "is_mv") <- TRUE
-
-  if (flatten) {
-    unique(unlist(out))
-  } else {
-    out
-  }
-}
-
-
-
-#' @export
-find_parameters.glmx <- function(x, flatten = FALSE, ...) {
-  cf <- stats::coef(summary(x))
-
-  out <- list(
-    conditional = .remove_backticks_from_string(names(cf$glm[, 1])),
-    extra = .remove_backticks_from_string(rownames(cf$extra))
-  )
 
   if (flatten) {
     unique(unlist(out))

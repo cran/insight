@@ -1,4 +1,7 @@
-if (require("testthat") &&
+.runThisTest <- Sys.getenv("RunAllinsightTests") == "yes"
+
+if (.runThisTest &&
+  require("testthat") &&
   require("insight") &&
   require("gam")) {
   data(kyphosis)

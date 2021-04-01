@@ -38,8 +38,12 @@
 }
 
 
+#' @importFrom stats na.omit
 # is string empty?
 .is_empty_object <- function(x) {
+  if (inherits(x, "data.frame")) {
+    x <- as.data.frame(x)
+  }
   if (is.list(x)) {
     x <- tryCatch(
       {
@@ -50,10 +54,12 @@
       }
     )
   }
-  # this is an ugly fix because of ugly tibbles
-  if (inherits(x, c("tbl_df", "tbl"))) x <- as.data.frame(x)
-  x <- suppressWarnings(x[!is.na(x)])
-  length(x) == 0 || is.null(x)
+  if (inherits(x, "data.frame")) {
+    x <- x[!sapply(x, function(i) all(is.na(i)))]
+    x <- x[!apply(x, 1, function(i) all(is.na(i))), ]
+  }
+  x <- stats::na.omit(x)
+  length(x) == 0 || is.null(x) || isTRUE(nrow(x) == 0)
 }
 
 
@@ -240,15 +246,16 @@
 
   # all elements of a model
   elements <- c(
-    "conditional", "conditional2", "conditional3", "precision",
+    "conditional", "conditional1", "conditional2", "conditional3", "precision",
     "nonlinear", "random", "zero_inflated", "zero_inflated_random",
     "dispersion", "instruments", "interactions", "simplex",
     "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes",
-    "cluster", "extra", "scale", "marginal", "alpha", "beta"
+    "cluster", "extra", "scale", "marginal", "alpha", "beta",
+    "survival", "infrequent_purchase", "auxiliary"
   )
 
   # auxiliary parameters
-  auxiliary_parameters <- c("sigma", "alpha", "beta", "dispersion", "precision", "nu", "tau", "shape", "phi", "ndt", "hu", "xi", "coi", "zoi")
+  auxiliary_parameters <- c("sigma", "alpha", "beta", "dispersion", "precision", "nu", "tau", "shape", "phi", "ndt", "hu", "xi", "coi", "zoi", "auxiliary")
 
   # random parameters
   random_parameters <- c("random", "zero_inflated_random")
@@ -273,13 +280,13 @@
 
   elements <- switch(effects,
     all = elements,
-    fixed = elements[elements %in% c("conditional", "conditional2", "conditional3", "precision", "zero_inflated", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "correlation", "slopes", "sigma", "nonlinear", "cluster", "extra", "scale", "marginal", "beta")],
+    fixed = elements[elements %in% c("conditional", "conditional1", "conditional2", "conditional3", "precision", "zero_inflated", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "correlation", "slopes", "sigma", "nonlinear", "cluster", "extra", "scale", "marginal", "beta", "survival", "infrequent_purchase", "auxiliary")],
     random = elements[elements %in% c("random", "zero_inflated_random")]
   )
 
   elements <- switch(component,
     all = elements,
-    conditional = elements[elements %in% c("conditional", "conditional2", "conditional3", "precision", "nonlinear", "random", "slopes")],
+    conditional = elements[elements %in% c("conditional", "conditional1", "conditional2", "conditional3", "precision", "nonlinear", "random", "slopes")],
     zi = ,
     zero_inflated = elements[elements %in% c("zero_inflated", "zero_inflated_random")],
     dispersion = elements[elements == "dispersion"],
@@ -297,7 +304,10 @@
     extra = elements[elements == "extra"],
     scale = elements[elements == "scale"],
     precision = elements[elements == "precision"],
-    marginal = elements[elements == "marginal"]
+    marginal = elements[elements == "marginal"],
+    survival = elements[elements == "survival"],
+    auxiliary = elements[elements == "auxiliary"],
+    infrequent_purchase = elements[elements == "infrequent_purchase"]
   )
 
   elements
@@ -501,6 +511,9 @@
     "zero_inflated" = dat[dat$Component == "zero_inflated", , drop = FALSE],
     "dispersion" = dat[dat$Component == "dispersion", , drop = FALSE],
     "smooth_terms" = dat[dat$Component == "smooth_terms", , drop = FALSE],
+    "ip" = ,
+    "infrequent_purchase" = dat[dat$Component == "infrequent_purchase", , drop = FALSE],
+    "auxiliary" = dat[dat$Component == "auxiliary", , drop = FALSE],
     dat
   )
 }
@@ -578,6 +591,17 @@
   !(all(dim(post.beta) == 1) && is.na(post.beta))
 }
 
+
+
+.is_bayesian_model <- function(x) {
+  inherits(x, c(
+    "brmsfit", "stanfit", "MCMCglmm", "stanreg",
+    "stanmvreg", "bmerMod", "BFBayesFactor", "bamlss",
+    "bayesx", "mcmc", "bcplm", "bayesQR", "BGGM",
+    "meta_random", "meta_fixed", "meta_bma", "blavaan",
+    "blrm"
+  ))
+}
 
 
 
@@ -798,4 +822,61 @@
     }
   }
   FALSE
+}
+
+
+
+#' @importFrom stats na.omit
+.n_unique <- function(x, na.rm = TRUE) {
+  if (is.null(x)) {
+    return(0)
+  }
+  if (isTRUE(na.rm)) x <- stats::na.omit(x)
+  length(unique(x))
+}
+
+
+
+
+# classify emmeans objects -------------
+
+
+is.emmeans.contrast <- function(x) {
+  if (inherits(x, "list")) {
+    out <- vector("list", length = length(x))
+    for (i in seq_along(x)) {
+      out[[i]] <- is.emmeans.contrast(x[[i]])
+    }
+    return(unlist(out))
+  }
+
+  res <- "con.coef" %in% names(x@misc)
+  rep(res, nrow(x@linfct))
+}
+
+
+is.emmeans.trend <- function(x) {
+  if (inherits(x, "list")) {
+    out <- vector("list", length = length(x))
+    for (i in seq_along(x)) {
+      out[[i]] <- is.emmeans.trend(x[[i]])
+    }
+    return(unlist(out))
+  }
+
+  "trend" %in% names(x@roles) & !is.emmeans.contrast(x)
+}
+
+
+is.emmean <- function(x) {
+  !is.emmeans.trend(x) & !is.emmeans.contrast(x)
+}
+
+
+.classify_emmeans <- function(x) {
+  c_ <- is.emmeans.contrast(x)
+  t_ <- is.emmeans.trend(x)
+
+  ifelse(c_, "contrasts",
+         ifelse(t_, "emtrends", "emmeans"))
 }

@@ -31,6 +31,7 @@
 #'   Only applies when \code{format = "html"}. \code{group_by} is passed down
 #'   to \code{gt::gt(groupname_col = group_by)}.
 #' @inheritParams format_value
+#' @inheritParams get_data
 #'
 #' @note The values for \code{caption}, \code{subtitle} and \code{footer}
 #'   can also be provided as attributes of \code{x}, e.g. if \code{caption = NULL}
@@ -79,7 +80,8 @@ export_table <- function(x,
                          footer = NULL,
                          align = NULL,
                          group_by = NULL,
-                         zap_small = FALSE) {
+                         zap_small = FALSE,
+                         verbose = TRUE) {
 
   # check args
   if (is.null(format)) {
@@ -88,6 +90,14 @@ export_table <- function(x,
 
   if (format == "md") {
     format <- "markdown"
+  }
+
+  # sanity check
+  if (is.null(x) || (is.data.frame(x) && nrow(x) == 0) || .is_empty_object(x)) {
+    if (isTRUE(verbose)) {
+      message(paste0("Can't export table to ", format, ", data frame is empty."))
+    }
+    return(NULL)
   }
 
   # if we have a list of data frame and HTML format, create a single
@@ -310,7 +320,9 @@ export_table <- function(x,
     } else {
       subtitle <- ""
     }
+    # paste everything together and remove unnecessary double spaces
     title_line <- .trim(paste0(caption[1], " ", subtitle[1]))
+    title_line <- gsub("  ", " ", title_line, fixed = TRUE)
     rows <- paste0(title_line, "\n\n", rows)
   }
 
@@ -458,6 +470,14 @@ export_table <- function(x,
   group_by_columns <- c(intersect(c("Group", "Response", "Effects", "Component"), names(final)), group_by)
   if (!length(group_by_columns)) {
     group_by_columns <- NULL
+  } else {
+    # remove columns with only 1 unique value - this *should* be safe to
+    # remove, but we may check if all printed sub titles look like intended
+    for (i in group_by_columns) {
+      if (.n_unique(final[[i]]) <= 1) {
+        final[[i]] <- NULL
+      }
+    }
   }
 
   tab <- gt::gt(final, groupname_col = group_by_columns)
@@ -478,7 +498,7 @@ export_table <- function(x,
           "center"
         ))
       }
-      out[["_boxhead"]]$column_align[1] <- col_align
+      out[["_boxhead"]]$column_align <- col_align
     }
   }
 

@@ -6,17 +6,28 @@
 #'   separate columns for lower and upper confidence interval values). Furthermore,
 #'   column names are formatted as well.
 #'
-#' @param x A data frame of model's parameters, as returned by various functions of the \strong{easystats}-packages. May also be a result from \code{broom::tidy()}.
-#' @param pretty_names Return "pretty" (i.e. more human readable) parameter names.
-#' @param digits Number of decimal places for numeric values (except confidence intervals and p-values).
-#' @param ci_width Minimum width of the returned string for confidence intervals. If not \code{NULL} and width is larger than the string's length, leading whitespaces are added to the string. If \code{width="auto"}, width will be set to the length of the longest string.
-#' @param ci_brackets Logical, if \code{TRUE} (default), CI-values are encompassed in square brackets (else in parentheses).
+#' @param x A data frame of model's parameters, as returned by various functions
+#'   of the \strong{easystats}-packages. May also be a result from
+#'   \code{broom::tidy()}.
+#' @param pretty_names Return "pretty" (i.e. more human readable) parameter
+#'   names.
+#' @param digits Number of decimal places for numeric values (except confidence
+#'   intervals and p-values).
+#' @param ci_width Minimum width of the returned string for confidence
+#'   intervals. If not \code{NULL} and width is larger than the string's length,
+#'   leading whitespaces are added to the string. If \code{width="auto"}, width
+#'   will be set to the length of the longest string.
+#' @param ci_brackets Logical, if \code{TRUE} (default), CI-values are
+#'   encompassed in square brackets (else in parentheses).
 #' @param ci_digits Number of decimal places for confidence intervals.
 #' @param p_digits Number of decimal places for p-values. May also be \code{"scientific"} for scientific notation of p-values.
 #' @param rope_digits Number of decimal places for the ROPE percentage values.
-#' @param preserve_attributes Logical, if \code{TRUE}, preserves all attributes from the input data frame.
-#' @inheritParams format_p
+#' @param preserve_attributes Logical, if \code{TRUE}, preserves all attributes
+#'   from the input data frame.
 #' @param ... Arguments passed to or from other methods.
+#' @inheritParams format_p
+#' @inheritParams format_value
+#' @inheritParams get_data
 #'
 #' @examples
 #' if (require("parameters")) {
@@ -31,10 +42,30 @@
 #'   as.data.frame(format_table(x))
 #' }
 #' }
-#'
 #' @return A data frame.
 #' @export
-format_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, ci_width = "auto", ci_brackets = TRUE, ci_digits = 2, p_digits = 3, rope_digits = 2, preserve_attributes = FALSE, ...) {
+format_table <- function(x,
+                         pretty_names = TRUE,
+                         stars = FALSE,
+                         digits = 2,
+                         ci_width = "auto",
+                         ci_brackets = TRUE,
+                         ci_digits = 2,
+                         p_digits = 3,
+                         rope_digits = 2,
+                         zap_small = FALSE,
+                         preserve_attributes = FALSE,
+                         verbose = TRUE,
+                         ...) {
+
+
+  # sanity check
+  if (is.null(x) || (is.data.frame(x) && nrow(x) == 0)) {
+    if (isTRUE(verbose)) {
+      message("Can't format table, data frame is empty.")
+    }
+    return(NULL)
+  }
 
   # check if user supplied digits attributes
   if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
@@ -91,12 +122,12 @@ format_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, ci_w
 
 
   # Main CI ----
-  x <- .format_main_ci_columns(x, att, ci_digits, ci_width, ci_brackets)
-  x <- .format_broom_ci_columns(x, ci_digits, ci_width, ci_brackets)
+  x <- .format_main_ci_columns(x, att, ci_digits, ci_width, ci_brackets, zap_small)
+  x <- .format_broom_ci_columns(x, ci_digits, ci_width, ci_brackets, zap_small)
 
 
   # Other CIs ----
-  out <- .format_other_ci_columns(x, att, ci_digits, ci_width, ci_brackets)
+  out <- .format_other_ci_columns(x, att, ci_digits, ci_width, ci_brackets, zap_small)
   x <- out$x
   other_ci_colname <- out$other_ci_colname
 
@@ -109,11 +140,11 @@ format_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, ci_w
 
 
   # Standardized ----
-  x <- .format_std_columns(x, other_ci_colname, digits)
+  x <- .format_std_columns(x, other_ci_colname, digits, zap_small)
 
 
   # Partial ----
-  x[names(x)[grepl("_partial$", names(x))]] <- format_value(x[names(x)[grepl("_partial$", names(x))]])
+  x[names(x)[grepl("_partial$", names(x))]] <- format_value(x[names(x)[grepl("_partial$", names(x))]], zap_small = zap_small)
   names(x)[grepl("_partial$", names(x))] <- paste0(gsub("_partial$", "", names(x)[grepl("_partial$", names(x))]), " (partial)")
 
 
@@ -122,7 +153,14 @@ format_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, ci_w
 
 
   # Bayesian ---
-  x <- .format_bayes_columns(x, stars, rope_digits = rope_digits)
+  x <- .format_bayes_columns(
+    x,
+    stars,
+    rope_digits = rope_digits,
+    zap_small = zap_small,
+    ci_width = ci_width,
+    ci_brackets = ci_brackets
+  )
 
 
   # rename performance columns
@@ -131,7 +169,7 @@ format_table <- function(x, pretty_names = TRUE, stars = FALSE, digits = 2, ci_w
 
   # Format remaining columns
   other_cols <- names(x)[sapply(x, is.numeric)]
-  x[other_cols[other_cols %in% names(x)]] <- format_value(x[other_cols[other_cols %in% names(x)]], digits = digits)
+  x[other_cols[other_cols %in% names(x)]] <- format_value(x[other_cols[other_cols %in% names(x)]], digits = digits, zap_small = zap_small)
 
   # SEM links
   if (all(c("To", "Operator", "From") %in% names(x))) {
@@ -174,7 +212,7 @@ parameters_table <- format_table
     x$p.value <- format(x$p.value, justify = "left")
   }
 
-  for (stats in c("p_CochransQ", "p_Omnibus", "p_Chi2", "p_Baseline", "p_RMSEA", "p_ROPE", "Wu_Hausman_p", "Sargan_p", "p_Omega2", "p_LR")) {
+  for (stats in c("p_CochransQ", "p_Omnibus", "p_Chi2", "p_Baseline", "p_RMSEA", "p_ROPE", "p_MAP", "Wu_Hausman_p", "Sargan_p", "p_Omega2", "p_LR")) {
     if (stats %in% names(x)) {
       x[[stats]] <- format_p(x[[stats]], stars = stars, name = NULL, missing = "", digits = p_digits)
       x[[stats]] <- format(x[[stats]], justify = "left")
@@ -277,43 +315,76 @@ parameters_table <- format_table
 
 
 #' @importFrom stats na.omit
-.format_main_ci_columns <- function(x, att, ci_digits, ci_width = "auto", ci_brackets = TRUE) {
+.format_main_ci_columns <- function(x, att, ci_digits, ci_width = "auto", ci_brackets = TRUE, zap_small) {
   # Main CI
   ci_low <- names(x)[grep("^CI_low", names(x))]
   ci_high <- names(x)[grep("^CI_high", names(x))]
-  if (length(ci_low) >= 1 && length(ci_low) == length(ci_high)) {
-    if (!is.null(att$ci)) {
-      if (length(unique(stats::na.omit(att$ci))) > 1) {
-        ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(att$ci)) * 100)
-      } else {
-        ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(att$ci))[1] * 100)
-      }
-      x$CI <- NULL
-    } else if (!is.null(x$CI)) {
-      ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(x$CI))[1] * 100)
-      x$CI <- NULL
-    } else {
-      # all these edge cases... for some objects in "parameters::model_parameters()",
-      # when we have multiple ci-levels, column names can be "CI_low_0.8" or
-      # "CI_low_0.95" etc. - this is handled here, if we have no ci-attribute
-      if (grepl("CI_low_(\\d)\\.(\\d)", ci_low) && grepl("CI_high_(\\d)\\.(\\d)", ci_high)) {
-        ci_levels <- as.numeric(gsub("CI_low_(\\d)\\.(\\d)", "\\1.\\2", ci_low))
-        ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(ci_levels)) * 100)
-        x$CI <- NULL
-      } else {
-        ci_colname <- "CI"
-      }
+  ci_value <- att[["ci"]]
+
+  # CI or SI?
+  ci_method <- att[["ci_method"]]
+
+  if (!is.null(ci_method) && all(tolower(ci_method) == "si")) {
+
+    # Support Intervals
+
+    if (is.null(ci_value) && !is.null(x$CI)) {
+      ci_value <- unique(x$CI)[1]
     }
 
-    # Get characters to align the CI
-    for (i in 1:length(ci_colname)) {
-      x[[ci_low[i]]] <- format_ci(x[[ci_low[i]]], x[[ci_high[i]]], ci = NULL, digits = ci_digits, width = ci_width, brackets = ci_brackets)
-      # rename lower CI into final CI column
-      ci_position <- which(names(x) == ci_low[i])
-      colnames(x)[ci_position] <- ci_colname[i]
-      # remove upper CI column
-      ci_position <- which(names(x) == ci_high[i])
-      x[[ci_position]] <- NULL
+    if (is.null(ci_value)) {
+      ci_colname <- "SI"
+    } else {
+      ci_colname <- sprintf("BF = %.5g SI", ci_value)
+    }
+
+    x[[ci_low[1]]] <- format_ci(x[[ci_low[1]]], x[[ci_high[1]]], ci = NULL, digits = ci_digits, width = ci_width, brackets = ci_brackets, zap_small = zap_small)
+
+    ci_position <- which(names(x) == ci_low[1])
+    colnames(x)[ci_position] <- ci_colname
+    # remove upper CI column
+    ci_position <- which(names(x) == ci_high[1])
+    x[[ci_position]] <- NULL
+    x$CI <- NULL
+  }
+  else {
+
+    # regular CIs
+
+    if (length(ci_low) >= 1 && length(ci_low) == length(ci_high)) {
+      if (!is.null(ci_value)) {
+        if (length(unique(stats::na.omit(ci_value))) > 1) {
+          ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(ci_value)) * 100)
+        } else {
+          ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(ci_value))[1] * 100)
+        }
+        x$CI <- NULL
+      } else if (!is.null(x$CI)) {
+        ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(x$CI))[1] * 100)
+        x$CI <- NULL
+      } else {
+        # all these edge cases... for some objects in "parameters::model_parameters()",
+        # when we have multiple ci-levels, column names can be "CI_low_0.8" or
+        # "CI_low_0.95" etc. - this is handled here, if we have no ci-attribute
+        if (grepl("CI_low_(\\d)\\.(\\d)", ci_low) && grepl("CI_high_(\\d)\\.(\\d)", ci_high)) {
+          ci_levels <- as.numeric(gsub("CI_low_(\\d)\\.(\\d)", "\\1.\\2", ci_low))
+          ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(ci_levels)) * 100)
+          x$CI <- NULL
+        } else {
+          ci_colname <- "CI"
+        }
+      }
+
+      # Get characters to align the CI
+      for (i in 1:length(ci_colname)) {
+        x[[ci_low[i]]] <- format_ci(x[[ci_low[i]]], x[[ci_high[i]]], ci = NULL, digits = ci_digits, width = ci_width, brackets = ci_brackets, zap_small = zap_small)
+        # rename lower CI into final CI column
+        ci_position <- which(names(x) == ci_low[i])
+        colnames(x)[ci_position] <- ci_colname[i]
+        # remove upper CI column
+        ci_position <- which(names(x) == ci_high[i])
+        x[[ci_position]] <- NULL
+      }
     }
   }
 
@@ -324,7 +395,7 @@ parameters_table <- format_table
 
 
 #' @importFrom stats na.omit
-.format_other_ci_columns <- function(x, att, ci_digits, ci_width = "auto", ci_brackets = TRUE) {
+.format_other_ci_columns <- function(x, att, ci_digits, ci_width = "auto", ci_brackets = TRUE, zap_small) {
   other_ci_low <- names(x)[grep("_CI_low$", names(x))]
   other_ci_high <- names(x)[grep("_CI_high$", names(x))]
   if (length(other_ci_low) >= 1 && length(other_ci_low) == length(other_ci_high)) {
@@ -333,8 +404,8 @@ parameters_table <- format_table
     # CI percentage
     if (length(other) == 1 && !is.null(att[[paste0("ci_", other)]])) {
       other_ci_colname <- sprintf("%s %i%% CI", other, unique(stats::na.omit(att[[paste0("ci_", other)]])) * 100)
-    } else if (!is.null(att$ci)) {
-      other_ci_colname <- sprintf("%s %i%% CI", other, unique(stats::na.omit(att$ci)) * 100)
+    } else if (!is.null(att[["ci"]])) {
+      other_ci_colname <- sprintf("%s %i%% CI", other, unique(stats::na.omit(att[["ci"]])) * 100)
     } else if (length(other == 1) && paste0(other, "_CI") %in% colnames(x)) {
       other_ci_colname <- sprintf("%s %i%% CI", other, unique(stats::na.omit(x[[paste0(other, "_CI")]])) * 100)
     } else {
@@ -343,7 +414,7 @@ parameters_table <- format_table
 
     # Get characters to align the CI
     for (i in 1:length(other_ci_colname)) {
-      x[[other_ci_low[i]]] <- format_ci(x[[other_ci_low[i]]], x[[other_ci_high[i]]], ci = NULL, digits = ci_digits, width = ci_width, brackets = ci_brackets)
+      x[[other_ci_low[i]]] <- format_ci(x[[other_ci_low[i]]], x[[other_ci_high[i]]], ci = NULL, digits = ci_digits, width = ci_width, brackets = ci_brackets, zap_small = zap_small)
       # rename lower CI into final CI column
       other_ci_position <- which(names(x) == other_ci_low[i])
       colnames(x)[other_ci_position] <- other_ci_colname[i]
@@ -365,7 +436,11 @@ parameters_table <- format_table
 
 
 
-.format_broom_ci_columns <- function(x, ci_digits, ci_width = "auto", ci_brackets = TRUE) {
+.format_broom_ci_columns <- function(x,
+                                     ci_digits,
+                                     ci_width = "auto",
+                                     ci_brackets = TRUE,
+                                     zap_small) {
   if (!any(grepl("conf.low", names(x), fixed = TRUE))) {
     return(x)
   }
@@ -376,7 +451,7 @@ parameters_table <- format_table
     {
       ci_low <- names(x)[which(names(x) == "conf.low")]
       ci_high <- names(x)[which(names(x) == "conf.high")]
-      x$conf.int <- format_ci(x[[ci_low]], x[[ci_high]], ci = NULL, digits = ci_digits, width = ci_width, brackets = ci_brackets)
+      x$conf.int <- format_ci(x[[ci_low]], x[[ci_high]], ci = NULL, digits = ci_digits, width = ci_width, brackets = ci_brackets, zap_small = zap_small)
       x$conf.low <- NULL
       x$conf.high <- NULL
       x
@@ -390,11 +465,12 @@ parameters_table <- format_table
 
 
 
-.format_rope_columns <- function(x, ci_width = "auto", ci_brackets = TRUE) {
+.format_rope_columns <- function(x, ci_width = "auto", ci_brackets = TRUE, zap_small) {
   if (all(c("ROPE_low", "ROPE_high") %in% names(x))) {
-    x$ROPE_low <- format_ci(x$ROPE_low, x$ROPE_high, ci = NULL, width = ci_width, brackets = ci_brackets)
+    x$ROPE_low <- format_ci(x$ROPE_low, x$ROPE_high, ci = NULL, width = ci_width, brackets = ci_brackets, zap_small = zap_small)
     x$ROPE_high <- NULL
     names(x)[names(x) == "ROPE_low"] <- "ROPE"
+    x$ROPE_CI <- NULL
   }
   x
 }
@@ -402,7 +478,7 @@ parameters_table <- format_table
 
 
 
-.format_std_columns <- function(x, other_ci_colname, digits) {
+.format_std_columns <- function(x, other_ci_colname, digits, zap_small) {
   std_cols <- names(x)[grepl("Std_", names(x))]
   if (length(std_cols) == 0) {
     return(x)
@@ -415,7 +491,7 @@ parameters_table <- format_table
     std_cols <- std_cols[!std_cols %in% other_ci_colname]
   }
 
-  x[std_cols] <- format_value(x[std_cols], digits = digits)
+  x[std_cols] <- format_value(x[std_cols], digits = digits, zap_small = zap_small)
   names(x)[names(x) == std_cols] <- .replace_words(std_cols, "Std_Coefficient", "Std. Coef.")
   names(x)[names(x) == std_cols] <- .replace_words(std_cols, "Std_Median", "Std. Median")
   names(x)[names(x) == std_cols] <- .replace_words(std_cols, "Std_Mean", "Std. Mean")
@@ -433,25 +509,30 @@ parameters_table <- format_table
 
 
 
-.format_bayes_columns <- function(x, stars, rope_digits = 2) {
+.format_bayes_columns <- function(x, stars, rope_digits = 2, zap_small, ci_width = "auto", ci_brackets = TRUE) {
   # Indices
   if ("BF" %in% names(x)) x$BF <- format_bf(x$BF, name = NULL, stars = stars)
   if ("pd" %in% names(x)) x$pd <- format_pd(x$pd, name = NULL, stars = stars)
   if ("Rhat" %in% names(x)) x$Rhat <- format_value(x$Rhat, digits = 3)
-  if ("ESS" %in% names(x)) x$ESS <- format_value(x$ESS, protect_integers = TRUE)
+  if ("ESS" %in% names(x)) x$ESS <- round(x$ESS)
 
   if ("ROPE_Equivalence" %in% names(x)) names(x)[names(x) == "ROPE_Equivalence"] <- "Equivalence (ROPE)"
   if ("ROPE_Percentage" %in% names(x)) {
     x$ROPE_Percentage <- format_rope(x$ROPE_Percentage, name = NULL, digits = rope_digits)
     names(x)[names(x) == "ROPE_Percentage"] <- "% in ROPE"
   }
-  x <- .format_rope_columns(x)
+  x <- .format_rope_columns(x, ci_width, ci_brackets, zap_small)
 
 
   # Priors
   if ("Prior_Location" %in% names(x)) x$Prior_Location <- format_value(x$Prior_Location, protect_integers = TRUE)
   if ("Prior_Scale" %in% names(x)) x$Prior_Scale <- format_value(x$Prior_Scale, protect_integers = TRUE)
   if ("Prior_Distribution" %in% names(x)) x$Prior_Distribution <- ifelse(is.na(x$Prior_Distribution), "", x$Prior_Distribution)
+  if ("Prior_df" %in% names(x)) x$Prior_df <- format_value(x$Prior_df, protect_integers = TRUE)
+  if (all(c("Prior_Distribution", "Prior_df") %in% names(x))) {
+    missing_df <- is.na(x$Prior_df) | x$Prior_df == ""
+    x$Prior_Distribution[!missing_df] <- paste0(x$Prior_Distribution[!missing_df], " (df=", x$Prior_df[!missing_df], ")")
+  }
   if (all(c("Prior_Distribution", "Prior_Location", "Prior_Scale") %in% names(x))) {
     x$Prior <- paste0(
       .capitalize(x$Prior_Distribution),
@@ -462,10 +543,11 @@ parameters_table <- format_table
       ")"
     )
     x$Prior <- ifelse(x$Prior == " ( +- )", "", x$Prior) # Remove empty
+    x$Prior <- trimws(gsub("( +- )", "", x$Prior, fixed = TRUE))
 
     col_position <- which(names(x) == "Prior_Distribution")
     x <- x[c(names(x)[0:(col_position - 1)], "Prior", names(x)[col_position:(length(names(x)) - 1)])] # Replace at initial position
-    x$Prior_Distribution <- x$Prior_Location <- x$Prior_Scale <- NULL
+    x$Prior_Distribution <- x$Prior_Location <- x$Prior_Scale <- x$Prior_df <- NULL
   }
 
   x

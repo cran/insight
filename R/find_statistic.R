@@ -43,6 +43,10 @@ find_statistic <- function(x, ...) {
     x <- x$analyses[[1]]
   }
 
+  if (inherits(x, "model_fit")) {
+    x <- x$fit
+  }
+
   if (inherits(x, "merModList")) {
     x <- x[[1]]
   }
@@ -99,6 +103,7 @@ find_statistic <- function(x, ...) {
       "lqmm",
       "maxLik",
       "mixed",
+      "mhurdle",
       "mlm",
       "multinom",
       "nlmerMod",
@@ -197,6 +202,9 @@ find_statistic <- function(x, ...) {
       "poissonirr",
       "psm",
       "probitmfx",
+      "qr",
+      "QRNLMM",
+      "QRLMM",
       "Rchoice",
       "riskRegression",
       "robmixglm",
@@ -208,6 +216,7 @@ find_statistic <- function(x, ...) {
       "sem",
       "slm",
       "survreg",
+      "svy_vglm",
       "test_mediation",
       "tobit",
       "vglm",
@@ -237,6 +246,7 @@ find_statistic <- function(x, ...) {
   chi.mods <-
     c(
       "coxph.penal",
+      "epi.2by2",
       "geeglm",
       "logistf",
       "MANOVA",
@@ -309,6 +319,7 @@ find_statistic <- function(x, ...) {
       "BFBayesFactor",
       "brmsfit",
       "gbm",
+      "joint",
       "list",
       "MCMCglmm",
       "mediate",
