@@ -9,7 +9,8 @@ find_predictors(
   effects = c("fixed", "random", "all"),
   component = c("all", "conditional", "zi", "zero_inflated", "dispersion",
     "instruments", "correlation", "smooth_terms"),
-  flatten = FALSE
+  flatten = FALSE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -19,15 +20,17 @@ find_predictors(
 or both be returned? Only applies to mixed models. May be abbreviated.}
 
 \item{component}{Should all predictor variables, predictor variables for the
- conditional model, the zero-inflated part of the model, the dispersion
- term or the instrumental variables be returned? Applies to models
- with zero-inflated and/or dispersion formula, or to models with instrumental
- variable (so called fixed-effects regressions). May be abbreviated. Note that the
+conditional model, the zero-inflated part of the model, the dispersion
+term or the instrumental variables be returned? Applies to models
+with zero-inflated and/or dispersion formula, or to models with instrumental
+variable (so called fixed-effects regressions). May be abbreviated. Note that the
 \emph{conditional} component is also called \emph{count} or \emph{mean}
 component, depending on the model.}
 
 \item{flatten}{Logical, if \code{TRUE}, the values are returned
 as character vector, not as list. Duplicated values are removed.}
+
+\item{verbose}{Toggle warnings.}
 }
 \value{
 A list of character vectors that represent the name(s) of the

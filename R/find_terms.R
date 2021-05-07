@@ -39,17 +39,19 @@
 #'   find_terms(m)
 #' }
 #' @export
-find_terms <- function(x, flatten = FALSE, ...) {
-  f <- find_formula(x)
+find_terms <- function(x, flatten = FALSE, verbose = TRUE, ...) {
+  f <- find_formula(x, verbose = verbose)
 
   if (is.null(f)) {
     return(NULL)
   }
 
-  if (is_multivariate(f)) {
-    l <- lapply(f, .get_variables_list)
+  resp <- find_response(x, verbose = FALSE)
+
+  if (is_multivariate(f) || isTRUE(attributes(f)$two_stage)) {
+    l <- lapply(f, .get_variables_list, resp = resp)
   } else {
-    l <- .get_variables_list(f)
+    l <- .get_variables_list(f, resp)
   }
 
   if (flatten) {
@@ -61,9 +63,14 @@ find_terms <- function(x, flatten = FALSE, ...) {
 
 
 
-.get_variables_list <- function(f) {
-  f$response <- sub("(.*)::(.*)", "\\2", .safe_deparse(f$conditional[[2L]]))
-  f$conditional <- .safe_deparse(f$conditional[[3L]])
+.get_variables_list <- function(f, resp = NULL) {
+  # exception for formula w/o response
+  if (is.null(resp) || !.is_empty_object(resp)) {
+    f$response <- sub("(.*)::(.*)", "\\2", .safe_deparse(f$conditional[[2L]]))
+    f$conditional <- .safe_deparse(f$conditional[[3L]])
+  } else {
+    f$conditional <- .safe_deparse(f$conditional[[2L]])
+  }
 
   f <- lapply(f, function(.x) {
     if (is.list(.x)) {
@@ -78,7 +85,8 @@ find_terms <- function(x, flatten = FALSE, ...) {
   f$conditional <- gsub("(-1|- 1)(?![^(]*\\))", "#1", f$conditional, perl = TRUE)
 
   f <- lapply(f, function(.x) {
-    f_parts <- gsub("~", "", .trim(unlist(strsplit(split = "[\\*\\+\\:\\-\\|](?![^(]*\\))", x = .x, perl = TRUE))))
+    pattern <- "[*+:|\\-\\/](?![^(]*\\))" # was: "[\\*\\+:\\-\\|/](?![^(]*\\))"
+    f_parts <- gsub("~", "", .trim(unlist(strsplit(split = pattern, x = .x, perl = TRUE))))
     # if user has used namespace in formula-functions, these are returned
     # as empty elements. remove those here
     if (any(nchar(f_parts) == 0)) {

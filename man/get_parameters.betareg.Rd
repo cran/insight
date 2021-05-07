@@ -6,6 +6,7 @@
 \alias{get_parameters.averaging}
 \alias{get_parameters.glmx}
 \alias{get_parameters.clm2}
+\alias{get_parameters.mvord}
 \alias{get_parameters.mjoint}
 \title{Get model parameters from models with special components}
 \usage{
@@ -34,16 +35,22 @@
 
 \method{get_parameters}{clm2}(x, component = c("all", "conditional", "scale"), ...)
 
+\method{get_parameters}{mvord}(
+  x,
+  component = c("all", "conditional", "thresholds", "correlation"),
+  ...
+)
+
 \method{get_parameters}{mjoint}(x, component = c("all", "conditional", "survival"), ...)
 }
 \arguments{
 \item{x}{A fitted model.}
 
 \item{component}{Should all predictor variables, predictor variables for the
- conditional model, the zero-inflated part of the model, the dispersion
- term or the instrumental variables be returned? Applies to models
- with zero-inflated and/or dispersion formula, or to models with instrumental
- variable (so called fixed-effects regressions). May be abbreviated. Note that the
+conditional model, the zero-inflated part of the model, the dispersion
+term or the instrumental variables be returned? Applies to models
+with zero-inflated and/or dispersion formula, or to models with instrumental
+variable (so called fixed-effects regressions). May be abbreviated. Note that the
 \emph{conditional} component is also called \emph{count} or \emph{mean}
 component, depending on the model.}
 

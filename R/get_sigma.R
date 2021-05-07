@@ -1,11 +1,13 @@
 #' @title Get residual standard deviation from models
 #'
-#' @description Returns the residual standard deviation from classical
-#'   and mixed models.
+#' @description Returns \code{sigma}, which corresponds the estimated standard deviation of the residuals. This function extends the \code{sigma()} base R generic for models that don't have implemented it. It also computes the confidence interval (CI), which is stored as an attribute.
+#'
+#' Sigma is a key-component of regression models, and part of the so-called auxiliary parameters that are estimated. Indeed, linear models for instance assume that the residuals comes from a normal distribution with mean 0 and standard deviation \code{sigma}. See the details section below for more information about its interpretation and calculation.
 #'
 #' @name get_sigma
 #'
 #' @param x A model.
+#' @param ci Scalar, the CI level. The default (\code{NULL}) returns no CI.
 #' @inheritParams find_parameters
 #'
 #' @return The residual standard deviation (sigma), or \code{NULL} if this information could not be accessed.
@@ -38,28 +40,130 @@
 #' data(mtcars)
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' get_sigma(m)
-#' @importFrom stats sigma
 #' @export
-get_sigma <- function(x, verbose = TRUE) {
+get_sigma <- function(x, ci = NULL, verbose = TRUE) {
+  s <- .get_sigma(x, verbose = verbose)
 
-  # special handling ---------------
-  if (inherits(x, "model_fit")) {
-    x <- x$fit
+  # Confidence interval for sigma
+  ci <- tryCatch(
+    {
+      .get_sigma_ci(x, ci = ci)
+    },
+    error = function(e) {
+      NULL
+    }
+  )
+
+  if (!is.null(ci)) {
+    attributes(s) <- c(attributes(s), ci)
   }
 
-  if (inherits(x, "merModList")) {
-    s <- suppressWarnings(summary(x))
-    return(s$residError)
+  s
+}
+
+
+# Retrieve sigma ----------------------------------------------------------
+
+
+.get_sigma <- function(x, ...) {
+  UseMethod(".get_sigma")
+}
+
+
+# special handling ---------------
+
+.get_sigma.model_fit <- function(x, verbose = TRUE, ...) {
+  .get_sigma(x$fit, verbose = verbose)
+}
+
+.get_sigma.lrm <- function(x, verbose = TRUE, ...) {
+  s <- stats::sigma(x)
+  s[length(s)]
+}
+
+.get_sigma.merModList <- function(x, verbose = TRUE, ...) {
+  s <- suppressWarnings(summary(x))
+  s$residError
+}
+
+.get_sigma.summary.lm <- function(x, verbose = TRUE, ...) {
+  x$sigma
+}
+
+.get_sigma.selection <- function(x, verbose = TRUE, ...) {
+  unname(stats::coef(x)["sigma"])
+}
+
+.get_sigma.cpglmm <- function(x, verbose = TRUE, ...) {
+  tryCatch(
+    {
+      stats::deviance(x)[["sigmaML"]]
+    },
+    error = function(e) {
+      NULL
+    }
+  )
+}
+
+.get_sigma.brmsfit <- function(x, verbose = TRUE, ...) {
+  s <- tryCatch(
+    {
+      dat <- as.data.frame(x)
+      sigma_column <- grep("sigma", colnames(dat), fixed = TRUE)
+      if (length(sigma_column)) {
+        mean(dat[[sigma_column]][1])
+      } else {
+        NULL
+      }
+    },
+    error = function(e) {
+      NULL
+    }
+  )
+
+
+  # compute sigma manually ---------------
+  if (.is_empty_object(s)) {
+    # default sigma ---------------
+    s <- tryCatch(
+      {
+        stats::sigma(x)
+      },
+      error = function(e) {
+        NULL
+      }
+    )
   }
 
-  if (inherits(x, "summary.lm")) {
-    return(x$sigma)
+  if (.is_empty_object(s)) {
+    info <- model_info(x)
+    if (!is.null(info) && info$is_mixed) {
+      s <- tryCatch(
+        {
+          sqrt(get_variance_residual(x, verbose = FALSE))
+        },
+        error = function(e) {
+          NULL
+        }
+      )
+    }
   }
 
+  if (.is_empty_object(s)) {
+    return(NULL)
+  }
+  class(s) <- c("insight_aux", class(s))
+  s
+}
+
+
+
+# default handling ---------------
+
+.get_sigma.default <- function(x, verbose = TRUE, ...) {
   if (inherits(x, c("mipo", "mira", "riskRegression"))) {
     return(NULL)
   }
-
 
   # default sigma ---------------
   s <- tryCatch(
@@ -70,6 +174,7 @@ get_sigma <- function(x, verbose = TRUE) {
       NULL
     }
   )
+
 
   # compute sigma manually ---------------
   if (.is_empty_object(s)) {
@@ -97,29 +202,37 @@ get_sigma <- function(x, verbose = TRUE) {
     }
   }
 
-  if (.is_empty_object(s) && inherits(x, "brmsfit")) {
-    s <- tryCatch(
-      {
-        dat <- as.data.frame(x)
-        sigma_column <- grep("sigma", colnames(dat), fixed = TRUE)
-        if (length(sigma_column)) {
-          mean(dat[[sigma_column]][1])
-        } else {
-          NULL
-        }
-      },
-      error = function(e) {
-        NULL
-      }
-    )
-  }
-
   if (.is_empty_object(s)) {
     return(NULL)
   }
   class(s) <- c("insight_aux", class(s))
   s
 }
+
+
+
+
+
+
+
+# Methods -----------------------------------------------------------------
+
+.get_sigma_ci <- function(x, ci = 0.95, ...) {
+
+  # TODO: What does it work for Bayesian models?
+
+  if (is.null(ci) || is.na(ci)) {
+    return(NULL)
+  }
+
+  alpha <- 1 - ci
+  dev <- get_deviance(x)
+  n <- n_obs(x)
+  low <- dev / stats::qchisq(1 - alpha / 2, n)
+  high <- dev / stats::qchisq(alpha / 2, n)
+  list(CI_low = sqrt(low), CI_high = sqrt(high))
+}
+
 
 
 #' @export

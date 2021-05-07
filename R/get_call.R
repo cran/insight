@@ -70,14 +70,24 @@ get_call.lm <- function(x) {
 get_call.glm <- get_call.lm
 
 #' @export
+get_call.mvord <- function(x) {
+  x$rho$mc
+}
+
+#' @export
 get_call.model_fit <- function(x) {
   get_call(x$fit)
 }
-
 
 #' @export
 get_call.lmerMod <- function(x) {
   x@call
 }
+
 #' @export
 get_call.merMod <- get_call.lmerMod
+
+#' @export
+get_call.stanreg <- function(x) {
+  x$call
+}

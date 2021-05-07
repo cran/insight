@@ -4,7 +4,7 @@
 
 
 # remove NULL elements from lists
-.compact_list <- function(x) x[!sapply(x, function(i) length(i) == 0 || is.null(i) || (!is.data.frame(i) && any(i == "NULL", na.rm = TRUE)) || (is.data.frame(i) && nrow(i) == 0))]
+.compact_list <- function(x) x[!sapply(x, function(i) all(length(i) == 0) || all(is.null(i)) || (!is.data.frame(i) && any(i == "NULL", na.rm = TRUE)) || (is.data.frame(i) && nrow(i) == 0))]
 
 
 
@@ -38,13 +38,12 @@
 }
 
 
-#' @importFrom stats na.omit
-# is string empty?
+# is object empty?
 .is_empty_object <- function(x) {
   if (inherits(x, "data.frame")) {
     x <- as.data.frame(x)
   }
-  if (is.list(x)) {
+  if (is.list(x) && length(x) > 0) {
     x <- tryCatch(
       {
         .compact_list(x)
@@ -55,11 +54,15 @@
     )
   }
   if (inherits(x, "data.frame")) {
-    x <- x[!sapply(x, function(i) all(is.na(i)))]
-    x <- x[!apply(x, 1, function(i) all(is.na(i))), ]
+    if (nrow(x) > 0 && ncol(x) > 0) {
+      x <- x[!sapply(x, function(i) all(is.na(i)))]
+      x <- x[!apply(x, 1, function(i) all(is.na(i))), ]
+      # need to check for is.null for R 3.4
+    }
+  } else if (!is.null(x)) {
+    x <- stats::na.omit(x)
   }
-  x <- stats::na.omit(x)
-  length(x) == 0 || is.null(x) || isTRUE(nrow(x) == 0)
+  length(x) == 0 || is.null(x) || isTRUE(nrow(x) == 0) || isTRUE(ncol(x) == 0)
 }
 
 
@@ -240,25 +243,45 @@
 
 
 
-# to reduce redundant code, I extract this part which is used several
-# times across this package
+# helper to access model components ----------------
+
+
+.all_elements <- function() {
+  c(
+    "conditional", "conditional1", "conditional2", "conditional3", "precision",
+    "nonlinear", "random", "zi", "zero_inflated", "zero_inflated_random", "shape",
+    "dispersion", "instruments", "interactions", "simplex", "smooth_terms",
+    "sigma", "nu", "tau", "correlation", "slopes", "cluster", "extra", "scale",
+    "marginal", "alpha", "beta", "survival", "infrequent_purchase", "auxiliary",
+    "mix", "shiftprop", "phi", "ndt", "hu", "xi", "coi", "zoi", "aux", "dist",
+    "selection", "outcome"
+  )
+}
+
+.aux_elements <- function() {
+  c(
+    "sigma", "alpha", "beta", "dispersion", "precision", "nu", "tau", "shape",
+    "phi", "ndt", "hu", "xi", "coi", "zoi", "mix", "shiftprop", "auxiliary",
+    "aux", "dist"
+  )
+}
+
 .get_elements <- function(effects, component) {
 
   # all elements of a model
-  elements <- c(
-    "conditional", "conditional1", "conditional2", "conditional3", "precision",
-    "nonlinear", "random", "zero_inflated", "zero_inflated_random",
-    "dispersion", "instruments", "interactions", "simplex",
-    "smooth_terms", "sigma", "nu", "tau", "correlation", "slopes",
-    "cluster", "extra", "scale", "marginal", "alpha", "beta",
-    "survival", "infrequent_purchase", "auxiliary"
-  )
+  elements <- .all_elements()
+
+  # zero-inflation component
+  zero_inflated_component <- c("zi", "zero_inflated", "zero_inflated_random")
 
   # auxiliary parameters
-  auxiliary_parameters <- c("sigma", "alpha", "beta", "dispersion", "precision", "nu", "tau", "shape", "phi", "ndt", "hu", "xi", "coi", "zoi", "auxiliary")
+  auxiliary_parameters <- .aux_elements()
 
   # random parameters
   random_parameters <- c("random", "zero_inflated_random")
+
+  # conditional component
+  conditional_component <- setdiff(elements, c(auxiliary_parameters, zero_inflated_component, "smooth_terms"))
 
   # location parameters
   location_parameters <- if (effects == "fixed") {
@@ -273,41 +296,24 @@
   }
 
   # fixed pattern?
-  if (all(component %in% c("distributional", "auxiliary"))) {
+  if (all(component %in% c("aux", "dist", "distributional", "auxiliary"))) {
     return(auxiliary_parameters)
   }
 
 
   elements <- switch(effects,
     all = elements,
-    fixed = elements[elements %in% c("conditional", "conditional1", "conditional2", "conditional3", "precision", "zero_inflated", "dispersion", "instruments", "interactions", "simplex", "smooth_terms", "correlation", "slopes", "sigma", "nonlinear", "cluster", "extra", "scale", "marginal", "beta", "survival", "infrequent_purchase", "auxiliary")],
-    random = elements[elements %in% c("random", "zero_inflated_random")]
+    fixed = elements[!elements %in% random_parameters],
+    random = elements[elements %in% random_parameters]
   )
 
   elements <- switch(component,
     all = elements,
-    conditional = elements[elements %in% c("conditional", "conditional1", "conditional2", "conditional3", "precision", "nonlinear", "random", "slopes")],
+    cond = ,
+    conditional = elements[elements %in% conditional_component],
     zi = ,
-    zero_inflated = elements[elements %in% c("zero_inflated", "zero_inflated_random")],
-    dispersion = elements[elements == "dispersion"],
-    instruments = elements[elements == "instruments"],
-    interactions = elements[elements == "interactions"],
-    simplex = elements[elements == "simplex"],
-    sigma = elements[elements == "sigma"],
-    beta = elements[elements == "beta"],
-    alpha = elements[elements == "alpha"],
-    smooth_terms = elements[elements == "smooth_terms"],
-    correlation = elements[elements == "correlation"],
-    cluster = elements[elements == "cluster"],
-    nonlinear = elements[elements == "nonlinear"],
-    slopes = elements[elements == "slopes"],
-    extra = elements[elements == "extra"],
-    scale = elements[elements == "scale"],
-    precision = elements[elements == "precision"],
-    marginal = elements[elements == "marginal"],
-    survival = elements[elements == "survival"],
-    auxiliary = elements[elements == "auxiliary"],
-    infrequent_purchase = elements[elements == "infrequent_purchase"]
+    zero_inflated = elements[elements %in% zero_inflated_component],
+    elements[elements == component]
   )
 
   elements
@@ -315,9 +321,9 @@
 
 
 
+
 # checks if a mixed model fit is singular or not. Need own function,
 # because lme4::isSingular() does not work with glmmTMB
-#' @importFrom stats na.omit
 .is_singular <- function(x, vals, tolerance = 1e-5) {
   if (!requireNamespace("lme4", quietly = TRUE)) {
     stop("Package `lme4` needs to be installed to compute variances for mixed models.", call. = FALSE)
@@ -473,7 +479,6 @@
 
 
 
-#' @importFrom stats family
 .gam_family <- function(x) {
   faminfo <- tryCatch(
     {
@@ -514,6 +519,8 @@
     "ip" = ,
     "infrequent_purchase" = dat[dat$Component == "infrequent_purchase", , drop = FALSE],
     "auxiliary" = dat[dat$Component == "auxiliary", , drop = FALSE],
+    "distributional" = dat[dat$Component == "distributional", , drop = FALSE],
+    "sigma" = dat[dat$Component == "sigma", , drop = FALSE],
     dat
   )
 }
@@ -558,7 +565,6 @@
 
 
 
-#' @importFrom stats reshape
 #' @keywords internal
 .gather <- function(x, names_to = "key", values_to = "value", columns = colnames(x)) {
   if (is.numeric(columns)) columns <- colnames(x)[columns]
@@ -582,7 +588,6 @@
 
 
 
-#' @importFrom methods slot
 .is_baysian_emmeans <- function(x) {
   if (inherits(x, "emm_list")) {
     x <- x[[1]]
@@ -606,7 +611,6 @@
 
 
 # safe conversion from factor to numeric
-#' @importFrom stats na.omit
 .factor_to_numeric <- function(x, lowest = NULL) {
   if (is.data.frame(x)) {
     as.data.frame(lapply(x, .factor_to_numeric_helper, lowest = lowest))
@@ -616,7 +620,6 @@
 }
 
 
-#' @importFrom stats na.omit
 .factor_to_numeric_helper <- function(x, lowest = NULL) {
   if (is.numeric(x)) {
     return(x)
@@ -653,8 +656,8 @@
 
 .expandDoubleVert <- function(term) {
   frml <- stats::formula(substitute(~x, list(x = term[[2]])))
-  newtrms <- paste0("0+", attr(terms(frml), "term.labels"))
-  if (attr(terms(frml), "intercept") != 0) {
+  newtrms <- paste0("0+", attr(stats::terms(frml), "term.labels"))
+  if (attr(stats::terms(frml), "intercept") != 0) {
     newtrms <- c("1", newtrms)
   }
   stats::as.formula(paste("~(", paste(vapply(newtrms, function(trm) {
@@ -737,7 +740,7 @@
       }))
     }
   }
-  modterm <- .expandDoubleVerts(if (is(term, "formula")) {
+  modterm <- .expandDoubleVerts(if (methods::is(term, "formula")) {
     term[[length(term)]]
   } else {
     term
@@ -751,8 +754,6 @@
 ## copied from lme4::nobars() -----------------------
 
 
-#' @importFrom methods is
-#' @importFrom stats reformulate
 .nobars <- function(term) {
   nb <- .nobars_(term)
   if (methods::is(term, "formula") && length(term) == 3 && is.symbol(nb)) {
@@ -826,7 +827,6 @@
 
 
 
-#' @importFrom stats na.omit
 .n_unique <- function(x, na.rm = TRUE) {
   if (is.null(x)) {
     return(0)
@@ -878,5 +878,6 @@ is.emmean <- function(x) {
   t_ <- is.emmeans.trend(x)
 
   ifelse(c_, "contrasts",
-         ifelse(t_, "emtrends", "emmeans"))
+    ifelse(t_, "emtrends", "emmeans")
+  )
 }

@@ -22,7 +22,6 @@
 #' link_inverse(m)(.3)
 #' # same as
 #' exp(.3)
-#' @importFrom stats family make.link gaussian formula
 #' @export
 link_inverse <- function(x, ...) {
   UseMethod("link_inverse")
@@ -56,11 +55,6 @@ link_inverse.default <- function(x, ...) {
 
 
 
-
-
-
-
-
 # GLM families ---------------------------------------------------
 
 
@@ -81,13 +75,6 @@ link_inverse.speedglm <- link_inverse.glm
 
 #' @export
 link_inverse.bigglm <- link_inverse.glm
-
-
-
-
-
-
-
 
 
 
@@ -115,13 +102,7 @@ link_inverse.flexsurvreg <- function(x, ...) {
 }
 
 
-
-
-
-
-
 # Gaussian identity links ---------------------------------
-
 
 #' @export
 link_inverse.lm <- function(x, ...) {
@@ -208,6 +189,10 @@ link_inverse.complmrob <- link_inverse.lm
 
 #' @export
 link_inverse.speedlm <- link_inverse.lm
+
+#' @export
+link_inverse.afex_aov <- link_inverse.lm
+
 
 
 
@@ -302,6 +287,14 @@ link_inverse.multinom <- link_inverse.gmnl
 #' @export
 link_inverse.ivprobit <- function(x, ...) {
   stats::make.link(link = "probit")$linkinv
+}
+
+
+#' @export
+link_inverse.mvord <- function(x, ...) {
+  link_name <- x$rho$link$name
+  l <- stats::make.link(link = ifelse(link_name == "mvprobit", "probit", "logit"))
+  l$linkinv
 }
 
 
@@ -746,7 +739,6 @@ link_inverse.mira <- function(x, ...) {
 }
 
 
-#' @importFrom stats poisson
 .get_cplm_family <- function(x) {
   link <- parse(text = .safe_deparse(x@call))[[1]]$link
 

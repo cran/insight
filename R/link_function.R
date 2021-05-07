@@ -21,7 +21,6 @@
 #' # same as
 #' log(.3)
 #' @export
-#' @importFrom stats family make.link
 link_function <- function(x, ...) {
   UseMethod("link_function")
 }
@@ -154,6 +153,8 @@ link_function.MANOVA <- link_function.lm
 #' @export
 link_function.RM <- link_function.lm
 
+#' @export
+link_function.afex_aov <- link_function.lm
 
 
 
@@ -300,6 +301,14 @@ link_function.flexsurvreg <- function(x, ...) {
 
 
 # Ordinal and cumulative links --------------------------
+
+
+#' @export
+link_function.mvord <- function(x, ...) {
+  link_name <- x$rho$link$name
+  l <- stats::make.link(link = ifelse(link_name == "mvprobit", "probit", "logit"))
+  l$linkfun
+}
 
 
 #' @export
@@ -690,7 +699,6 @@ link_function.DirichletRegModel <- function(x, what = c("mean", "precision"), ..
 
 
 
-#' @importFrom stats poisson
 #' @export
 link_function.gbm <- function(x, ...) {
   switch(x$distribution$name,

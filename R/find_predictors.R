@@ -11,14 +11,15 @@
 #' @param effects Should variables for fixed effects, random effects
 #'    or both be returned? Only applies to mixed models. May be abbreviated.
 #' @param component Should all predictor variables, predictor variables for the
-#'    conditional model, the zero-inflated part of the model, the dispersion
-#'    term or the instrumental variables be returned? Applies to models
-#'    with zero-inflated and/or dispersion formula, or to models with instrumental
-#'    variable (so called fixed-effects regressions). May be abbreviated. Note that the
+#'   conditional model, the zero-inflated part of the model, the dispersion
+#'   term or the instrumental variables be returned? Applies to models
+#'   with zero-inflated and/or dispersion formula, or to models with instrumental
+#'   variable (so called fixed-effects regressions). May be abbreviated. Note that the
 #'   \emph{conditional} component is also called \emph{count} or \emph{mean}
 #'   component, depending on the model.
 #' @param flatten Logical, if \code{TRUE}, the values are returned
 #'    as character vector, not as list. Duplicated values are removed.
+#' @param verbose Toggle warnings.
 #'
 #' @return A list of character vectors that represent the name(s) of the
 #'    predictor variables. Depending on the combination of the arguments
@@ -39,11 +40,15 @@
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' find_predictors(m)
 #' @export
-find_predictors <- function(x, effects = c("fixed", "random", "all"), component = c("all", "conditional", "zi", "zero_inflated", "dispersion", "instruments", "correlation", "smooth_terms"), flatten = FALSE) {
+find_predictors <- function(x,
+                            effects = c("fixed", "random", "all"),
+                            component = c("all", "conditional", "zi", "zero_inflated", "dispersion", "instruments", "correlation", "smooth_terms"),
+                            flatten = FALSE,
+                            verbose = TRUE) {
   effects <- match.arg(effects)
   component <- match.arg(component)
 
-  f <- find_formula(x)
+  f <- find_formula(x, verbose = verbose)
   is_mv <- is_multivariate(f)
   elements <- .get_elements(effects, component)
 

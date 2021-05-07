@@ -16,7 +16,6 @@
 #' data(mtcars)
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' get_parameters(m)
-#' @importFrom stats coef
 #' @export
 get_parameters.gamm <- function(x, component = c("all", "conditional", "smooth_terms", "location"), ...) {
   x <- x$gam
@@ -77,7 +76,6 @@ get_parameters.vgam <- function(x, component = c("all", "conditional", "smooth_t
 
 
 
-#' @importFrom stats na.omit
 #' @export
 get_parameters.gamlss <- function(x, ...) {
   pars <- lapply(x$parameters, function(i) {
@@ -115,13 +113,12 @@ get_parameters.gamlss <- function(x, ...) {
 
 
 #' @rdname get_parameters.gamm
-#' @importFrom stats setNames
 #' @export
 get_parameters.rqss <- function(x, component = c("all", "conditional", "smooth_terms"), ...) {
   component <- match.arg(component)
   sc <- summary(x)
 
-  smooth_terms <- sc$qsstab[, 3]
+  smooth_terms <- sc$qsstab[, 1]
   names(smooth_terms) <- rownames(sc$qsstab)
 
   .return_smooth_parms(
@@ -133,7 +130,6 @@ get_parameters.rqss <- function(x, component = c("all", "conditional", "smooth_t
 
 
 
-#' @importFrom stats setNames
 #' @export
 get_parameters.cgam <- function(x, component = c("all", "conditional", "smooth_terms"), ...) {
   component <- match.arg(component)
@@ -149,6 +145,22 @@ get_parameters.cgam <- function(x, component = c("all", "conditional", "smooth_t
     smooth_terms = smooth_terms,
     component = component
   )
+}
+
+
+#' @export
+get_parameters.SemiParBIV <- function(x, ...) {
+  s <- summary(x)
+  s <- .compact_list(s[grepl("^tableP", names(s))])
+  params <- do.call(rbind, lapply(1:length(s), function(i) {
+    out <- as.data.frame(s[[i]])
+    out$Parameter <- rownames(out)
+    out$Component <- paste0("Equation", i)
+    out
+  }))
+  colnames(params)[1] <- "Estimate"
+  rownames(params) <- NULL
+  .remove_backticks_from_parameter_names(params[c("Parameter", "Estimate", "Component")])
 }
 
 

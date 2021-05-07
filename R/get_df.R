@@ -1,7 +1,8 @@
 #' @title Extract degrees of freedom
 #' @name get_df
 #'
-#' @description Estimate or extract residual or model-based degrees of freedom from regression models.
+#' @description Estimate or extract residual or model-based degrees of freedom
+#'   from regression models.
 #'
 #' @param x A statistical model.
 #' @param type Can be \code{"residual"} or \code{"model"}. \code{"residual"}
@@ -78,7 +79,26 @@ get_df.summary.lm <- function(x, type = "residual", ...) {
 
 #' @export
 get_df.emmGrid <- function(x, ...) {
+  if (!is.null(x@misc$is_boot) && x@misc$is_boot) {
+    return(.boot_em_df(x))
+  }
   unique(summary(x)$df)
+}
+
+
+#' @export
+get_df.emm_list <- function(x, ...) {
+  if (!is.null(x[[1]]@misc$is_boot) && x[[1]]@misc$is_boot) {
+    return(.boot_em_df(x))
+  }
+  s <- summary(x)
+  unname(unlist(lapply(s, function(i) {
+    if (is.null(i$df)) {
+      rep(Inf, nrow(i))
+    } else {
+      i$df
+    }
+  })))
 }
 
 
@@ -115,6 +135,16 @@ get_df.lqmm <- function(x, type = "residual", ...) {
 get_df.lqm <- get_df.lqmm
 
 
+get_df.cgam <- function(x, type = "residual", ...) {
+  type <- match.arg(tolower(type), choices = c("residual", "model"))
+  if (type == "model") {
+    .model_df(x)
+  } else {
+    x$resid_df_obs
+  }
+}
+
+
 #' @export
 get_df.glht <- function(x, type = "residual", ...) {
   type <- match.arg(tolower(type), choices = c("residual", "model"))
@@ -122,6 +152,18 @@ get_df.glht <- function(x, type = "residual", ...) {
     .model_df(x)
   } else {
     x$df
+  }
+}
+
+
+#' @export
+get_df.selection <- function(x, type = "residual", ...) {
+  type <- match.arg(tolower(type), choices = c("residual", "model"))
+  if (type == "model") {
+    .model_df(x)
+  } else {
+    s <- summary(x)
+    s$param$df
   }
 }
 
@@ -169,6 +211,71 @@ get_df.betaor <- get_df.logitor
 get_df.betamfx <- get_df.logitor
 
 
+#' @export
+get_df.merModList <- function(x, type = "residual", ...) {
+  type <- match.arg(tolower(type), choices = c("residual", "model"))
+  if (type == "model") {
+    .model_df(x)
+  } else {
+    s <- suppressWarnings(summary(x))
+    s$fe$df
+  }
+}
+
+
+#' @export
+get_df.mira <- function(x, type = "residual", ...) {
+  if (!requireNamespace("mice", quietly = TRUE)) {
+    stop("Package 'mice' needed for this function to work. Please install it.")
+  }
+  type <- match.arg(tolower(type), choices = c("residual", "model"))
+  get_df(mice::pool(x), type, ...)
+}
+
+
+#' @export
+get_df.mipo <- function(x, type = "residual", ...) {
+  type <- match.arg(tolower(type), choices = c("residual", "model"))
+  if (type == "model") {
+    .model_df(x)
+  } else {
+    as.vector(summary(x)$df)
+  }
+}
+
+
+#' @export
+get_df.vgam <- function(x, type = "residual", ...) {
+  type <- match.arg(tolower(type), choices = c("residual", "model"))
+  if (type == "model") {
+    .model_df(x)
+  } else {
+    params <- get_parameters(x)
+    out <- stats::setNames(rep(NA, nrow(params)), params$Parameter)
+    out[names(x@nl.df)] <- x@nl.df
+    out
+  }
+}
+
+
+#' @export
+get_df.rqs <- function(x, type = "residual", ...) {
+  type <- match.arg(tolower(type), choices = c("residual", "model"))
+  if (type == "model") {
+    .model_df(x)
+  } else {
+    tryCatch(
+      {
+        s <- suppressWarnings(summary(x, covariance = TRUE))
+        cs <- lapply(s, function(i) i$rdf)
+        unique(unlist(cs))
+      },
+      error = function(e) {
+        NULL
+      }
+    )
+  }
+}
 
 
 
@@ -191,8 +298,6 @@ get_df.betamfx <- get_df.logitor
 
 # Model approach (Residual df) ------------------------------
 
-#' @importFrom stats df.residual
-#' @importFrom utils capture.output
 #' @keywords internal
 .degrees_of_freedom_fit <- function(model, verbose = TRUE) {
   info <- model_info(model, verbose = FALSE)
@@ -231,7 +336,6 @@ get_df.betamfx <- get_df.logitor
 
 
 
-#' @importFrom stats logLik
 .model_df <- function(x) {
   dof <- tryCatch(
     {
@@ -259,4 +363,10 @@ get_df.betamfx <- get_df.logitor
   }
 
   dof
+}
+
+
+.boot_em_df <- function(model) {
+  est <- get_parameters(model, summary = FALSE)
+  rep(NA, ncol(est))
 }

@@ -26,9 +26,8 @@ get_priors <- function(x, ...) {
 
 #' @export
 get_priors.stanreg <- function(x, verbose = TRUE, ...) {
-  if (!requireNamespace("rstanarm", quietly = TRUE)) {
-    stop("To use this function, please install package 'rstanarm'.")
-  }
+  # installed?
+  check_if_installed("rstanarm")
 
   ps <- rstanarm::prior_summary(x)
 
@@ -113,9 +112,9 @@ get_priors.stanreg <- function(x, verbose = TRUE, ...) {
 
 #' @export
 get_priors.stanmvreg <- function(x, ...) {
-  if (!requireNamespace("rstanarm", quietly = TRUE)) {
-    stop("To use this function, please install package 'rstanarm'.")
-  }
+  # installed?
+  check_if_installed("rstanarm")
+
 
   ps <- rstanarm::prior_summary(x)
 
@@ -171,58 +170,81 @@ get_priors.stanmvreg <- function(x, ...) {
 #' @rdname get_priors
 #' @export
 get_priors.brmsfit <- function(x, verbose = TRUE, ...) {
+
+  # 1. Gather prior info -------------------
+  priors <- as.data.frame(x$prior) # Copy priors info from model
+
   ## TODO needs testing for edge cases - check if "coef"-column is
   # always empty for intercept-class
-  x$prior$coef[x$prior$class == "Intercept"] <- "(Intercept)"
+  priors$coef[priors$class == "Intercept"] <- "(Intercept)"
 
 
   # get default prior for all parameters, if defined
-  def_prior_b <- which(x$prior$prior != "" & x$prior$class == "b" & x$prior$coef == "")
+  def_prior_b <- which(priors$prior != "" & priors$class == "b" & priors$coef == "")
 
   # check which parameters have a default prior
-  need_def_prior <- which(x$prior$prior == "" & x$prior$class == "b" & x$prior$coef != "")
+  need_def_prior <- which(priors$prior == "" & priors$class == "b" & priors$coef != "")
 
   if (!.is_empty_object(def_prior_b) && !.is_empty_object(need_def_prior)) {
-    x$prior$prior[need_def_prior] <- x$prior$prior[def_prior_b]
+    priors$prior[need_def_prior] <- priors$prior[def_prior_b]
   }
 
 
   # get default prior for all parameters, if defined
-  def_prior_intercept <- which(x$prior$prior != "" & x$prior$class == "Intercept" & x$prior$coef == "")
+  def_prior_intercept <- which(priors$prior != "" & priors$class == "Intercept" & priors$coef == "")
 
   # check which parameters have a default prior
-  need_def_prior <- which(x$prior$prior == "" & x$prior$class == "Intercept" & x$prior$coef != "")
+  need_def_prior <- which(priors$prior == "" & priors$class == "Intercept" & priors$coef != "")
 
   if (!.is_empty_object(def_prior_intercept) && !.is_empty_object(need_def_prior)) {
-    x$prior$prior[need_def_prior] <- x$prior$prior[def_prior_intercept]
+    priors$prior[need_def_prior] <- priors$prior[def_prior_intercept]
   }
 
+  select_priors <- (priors$coef != "" & priors$class %in% c("b", "Intercept", "(Intercept)")) | priors$class %in% c("sigma", "mix", "shiftprop")
+  prior_info <- priors[select_priors, ]
 
-  prior_info <- x$prior[x$prior$coef != "" & x$prior$class %in% c("b", "Intercept", "(Intercept)"), ]
+  # 2. Format prior info -------------------
   # find additional components, avoid duplicated coef-names
   components <- prior_info$dpar != ""
   prior_info$dpar[components] <- paste0(prior_info$dpar[components], "_")
   prior_info$coef <- paste0(prior_info$dpar, prior_info$coef)
 
   prior_info$Distribution <- gsub("(.*)\\(.*", "\\1", prior_info$prior)
+
+  # fix uniform prior description
+  prior_info$Distribution[grepl("^(U|u)niform(.*)", prior_info$Distribution)] <- "uniform"
+  prior_info$prior[grepl("^(U|u)niform(.*)", prior_info$prior)] <- "uniform"
+
   student_t <- prior_info$Distribution %in% c("t", "student_t", "Student's t")
+  uniform <- prior_info$Distribution == "uniform"
+
   if (any(student_t)) {
     prior_info$Location[student_t] <- gsub("(.*)\\((.*)\\,(.*)\\,(.*)\\)", "\\3", prior_info$prior[student_t])
     prior_info$Location[!student_t] <- gsub("(.*)\\(([[:alnum:]]+)\\,(.*)", "\\2", prior_info$prior[!student_t])
   } else {
     prior_info$Location <- gsub("(.*)\\(([[:alnum:]]+)\\,(.*)", "\\2", prior_info$prior)
   }
+  if (any(uniform)) {
+    prior_info$Location[uniform] <- NA
+  }
+
   if (any(student_t)) {
     prior_info$Scale[student_t] <- gsub("(.*)\\((.*)\\,(.*)\\,(.*)\\)", "\\4", prior_info$prior[student_t])
     prior_info$Scale[!student_t] <- gsub("(.*)\\,(.*)\\)(.*)", "\\2", prior_info$prior[!student_t])
   } else {
     prior_info$Scale <- gsub("(.*)\\,(.*)\\)(.*)", "\\2", prior_info$prior)
   }
+  if (any(uniform)) {
+    prior_info$Scale[uniform] <- NA
+  }
+
   if (any(student_t)) {
     prior_info$df <- NA
     prior_info$df[student_t] <- gsub("(.*)\\((.*)\\,(.*)\\,(.*)\\)", "\\2", prior_info$prior[student_t])
   }
   prior_info$Parameter <- prior_info$coef
+  prior_info$Parameter[prior_info$class %in% c("sigma", "mix", "shiftprop")] <- prior_info$class[prior_info$class %in% c("sigma", "mix", "shiftprop")]
+
   prior_info <- prior_info[, intersect(c("Parameter", "Distribution", "df", "Location", "Scale"), colnames(prior_info))]
 
   pinfo <- as.data.frame(lapply(prior_info, function(x) {
@@ -235,11 +257,12 @@ get_priors.brmsfit <- function(x, verbose = TRUE, ...) {
 
   # fix uniform
   pinfo$Distribution[pinfo$Distribution == "" & is.na(pinfo$Location)] <- "uniform"
-  pinfo$Location[pinfo$Distribution == "uniform" & is.na(pinfo$Location)] <- 0
 
   # move intercept parameters to top
-  row_order <- c(which(grepl("(Intercept|\\(Intercept\\))", pinfo$Parameter)),
-                 which(!grepl("(Intercept|\\(Intercept\\))", pinfo$Parameter)))
+  row_order <- c(
+    which(grepl("(Intercept|\\(Intercept\\))", pinfo$Parameter)),
+    which(!grepl("(Intercept|\\(Intercept\\))", pinfo$Parameter))
+  )
   pinfo <- pinfo[row_order, ]
   rownames(pinfo) <- NULL
 
@@ -248,7 +271,7 @@ get_priors.brmsfit <- function(x, verbose = TRUE, ...) {
       print_color("Model was fitted with uninformative (flat) priors!\n", "red")
     }
     pinfo$Distribution <- "uniform"
-    pinfo$Location <- 0
+    pinfo$Location <- NA
     pinfo$Scale <- NA
   }
 
@@ -332,7 +355,6 @@ get_priors.meta_fixed <- function(x, ...) {
 
 
 
-#' @importFrom utils tail
 #' @export
 get_priors.BFBayesFactor <- function(x, ...) {
   prior <- .compact_list(utils::tail(x@numerator, 1)[[1]]@prior[[1]])
@@ -426,9 +448,9 @@ get_priors.BFBayesFactor <- function(x, ...) {
 
 #' @export
 get_priors.blavaan <- function(x, ...) {
-  if (!requireNamespace("lavaan", quietly = TRUE)) {
-    stop("Package 'lavaan' required for this function to work. Please install it.")
-  }
+  # installed?
+  check_if_installed("lavaan")
+
 
   PE <- lavaan::parameterEstimates(
     x,
@@ -468,7 +490,6 @@ get_priors.mcmc.list <- function(x, ...) {
 }
 
 
-#' @importFrom stats na.omit
 .is_numeric_character <- function(x) {
   (is.character(x) && !anyNA(suppressWarnings(as.numeric(stats::na.omit(x[nchar(x) > 0]))))) ||
     (is.factor(x) && !anyNA(suppressWarnings(as.numeric(levels(x)))))

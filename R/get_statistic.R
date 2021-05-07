@@ -1,6 +1,7 @@
 #' @title Get statistic associated with estimates
-#' @description Returns the statistic (\emph{t}, \code{z}, ...) for model estimates.
-#'   In most cases, this is the related column from \code{coef(summary())}.
+#' @description Returns the statistic (\emph{t}, \code{z}, ...) for model
+#'   estimates. In most cases, this is the related column from
+#'   \code{coef(summary())}.
 #' @name get_statistic
 #'
 #' @param x A model.
@@ -19,13 +20,16 @@
 #'   on the model.
 #' @param robust Logical, if \code{TRUE}, test statistic based on robust standard
 #'   errors is returned.
-#' @param adjust Character value naming the method used to adjust p-values or confidence intervals. See \code{?emmeans::summary.emmGrid} for details.
-#' @param ci Confidence Interval (CI) level. Default to 0.95 (95\%). Currently only applies to objects of class \code{emmGrid}.
+#' @param adjust Character value naming the method used to adjust p-values or
+#'   confidence intervals. See \code{?emmeans::summary.emmGrid} for details.
+#' @param ci Confidence Interval (CI) level. Default to 0.95 (95\%). Currently
+#'   only applies to objects of class \code{emmGrid}.
 #' @param ... Currently not used.
 #' @inheritParams get_parameters
 #' @inheritParams get_parameters.emmGrid
 #'
-#' @return A data frame with the model's parameter names and the related test statistic.
+#' @return A data frame with the model's parameter names and the related test
+#'   statistic.
 #'
 #' @examples
 #' data(mtcars)
@@ -176,10 +180,6 @@ get_statistic.feis <- get_statistic.default
 
 
 
-
-
-
-
 # Models with zero-inflation component --------------------------------------
 
 
@@ -216,7 +216,6 @@ get_statistic.mhurdle <- function(x, component = c("all", "conditional", "zi", "
 }
 
 
-#' @importFrom stats coef
 #' @rdname get_statistic
 #' @export
 get_statistic.glmmTMB <- function(x, component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), ...) {
@@ -314,14 +313,9 @@ get_statistic.MixMod <- function(x, component = c("all", "conditional", "zi", "z
 }
 
 
-
-
-
-
 # gam models --------------------------------------------------------------
 
 
-#' @importFrom stats na.omit
 #' @export
 get_statistic.Gam <- function(x, ...) {
   p.aov <- stats::na.omit(summary(x)$parametric.anova)
@@ -363,6 +357,28 @@ get_statistic.scam <- get_statistic.gam
 
 
 #' @export
+get_statistic.SemiParBIV <- function(x, ...) {
+  s <- summary(x)
+  s <- .compact_list(s[grepl("^tableP", names(s))])
+
+  params <- do.call(rbind, lapply(1:length(s), function(i) {
+    out <- as.data.frame(s[[i]])
+    out$Parameter <- rownames(out)
+    out$Component <- paste0("Equation", i)
+    out
+  }))
+
+  colnames(params)[3] <- "Statistic"
+  rownames(params) <- NULL
+  out <- .remove_backticks_from_parameter_names(params[c("Parameter", "Statistic", "Component")])
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+
+#' @export
 get_statistic.gamm <- function(x, ...) {
   x <- x$gam
   class(x) <- c("gam", "lm", "glm")
@@ -380,7 +396,6 @@ get_statistic.list <- function(x, ...) {
 }
 
 
-#' @importFrom utils capture.output
 #' @export
 get_statistic.gamlss <- function(x, ...) {
   parms <- get_parameters(x)
@@ -470,11 +485,6 @@ get_statistic.cgam <- function(x, component = c("all", "conditional", "smooth_te
 
 
 
-
-
-
-
-
 # Survival models ------------------------------------------
 
 
@@ -521,7 +531,6 @@ get_statistic.coxr <- function(x, ...) {
 get_statistic.crr <- get_statistic.coxr
 
 
-#' @importFrom stats vcov
 #' @export
 get_statistic.coxme <- function(x, ...) {
   beta <- x$coefficients
@@ -632,10 +641,6 @@ get_statistic.aareg <- function(x, ...) {
 
 
 
-
-
-
-
 # Ordinal models --------------------------------------------------
 
 
@@ -668,6 +673,59 @@ get_statistic.clm2 <- function(x, component = c("all", "conditional", "scale"), 
 
 #' @export
 get_statistic.clmm2 <- get_statistic.clm2
+
+
+#' @export
+get_statistic.mvord <- function(x, component = c("all", "conditional", "thresholds", "correlation"), ...) {
+  component <- match.arg(component)
+  junk <- utils::capture.output(s <- summary(x))
+  # intercepts thresholds
+  thresholds <- as.data.frame(s$thresholds)
+  thresholds$Parameter <- rownames(thresholds)
+  thresholds$Response <- gsub("(.*)\\s(.*)", "\\1", thresholds$Parameter)
+  # coefficients
+  coefficients <- as.data.frame(s$coefficients)
+  coefficients$Parameter <- rownames(coefficients)
+  coefficients$Response <- gsub("(.*)\\s(.*)", "\\2", coefficients$Parameter)
+
+  if (!all(coefficients$Response %in% thresholds$Response)) {
+    resp <- unique(thresholds$Response)
+    for (i in coefficients$Response) {
+      coefficients$Response[coefficients$Response == i] <- resp[grepl(paste0(i, "$"), resp)]
+    }
+  }
+
+  params <- data.frame(
+    Parameter = c(thresholds$Parameter, coefficients$Parameter),
+    Statistic = c(unname(thresholds[, "z value"]), unname(coefficients[, "z value"])),
+    Component = c(rep("thresholds", nrow(thresholds)), rep("conditional", nrow(coefficients))),
+    Response = c(thresholds$Response, coefficients$Response),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  params_error <- data.frame(
+    Parameter = rownames(s$error.structure),
+    Statistic = unname(s$error.structure[, "z value"]),
+    Component = "correlation",
+    Response = NA,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  params <- rbind(params, params_error)
+
+  if (.n_unique(params$Response) == 1) {
+    params$Response <- NULL
+  }
+
+  if (component != "all") {
+    params <- params[params$Component == component, , drop = FALSE]
+  }
+
+  attr(params, "statistic") <- find_statistic(x)
+  .remove_backticks_from_parameter_names(params)
+}
 
 
 #' @export
@@ -780,15 +838,9 @@ get_statistic.mlogit <- function(x, ...) {
 
 
 
-
-
-
-
 # mfx models -------------------------------------------------------
 
-
 #' @rdname get_statistic
-#' @importFrom stats coef
 #' @export
 get_statistic.betamfx <- function(x, component = c("all", "conditional", "precision", "marginal"), ...) {
   component <- match.arg(component)
@@ -880,12 +932,62 @@ get_statistic.poissonirr <- get_statistic.logitor
 get_statistic.negbinirr <- get_statistic.logitor
 
 
-
-
-
-
-
 # Other models -------------------------------------------------------
+
+
+#' @export
+get_statistic.selection <- function(x, component = c("all", "selection", "outcome", "auxiliary"), ...) {
+  component <- match.arg(component)
+  s <- summary(x)
+  rn <- row.names(s$estimate)
+  estimates <- as.data.frame(s$estimate, row.names = FALSE)
+  params <- data.frame(
+    Parameter = rn,
+    Statistic = estimates[[3]],
+    Component = "auxiliary",
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+  params$Component[s$param$index$betaS] <- "selection"
+  params$Component[s$param$index$betaO] <- "outcome"
+
+  if (component != "all") {
+    params <- params[params$Component == component, , drop = FALSE]
+  }
+
+  params <- .remove_backticks_from_parameter_names(params)
+  attr(params, "statistic") <- find_statistic(x)
+  params
+}
+
+
+#' @export
+get_statistic.lavaan <- function(x, ...) {
+  if (!requireNamespace("lavaan", quietly = TRUE)) {
+    stop("Package 'lavaan' required for this function to work. Please install it.")
+  }
+
+  params <- lavaan::parameterEstimates(x)
+
+  params$parameter <- paste0(params$lhs, params$op, params$rhs)
+  params$comp <- NA
+
+  params$comp[params$op == "~"] <- "regression"
+  params$comp[params$op == "=~"] <- "latent"
+  params$comp[params$op == "~~"] <- "residual"
+  params$comp[params$op == "~1"] <- "intercept"
+
+  params <- data.frame(
+    Parameter = params$parameter,
+    Statistic = params$z,
+    Component = params$comp,
+    stringsAsFactors = FALSE
+  )
+
+  params <- .remove_backticks_from_parameter_names(params)
+  attr(params, "statistic") <- find_statistic(x)
+  params
+}
 
 
 #' @export
@@ -1310,7 +1412,6 @@ get_statistic.averaging <- function(x, component = c("conditional", "full"), ...
 
 
 
-#' @importFrom stats coef
 #' @export
 get_statistic.bayesx <- function(x, ...) {
   out <- data.frame(
@@ -1411,7 +1512,7 @@ get_statistic.sem <- function(x, ...) {
   params <- get_parameters(x, effects = "fixed")
 
   if (is.null(x$se)) {
-    warning("Model has no standard errors. Please fit model again with bootstrapped standard errors.", call. = FALSE)
+    warning(format_message("Model has no standard errors. Please fit model again with bootstrapped standard errors."), call. = FALSE)
     return(NULL)
   }
 
@@ -1427,7 +1528,6 @@ get_statistic.sem <- function(x, ...) {
 }
 
 
-#' @importFrom utils capture.output
 #' @export
 get_statistic.cpglm <- function(x, ...) {
   if (!requireNamespace("cplm", quietly = TRUE)) {
@@ -1450,7 +1550,6 @@ get_statistic.cpglm <- function(x, ...) {
 
 
 
-#' @importFrom utils capture.output
 #' @export
 get_statistic.zcpglm <- function(x, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
   if (!requireNamespace("cplm", quietly = TRUE)) {
@@ -1781,7 +1880,6 @@ get_statistic.glmx <- function(x, component = c("all", "conditional", "extra"), 
 
 
 #' @rdname get_statistic
-#' @importFrom stats coef
 #' @export
 get_statistic.gee <- function(x, robust = FALSE, ...) {
   parms <- get_parameters(x)
@@ -1824,8 +1922,6 @@ get_statistic.complmrob <- function(x, ...) {
 
 
 
-#' @importFrom stats qchisq
-#' @importFrom utils capture.output
 #' @export
 get_statistic.logistf <- function(x, ...) {
   parms <- get_parameters(x)
@@ -1860,7 +1956,6 @@ get_statistic.epi.2by2 <- function(x, ...) {
 
 
 
-#' @importFrom stats vcov
 #' @export
 get_statistic.svyglm.nb <- function(x, ...) {
   if (!isNamespaceLoaded("survey")) {
@@ -1885,9 +1980,29 @@ get_statistic.svyglm.nb <- function(x, ...) {
 get_statistic.svyglm.zip <- get_statistic.svyglm.nb
 
 
+#' @export
+get_statistic.svyglm <- function(x, ...) {
+  parms <- get_parameters(x)
+  vc <- get_varcov(x)
+  se <- sqrt(diag(vc))
+
+  out <- data.frame(
+    Parameter = parms$Parameter,
+    Statistic = parms$Estimate / se,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
+get_statistic.svyolr <- get_statistic.svyglm
+
 
 #' @rdname get_statistic
-#' @importFrom stats coef
 #' @export
 get_statistic.betareg <- function(x, component = c("all", "conditional", "precision"), ...) {
   component <- match.arg(component)
@@ -1914,8 +2029,6 @@ get_statistic.betareg <- function(x, component = c("all", "conditional", "precis
 
 
 #' @rdname get_statistic
-#' @importFrom stats coef
-#' @importFrom utils capture.output
 #' @export
 get_statistic.DirichletRegModel <- function(x, component = c("all", "conditional", "precision"), ...) {
   component <- match.arg(component)
@@ -1946,7 +2059,6 @@ get_statistic.DirichletRegModel <- function(x, component = c("all", "conditional
 
 
 
-#' @importFrom methods slot
 #' @export
 get_statistic.glimML <- function(x, ...) {
   if (!requireNamespace("aod", quietly = TRUE)) {
@@ -1969,7 +2081,6 @@ get_statistic.glimML <- function(x, ...) {
 
 
 
-#' @importFrom stats coef vcov
 #' @export
 get_statistic.lrm <- function(x, ...) {
   parms <- get_parameters(x)
@@ -2032,7 +2143,6 @@ get_statistic.rma <- function(x, ...) {
 
 
 
-#' @importFrom stats qnorm
 #' @export
 get_statistic.metaplus <- function(x, ...) {
   params <- get_parameters(x)

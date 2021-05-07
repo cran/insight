@@ -16,6 +16,7 @@
 #'    is returned, where all values starting with \code{is_} are logicals.
 #'    \itemize{
 #'      \item \code{is_binomial}: family is binomial (but not negative binomial)
+#'      \item \code{is_bernoulli}: special case of binomial models: family is Bernoulli
 #'      \item \code{is_poisson}: family is poisson
 #'      \item \code{is_negbin}: family is negative binomial
 #'      \item \code{is_count}: model is a count model (i.e. family is either poisson or negative binomial)
@@ -80,7 +81,6 @@
 #' }
 #'
 #' model_info(m)
-#' @importFrom stats formula terms
 #' @export
 model_info <- function(x, ...) {
   UseMethod("model_info")
@@ -98,7 +98,6 @@ model_info.data.frame <- function(x, ...) {
 }
 
 
-#' @importFrom stats family
 #' @rdname model_info
 #' @export
 model_info.default <- function(x, verbose = TRUE, ...) {
@@ -126,6 +125,7 @@ model_info.default <- function(x, verbose = TRUE, ...) {
       fitfam = faminfo$family,
       logit.link = faminfo$link == "logit",
       link.fun = faminfo$link,
+      verbose = verbose,
       ...
     )
   } else {
@@ -148,9 +148,9 @@ model_info.model_fit <- function(x, verbose = TRUE, ...) {
 
 
 #' @export
-model_info.anova <- function(x, ...) {
+model_info.anova <- function(x, verbose = TRUE, ...) {
   if (!is.null(attributes(x)$heading) && grepl("Levene's Test", attributes(x)$heading, fixed = TRUE)) {
-    .make_family(x)
+    .make_family(x, verbose = verbose)
   } else {
     NULL
   }
@@ -158,8 +158,8 @@ model_info.anova <- function(x, ...) {
 
 
 #' @export
-model_info.mmclogit <- function(x, ...) {
-  .make_family(x, ...)
+model_info.mmclogit <- function(x, verbose = TRUE, ...) {
+  .make_family(x, verbose = verbose, ...)
 }
 
 #' @export
@@ -288,11 +288,11 @@ model_info.mlm <- function(x, ...) {
 }
 
 #' @export
-model_info.afex_aov <- function(x, ...) {
+model_info.afex_aov <- function(x, verbose = TRUE, ...) {
   if ("aov" %in% names(x)) {
-    .make_family(x$aov, ...)
+    .make_family(x$aov, verbose = verbose, ...)
   } else {
-    .make_family(x$lm, ...)
+    .make_family(x$lm, verbose = verbose, ...)
   }
 }
 
@@ -305,13 +305,14 @@ model_info.afex_aov <- function(x, ...) {
 
 
 #' @export
-model_info.logistf <- function(x, ...) {
+model_info.logistf <- function(x, verbose = TRUE, ...) {
   faminfo <- stats::binomial(link = "logit")
   .make_family(
     x = x,
     fitfam = faminfo$family,
     logit.link = faminfo$link == "logit",
     link.fun = faminfo$link,
+    verbose = verbose,
     ...
   )
 }
@@ -342,13 +343,14 @@ model_info.gmnl <- model_info.logistf
 
 
 #' @export
-model_info.clm <- function(x, ...) {
+model_info.clm <- function(x, verbose = TRUE, ...) {
   faminfo <- stats::binomial(link = .get_ordinal_link(x))
   .make_family(
     x = x,
     fitfam = faminfo$family,
     logit.link = faminfo$link == "logit",
     link.fun = faminfo$link,
+    verbose = verbose,
     ...
   )
 }
@@ -362,6 +364,21 @@ model_info.clmm <- model_info.clm
 #' @export
 model_info.mixor <- model_info.clm
 
+#' @export
+model_info.mvord <- function(x, verbose = verbose, ...) {
+  link_name <- x$rho$link$name
+  faminfo <- stats::binomial(link = ifelse(link_name == "mvprobit", "probit", "logit"))
+  .make_family(
+    x = x,
+    fitfam = faminfo$family,
+    logit.link = faminfo$link == "logit",
+    link.fun = faminfo$link,
+    multi.var = TRUE,
+    verbose = verbose,
+    ...
+  )
+}
+
 
 
 
@@ -372,28 +389,29 @@ model_info.mixor <- model_info.clm
 # Models with family-function  ----------------------------------
 
 
-#' @importFrom stats family
 #' @export
-model_info.bamlss <- function(x, ...) {
+model_info.bamlss <- function(x, verbose = TRUE, ...) {
   faminfo <- stats::family(x)
   .make_family(
     x = x,
     fitfam = faminfo$family,
     logit.link = faminfo$links[1] == "logit",
     link.fun = faminfo$links[1],
+    verbose = verbose,
     ...
   )
 }
 
 
 #' @export
-model_info.speedglm <- function(x, ...) {
+model_info.speedglm <- function(x, verbose = TRUE, ...) {
   faminfo <- stats::family(x)
   .make_family(
     x = x,
     fitfam = faminfo$family,
     logit.link = faminfo$link == "logit",
     link.fun = faminfo$link,
+    verbose = verbose,
     ...
   )
 }
@@ -411,7 +429,7 @@ model_info.brmultinom <- model_info.speedglm
 
 
 #' @export
-model_info.flexsurvreg <- function(x, ...) {
+model_info.flexsurvreg <- function(x, verbose = TRUE, ...) {
   dist <- parse(text = .safe_deparse(x$call))[[1]]$dist
   faminfo <- .make_tobit_family(x, dist)
 
@@ -420,12 +438,13 @@ model_info.flexsurvreg <- function(x, ...) {
     fitfam = faminfo$family,
     logit.link = faminfo$link == "logit",
     link.fun = faminfo$link,
+    verbose = verbose,
     ...
   )
 }
 
 #' @export
-model_info.tobit <- function(x, ...) {
+model_info.tobit <- function(x, verbose = TRUE, ...) {
   faminfo <- .make_tobit_family(x)
 
   .make_family(
@@ -433,6 +452,7 @@ model_info.tobit <- function(x, ...) {
     fitfam = faminfo$family,
     logit.link = faminfo$link == "logit",
     link.fun = faminfo$link,
+    verbose = verbose,
     ...
   )
 }
@@ -453,13 +473,14 @@ model_info.survreg <- model_info.tobit
 
 
 #' @export
-model_info.MixMod <- function(x, ...) {
+model_info.MixMod <- function(x, verbose = TRUE, ...) {
   faminfo <- x$family
   .make_family(
     x = x,
     fitfam = faminfo$family,
     logit.link = faminfo$link == "logit",
     link.fun = faminfo$link,
+    verbose = verbose,
     ...
   )
 }
@@ -472,20 +493,21 @@ model_info.bife <- model_info.MixMod
 
 
 #' @export
-model_info.glmx <- function(x, ...) {
+model_info.glmx <- function(x, verbose = TRUE, ...) {
   faminfo <- x$family$glm
   .make_family(
     x = x,
     fitfam = faminfo$family,
     logit.link = faminfo$link == "logit",
     link.fun = faminfo$link,
+    verbose = verbose,
     ...
   )
 }
 
 
 #' @export
-model_info.fixest <- function(x, ...) {
+model_info.fixest <- function(x, verbose = TRUE, ...) {
   faminfo <- x$family
 
   if (is.null(faminfo)) {
@@ -498,6 +520,7 @@ model_info.fixest <- function(x, ...) {
       fitfam = faminfo$family,
       logit.link = faminfo$link == "logit",
       link.fun = faminfo$link,
+      verbose = verbose,
       ...
     )
   } else {
@@ -519,6 +542,7 @@ model_info.fixest <- function(x, ...) {
       fitfam = fitfam,
       logit.link = link == "logit",
       link.fun = link,
+      verbose = verbose,
       ...
     )
   }
@@ -537,12 +561,13 @@ model_info.feglm <- model_info.fixest
 
 
 #' @export
-model_info.coxph <- function(x, ...) {
+model_info.coxph <- function(x, verbose = TRUE, ...) {
   .make_family(
     x = x,
     fitfam = "survival",
     logit.link = TRUE,
     link.fun = NULL,
+    verbose = verbose,
     ...
   )
 }
@@ -1008,7 +1033,7 @@ model_info.gam <- function(x, ...) {
   .make_family(
     x = x,
     fitfam = faminfo$family,
-    logit.link = link == "logit",
+    logit.link = !is.null(link) && (link == "logit" || faminfo$family == "multinom"),
     link.fun = link,
     multi.var = is.mv,
     ...

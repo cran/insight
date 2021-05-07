@@ -38,7 +38,6 @@
 #' data(mtcars)
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' get_parameters(m)
-#' @importFrom stats coef
 #' @export
 get_parameters <- function(x, ...) {
   UseMethod("get_parameters")
@@ -122,6 +121,30 @@ get_parameters.tobit <- get_parameters.default
 #' @export
 get_parameters.model_fit <- function(x, ...) {
   get_parameters(x$fit, ...)
+}
+
+
+#' @export
+get_parameters.selection <- function(x, component = c("all", "selection", "outcome", "auxiliary"), ...) {
+  component <- match.arg(component)
+  s <- summary(x)
+  rn <- row.names(s$estimate)
+  estimates <- as.data.frame(s$estimate, row.names = FALSE)
+  params <- data.frame(
+    Parameter = rn,
+    Estimate = estimates[[1]],
+    Component = "auxiliary",
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+  params$Component[s$param$index$betaS] <- "selection"
+  params$Component[s$param$index$betaO] <- "outcome"
+
+  if (component != "all") {
+    params <- params[params$Component == component, , drop = FALSE]
+  }
+
+  .remove_backticks_from_parameter_names(params)
 }
 
 
@@ -237,8 +260,6 @@ get_parameters.survreg <- function(x, ...) {
 }
 
 
-#' @importFrom utils capture.output
-#' @importFrom stats coef
 #' @export
 get_parameters.riskRegression <- function(x, ...) {
   junk <- utils::capture.output(cs <- stats::coef(x))
@@ -533,6 +554,14 @@ get_parameters.blavaan <- function(x, summary = FALSE, centrality = "mean", ...)
   params <- paste0(param_tab$lhs, param_tab$op, param_tab$rhs)
 
   coef_labels <- names(lavaan::coef(x))
+
+  if ("group" %in% colnames(param_tab) && .n_unique(param_tab$group) > 1) {
+    params <- paste0(params, " (group ", param_tab$group, ")")
+    groups <- grepl("(.*)\\.g(.*)", coef_labels)
+    coef_labels[!groups] <- paste0(coef_labels[!groups], " (group 1)")
+    coef_labels[groups] <- gsub("(.*)\\.g(.*)", "\\1 \\(group \\2\\)", coef_labels[groups])
+  }
+
   are_labels <- !coef_labels %in% params
   if (any(are_labels)) {
     unique_labels <- unique(coef_labels[are_labels])
@@ -666,7 +695,6 @@ get_parameters.aovlist <- function(x, ...) {
 
 
 
-#' @importFrom stats na.omit coef
 #' @export
 get_parameters.manova <- function(x, ...) {
   params <- stats::na.omit(stats::coef(x))
@@ -705,7 +733,6 @@ get_parameters.afex_aov <- function(x, ...) {
 # utility functions ---------------------------------
 
 
-#' @importFrom methods slot slotNames
 .get_armsim_fixef_parms <- function(x) {
   sn <- methods::slotNames(x)
   as.data.frame(methods::slot(x, sn[1]))
@@ -713,7 +740,6 @@ get_parameters.afex_aov <- function(x, ...) {
 
 
 
-#' @importFrom methods .hasSlot
 .get_armsim_ranef_parms <- function(x) {
   dat <- NULL
   if (methods::.hasSlot(x, "ranef")) {

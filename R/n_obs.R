@@ -16,7 +16,6 @@
 #' data(mtcars)
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' n_obs(m)
-#' @importFrom stats model.frame nobs family
 #' @export
 n_obs <- function(x, ...) {
   UseMethod("n_obs")
@@ -50,7 +49,6 @@ n_obs.default <- function(x, ...) {
 }
 
 
-#' @importFrom stats nobs formula
 #' @export
 n_obs.glm <- function(x, ...) {
   is_binomial <- tryCatch(
@@ -66,14 +64,20 @@ n_obs.glm <- function(x, ...) {
 
   if (isTRUE(is_binomial)) {
     resp <- deparse(stats::formula(x)[[2]])
+    resp_data <- get_response(x, verbose = FALSE)
+
+    # response is a matrix of numbers of trials and successes
     if (grepl("^cbind\\(", resp)) {
       trials <- trimws(sub("cbind\\((.*),(.*)\\)", "\\2", resp))
-      resp_data <- get_response(x)
       if (grepl("-", trials, fixed = TRUE)) {
         .nobs <- sum(resp_data[[2]])
       } else {
         .nobs <- sum(resp_data)
       }
+
+      # response is a fraction
+    } else if (!is.data.frame(resp_data) && .is.fraction(resp_data)) {
+      .nobs <- sum(get_weights(x))
     }
   }
 
@@ -134,6 +138,18 @@ n_obs.lavaan <- function(x, ...) {
 
 
 #' @export
+n_obs.selection <- function(x, type = c("all", "observed", "censored"), ...) {
+  type <- match.arg(type)
+  s <- summary(x)
+  switch(type,
+    "all" = s$param$nObs,
+    "observed" = s$param$N1,
+    s$param$N0
+  )
+}
+
+
+#' @export
 n_obs.mjoint <- function(x, ...) {
   nrow(x$data[[1]])
 }
@@ -187,8 +203,22 @@ n_obs.flexsurvreg <- function(x, ...) {
 
 
 #' @export
+n_obs.SemiParBIV <- function(x, ...) {
+  x$n
+}
+
+
+
+#' @export
 n_obs.ivprobit <- function(x, ...) {
   nrow(x$mr1)
+}
+
+
+
+#' @export
+n_obs.mvord <- function(x, ...) {
+  x$rho$n
 }
 
 
@@ -426,7 +456,6 @@ n_obs.RM <- n_obs.MANOVA
 
 
 
-#' @importFrom stats fitted
 #' @export
 n_obs.nlrq <- function(x, ...) {
   length(stats::fitted(x))
@@ -585,7 +614,7 @@ n_obs.Rchoice <- function(x, ...) {
 
 #' @export
 n_obs.betamfx <- function(x, ...) {
-  nobs(x$fit)
+  stats::nobs(x$fit)
 }
 
 #' @export

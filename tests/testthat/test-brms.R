@@ -376,14 +376,14 @@ if (.runThisTest) {
         )
       )
       expect_equal(
-        colnames(get_parameters(m4, effects = "random", component = "cond")),
+        colnames(get_parameters(m4, effects = "random", component = "conditional")),
         c(
           "r_persons.1.Intercept.", "r_persons.2.Intercept.", "r_persons.3.Intercept.",
           "r_persons.4.Intercept.", "sd_persons__Intercept"
         )
       )
       expect_equal(
-        colnames(get_parameters(m5, effects = "random", component = "cond")),
+        colnames(get_parameters(m5, effects = "random", component = "conditional")),
         c(
           "r_persons__count.1.Intercept.",
           "r_persons__count.2.Intercept.",
@@ -491,7 +491,7 @@ if (.runThisTest) {
           Parameter = c("(Intercept)", "c2", "treat1", "treat1:c2"),
           Distribution = c("student_t", "uniform", "uniform", "uniform"),
           df = c(3, NA, NA, NA),
-          Location = c(0, 0, 0, 0),
+          Location = c(0, NA, NA, NA),
           Scale = c(2.5, NA, NA, NA),
           stringsAsFactors = FALSE
         ),

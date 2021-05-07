@@ -30,7 +30,7 @@ find_response <- function(x, combine = TRUE, ...) {
 
 #' @export
 find_response.default <- function(x, combine = TRUE, ...) {
-  f <- find_formula(x)
+  f <- find_formula(x, verbose = FALSE)
 
   if (is.null(f)) {
     return(NULL)
@@ -55,8 +55,19 @@ find_response.model_fit <- function(x, combine = TRUE, ...) {
 
 
 #' @export
+find_response.selection <- function(x, combine = TRUE, ...) {
+  f <- find_formula(x, verbose = FALSE)
+  resp <- c(
+    .safe_deparse(f$conditional$selection[[2L]]),
+    .safe_deparse(f$conditional$outcome[[2L]])
+  )
+  check_cbind(resp, combine, model = x)
+}
+
+
+#' @export
 find_response.mediate <- function(x, combine = TRUE, ...) {
-  f <- find_formula(x)
+  f <- find_formula(x, verbose = FALSE)
 
   if (is.null(f)) {
     return(NULL)
@@ -70,7 +81,7 @@ find_response.mediate <- function(x, combine = TRUE, ...) {
 #' @export
 find_response.mjoint <- function(x, combine = TRUE, component = c("conditional", "survival", "all"), ...) {
   component <- match.arg(component)
-  f <- find_formula(x)
+  f <- find_formula(x, verbose = FALSE)
 
   if (is.null(f)) {
     return(NULL)
@@ -80,9 +91,10 @@ find_response.mjoint <- function(x, combine = TRUE, component = c("conditional",
   survial <- .safe_deparse(f$survival[[2L]])
 
   resp <- switch(component,
-                 "conditional" = conditional,
-                 "survial" = survial,
-                 "all" = c(conditional, survial))
+    "conditional" = conditional,
+    "survial" = survial,
+    "all" = c(conditional, survial)
+  )
 
   unlist(lapply(resp, check_cbind, combine = combine, model = x))
 }
@@ -91,7 +103,7 @@ find_response.mjoint <- function(x, combine = TRUE, component = c("conditional",
 #' @export
 find_response.joint <- function(x, combine = TRUE, component = c("conditional", "survival", "all"), ...) {
   component <- match.arg(component)
-  f <- find_formula(x)
+  f <- find_formula(x, verbose = FALSE)
 
   if (is.null(f)) {
     return(NULL)
@@ -101,9 +113,10 @@ find_response.joint <- function(x, combine = TRUE, component = c("conditional", 
   survial <- .safe_deparse(f$survival[[2L]])
 
   resp <- switch(component,
-                 "conditional" = conditional,
-                 "survial" = survial,
-                 "all" = c(conditional, survial))
+    "conditional" = conditional,
+    "survial" = survial,
+    "all" = c(conditional, survial)
+  )
 
   unlist(lapply(resp, check_cbind, combine = combine, model = x))
 }
@@ -131,6 +144,10 @@ check_cbind <- function(resp, combine, model) {
     resp <- .extract_combined_response(resp, "Event")
   } else if (!combine && any(grepl("Curv\\((.*)\\)", resp))) {
     resp <- .extract_combined_response(resp, "Curv")
+  } else if (!combine && any(grepl("MMO\\((.*)\\)", resp))) {
+    resp <- .extract_combined_response(resp, "MMO")
+  } else if (!combine && any(grepl("MMO2\\((.*)\\)", resp))) {
+    resp <- .extract_combined_response(resp, "MMO2")
   } else if (!combine && any(grepl("/", resp, fixed = TRUE))) {
     resp <- strsplit(resp, split = "/", fixed = TRUE)
     resp <- gsub("(I|\\(|\\))", "", .trim(unlist(resp)))
@@ -138,6 +155,19 @@ check_cbind <- function(resp, combine, model) {
     # check for brms Additional Response Information
     r1 <- .trim(sub("(.*)\\|(.*)", "\\1", resp))
     r2 <- .trim(sub("(.*)\\|(.*)\\(([^,)]*).*", "\\3", resp))
+    # check for "resp_thres" pattern
+    r_resp <- .trim(unlist(strsplit(resp, "|", fixed = TRUE))[2])
+    if (grepl("^resp_thres", r_resp)) {
+      r3 <- .trim(sub("=", "", sub("(.*)\\(([^=)]*)(.*)\\)", "\\3", r_resp)))
+      names(r3) <- r3
+      numeric_values <- suppressWarnings(as.numeric(r2))
+      r2 <- r2[is.na(numeric_values)]
+      if (length(r2)) {
+        r2 <- c(r2, r3)
+      } else {
+        r2 <- r3
+      }
+    }
     resp <- c(r1, r2)
   }
 
@@ -151,9 +181,13 @@ check_cbind <- function(resp, combine, model) {
 
 
 .extract_combined_response <- function(resp, pattern) {
-  resp <- sub(sprintf("%s\\(([^,].*)([\\)].*)", pattern), "\\1", resp)
-  resp <- strsplit(resp, split = ",", fixed = TRUE)
-  resp <- .trim(unlist(resp))
+  if (pattern %in% c("MMO", "MMO2") && !grepl(paste0("^", pattern, "\\((.*),(.*)\\)"), resp)) {
+    resp <- gsub(paste0("^", pattern, "\\((.*)\\)"), "\\1", resp)
+  } else {
+    resp <- sub(sprintf("%s\\(([^,].*)([\\)].*)", pattern), "\\1", resp)
+    resp <- strsplit(resp, split = ",", fixed = TRUE)
+    resp <- .trim(unlist(resp))
+  }
 
   if (any(.string_contains("-", resp[2]))) {
     resp[2] <- .trim(sub("(.*)(\\-)(.*)", "\\1", resp[2]))

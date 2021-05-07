@@ -20,7 +20,6 @@
 #' data(mtcars)
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' find_parameters(m)
-#' @importFrom stats na.omit coef
 #' @export
 find_parameters.gamlss <- function(x, flatten = FALSE, ...) {
   pars <- lapply(x$parameters, function(i) {
@@ -132,6 +131,26 @@ find_parameters.cgam <- function(x, component = c("all", "conditional", "smooth_
   }
 }
 
+
+
+#' @export
+find_parameters.SemiParBIV <- function(x, flatten = FALSE, ...) {
+  pars <- get_parameters(x)
+  # make sure we preserve order for split()
+  pars$Component <- factor(pars$Component, levels = unique(pars$Component))
+  l <- lapply(split(pars, pars$Component), function(i) {
+    as.vector(i$Parameter)
+  })
+  if (flatten) {
+    unique(unlist(l))
+  } else {
+    l
+  }
+}
+
+
+#' @export
+find_parameters.selection <- find_parameters.SemiParBIV
 
 
 #' @export

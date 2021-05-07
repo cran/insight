@@ -1,3 +1,83 @@
+# insight 0.13.3
+
+## General
+
+* Better support for accessing auxiliary parameters (via `get_sigma()` and 
+  `get_auxiliary()`, as well as `get_parameters(component = "all")`) for 
+  `brmsfit` models.
+
+## New functions
+
+* `get_modelmatrix()` as a robust alternative to `model.matrix()` for
+  different model classes.
+
+* `format_message()` to format warnings and messages by adjusting the maximum
+  line_length, possibly to the width of the console window.
+
+* `format_string()` to shorten a string to a maximum length.
+
+* `check_if_installed()` to see if the needed package is installed.
+
+## New supported model classes
+
+* Support for `mvord` (*mvord*), `SemiParBIV` (*GJRM*), 
+  `selection` (*sampleSelection*)
+
+## Changes to functions
+
+* `find_formula()` now warns when data name is present in formula, since this
+  can result in unexpected behaviour in other package functions.
+
+* `model_info()` returns `is_bernoulli = TRUE` for Bernoulli models.
+
+* Add `get_statistic()` for *lavaan* models.
+
+* `get_df()` supports more models/objects.
+
+* `get_sigma()` supports more models/objects.
+
+* `get_sigma()` and `get_deviance()` for `lrm` models (package *rms*) now only
+  return one value, sigma or deviance for the model with intercept and predictors.
+
+* `get_deviance()` now works for `glmerMod`, `MixMod` and `glmmTMB` models.
+
+* The behaviour and documentation of the `effects` and `component` arguments,
+  in particular for `brmsfit` models, were revised to be more consistent.
+
+* `export_table()` now correctly prints the footer if the input was a list of
+  data frames.
+
+## Bug fixes
+
+* Fixed issue (warning) in `get_loglikelihood()` for binomial models with
+  non-numeric response variables.
+
+* `find_statistic()` correctly distinguishes t- and z-statistic for *emmGrid*
+  objects.
+
+* Fixed issue in `model_info()` for `BGGM` and `mgcv::gam()`.
+
+* Fixed issue in `find_formula()` for `gamlss` models with `random()` function
+  in formula.
+
+* Fixed issue with `find_parameters()` for *brmsfit* models when auxiliary
+  parameters are directly modelled.
+
+* Fixed issue with `get_parameters()` and `find_parameters()` for 
+  multi-group *blavaan* models.
+
+* Fixed issue in `ellipsis_info()` when detecting nested models with 
+  poly-terms.
+
+* Fixed issue in `find_response()` for *brmsfit* models that used the
+  `resp_thres()` function in the model formula.
+  
+* Fixed issue in `get_predicted_ci()` for models with rank-deficient 
+  model matrix.
+  
+* Argument `zap_small` in `format_value()` did not work properly over 
+  vectorized vectors.
+
 # insight 0.13.2
 
 ## General

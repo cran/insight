@@ -31,7 +31,6 @@
 #' data(mtcars)
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' get_varcov(m)
-#' @importFrom stats vcov
 #' @export
 get_varcov <- function(x, ...) {
   UseMethod("get_varcov")
@@ -152,6 +151,41 @@ get_varcov.glmx <- function(x, component = c("all", "conditional", "extra"), ...
 
   if (component != "all") {
     keep <- match(find_parameters(x)[[component]], rownames(vc))
+    vc <- vc[keep, keep, drop = FALSE]
+  }
+  .process_vcov(vc)
+}
+
+
+#' @export
+get_varcov.selection <- function(x, component = c("all", "selection", "outcome", "auxiliary"), ...) {
+  component <- match.arg(component)
+  vc <- stats::vcov(object = x)
+
+  if (component != "all") {
+    keep <- match(find_parameters(x)[[component]], rownames(vc))
+    vc <- vc[keep, keep, drop = FALSE]
+  }
+
+  # we can't check for rank-deficiency here...
+  if (.is_negativ_matrix(vc)) {
+    vc <- .fix_negative_matrix(vc)
+  }
+  .remove_backticks_from_matrix_names(as.matrix(vc))
+}
+
+
+#' @export
+get_varcov.mvord <- function(x, component = c("all", "conditional", "thresholds", "correlation"), ...) {
+  component <- match.arg(component)
+  vc <- stats::vcov(x)
+
+  if (component != "all") {
+    fp <- find_parameters(x)[[component]]
+    if (component == "thresholds") {
+      fp <- gsub("\\s", "\\.", fp)
+    }
+    keep <- match(fp, rownames(vc))
     vc <- vc[keep, keep, drop = FALSE]
   }
   .process_vcov(vc)
@@ -308,8 +342,8 @@ get_varcov.glmmTMB <- function(x, component = c("conditional", "zero_inflated", 
 
 #' @rdname get_varcov
 #' @export
-get_varcov.brmsfit <- function(x, component = c("conditional", "zero_inflated", "zi", "all"), ...) {
-  component <- match.arg(component)
+get_varcov.brmsfit <- function(x, component = "conditional", ...) {
+  component <- match.arg(component, choices = c("all", .all_elements()))
   params <- find_parameters(x, effects = "fixed", component = component, flatten = TRUE)
   params <- gsub("^b_", "", params)
 
@@ -557,7 +591,6 @@ get_varcov.gamm <- function(x, ...) {
 }
 
 
-#' @importFrom stats cov
 #' @export
 get_varcov.lqmm <- function(x, ...) {
   sc <- summary(x, covariance = TRUE)
@@ -736,7 +769,7 @@ get_varcov.LORgee <- get_varcov.gee
 .fix_rank_deficiency <- function(m, verbose = TRUE) {
   if (anyNA(m)) {
     if (isTRUE(verbose)) {
-      warning("Model matrix is rank deficient. Some variance-covariance parameters are missing.", call. = FALSE)
+      warning(format_message("Model matrix is rank deficient. Some variance-covariance parameters are missing."), call. = FALSE)
     }
     mm <- m[!is.na(m)]
     if (!is.matrix(mm)) {
@@ -755,7 +788,6 @@ get_varcov.LORgee <- get_varcov.gee
 
 
 
-#' @importFrom stats residuals estVar sd
 .get_weighted_varcov <- function(x, cov_unscaled) {
   ssd <- .weighted_crossprod(stats::residuals(x), w = x$weights)
   df <- sum(x$weights)

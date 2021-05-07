@@ -26,7 +26,6 @@
 #' data(mtcars)
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' find_parameters(m)
-#' @importFrom stats coef
 #' @export
 find_parameters <- function(x, ...) {
   UseMethod("find_parameters")
@@ -59,7 +58,7 @@ find_parameters.default <- function(x, flatten = FALSE, verbose = TRUE, ...) {
 
   if (is.null(pars$conditional) || is.null(pars)) {
     if (isTRUE(verbose)) {
-      warning(sprintf("Parameters can't be retrieved for objects of class '%s'.", class(x)[1]), call. = FALSE)
+      warning(format_message(sprintf("Parameters can't be retrieved for objects of class '%s'.", class(x)[1])), call. = FALSE)
     }
     return(NULL)
   }
@@ -199,6 +198,14 @@ find_parameters.blavaan <- function(x, flatten = FALSE, ...) {
   params <- paste0(param_tab$lhs, param_tab$op, param_tab$rhs)
 
   coef_labels <- names(lavaan::coef(x))
+
+  if ("group" %in% colnames(param_tab) && .n_unique(param_tab$group) > 1) {
+    params <- paste0(params, " (group ", param_tab$group, ")")
+    groups <- grepl("(.*)\\.g(.*)", coef_labels)
+    coef_labels[!groups] <- paste0(coef_labels[!groups], " (group 1)")
+    coef_labels[groups] <- gsub("(.*)\\.g(.*)", "\\1 \\(group \\2\\)", coef_labels[groups])
+  }
+
   are_labels <- !coef_labels %in% params
   if (any(are_labels)) {
     unique_labels <- unique(coef_labels[are_labels])
@@ -335,8 +342,6 @@ find_parameters.crr <- function(x, flatten = FALSE, ...) {
 }
 
 
-#' @importFrom utils capture.output
-#' @importFrom stats coef
 #' @export
 find_parameters.riskRegression <- function(x, flatten = FALSE, ...) {
   junk <- utils::capture.output(cs <- stats::coef(x))
@@ -479,7 +484,6 @@ find_parameters.glht <- function(x, flatten = FALSE, ...) {
 }
 
 
-#' @importFrom stats na.omit coef
 #' @export
 find_parameters.manova <- function(x, flatten = FALSE, ...) {
   out <- list(conditional = .remove_backticks_from_string(rownames(stats::na.omit(stats::coef(x)))))
@@ -515,6 +519,26 @@ find_parameters.mlm <- function(x, flatten = FALSE, ...) {
   })
 
   names(out) <- gsub("^Response (.*)", "\\1", names(cs))
+  attr(out, "is_mv") <- TRUE
+
+  if (flatten) {
+    unique(unlist(out))
+  } else {
+    out
+  }
+}
+
+
+
+#' @export
+find_parameters.mvord <- function(x, flatten = FALSE, ...) {
+  junk <- utils::capture.output(s <- summary(x))
+
+  out <- list(
+    thresholds = .remove_backticks_from_string(rownames(s$thresholds)),
+    conditional = .remove_backticks_from_string(rownames(s$coefficients)),
+    correlation = .remove_backticks_from_string(rownames(s$error.structure))
+  )
   attr(out, "is_mv") <- TRUE
 
   if (flatten) {
@@ -627,7 +651,6 @@ find_parameters.crqs <- find_parameters.crq
 
 
 
-#' @importFrom stats coef
 #' @export
 find_parameters.lqmm <- function(x, flatten = FALSE, ...) {
   cs <- stats::coef(x)
@@ -754,10 +777,20 @@ find_parameters.mira <- function(x, flatten = FALSE, ...) {
   find_parameters(x$analyses[[1]], flatten = flatten, ...)
 }
 
+## For questions or problems with this ask Fernando Miguez (femiguez@iastate.edu)
+#' @export
+find_parameters.nls <- function(x, flatten = FALSE, ...) {
+  f <- find_formula(x)
+  elements <- .get_elements(effects = "fixed", component = "all")
+  f <- .prepare_predictors(x, f, elements)
+  pars <- .return_vars(f, x)
 
-
-
-
+  if (flatten) {
+    unique(unlist(pars))
+  } else {
+    pars
+  }
+}
 
 # helper ----------------------------
 

@@ -5,6 +5,7 @@
 #'
 #' @param ... Currently not used.
 #'
+#' @inheritParams find_parameters.glmmTMB
 #' @inheritParams find_parameters
 #' @inheritParams find_predictors
 #'
@@ -22,7 +23,6 @@
 #' data(mtcars)
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' get_parameters(m)
-#' @importFrom stats coef
 #' @export
 get_parameters.glmm <- function(x, effects = c("all", "fixed", "random"), ...) {
   effects <- match.arg(effects)
@@ -369,7 +369,7 @@ get_parameters.MixMod <- function(x,
   effects <- match.arg(effects)
   component <- match.arg(component)
 
-  has_zeroinf <- !is.null(find_formula(x)[["zero_inflated"]])
+  has_zeroinf <- !is.null(find_formula(x, verbose = FALSE)[["zero_inflated"]])
 
   if (component %in% c("zi", "zero_inflated") && !has_zeroinf) {
     stop("Model has no zero-inflation component.", call. = FALSE)

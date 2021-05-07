@@ -1,4 +1,3 @@
-#' @importFrom stats nobs
 .compute_variances <- function(x,
                                component,
                                name_fun = NULL,
@@ -18,7 +17,7 @@
 
   if (faminfo$family %in% c("truncated_nbinom1")) {
     if (verbose) {
-      warning(sprintf("Truncated negative binomial families are currently not supported by `%s`.", name_fun), call. = FALSE)
+      warning(format_message(sprintf("Truncated negative binomial families are currently not supported by `%s`.", name_fun)), call. = FALSE)
     }
     return(NA)
   }
@@ -31,7 +30,10 @@
   no_random_variance <- FALSE
   if (.is_singular(x, vals, tolerance = tolerance) && !(component %in% c("slope", "intercept"))) {
     if (verbose) {
-      warning(sprintf("Can't compute %s. Some variance components equal zero. Your model may suffer from singulariy.\n  Solution: Respecify random structure!\n  You may also decrease the 'tolerance' level to enforce the calculation of random effect variances.", name_full), call. = FALSE)
+      warning(format_message(
+        sprintf("Can't compute %s. Some variance components equal zero. Your model may suffer from singulariy.", name_full),
+        "Solution: Respecify random structure! You may also decrease the 'tolerance' level to enforce the calculation of random effect variances."
+      ), call. = FALSE)
     }
     no_random_variance <- TRUE
   }
@@ -54,7 +56,10 @@
 
   # Are random slopes present as fixed effects? Warn.
   if (!.random_slopes_in_fixed(x) && verbose) {
-    warning(sprintf("Random slopes not present as fixed effects. This artificially inflates the conditional %s.\n  Solution: Respecify fixed structure!", name_full), call. = FALSE)
+    warning(format_message(
+      sprintf("Random slopes not present as fixed effects. This artificially inflates the conditional %s.", name_full),
+      "Solution: Respecify fixed structure!"
+    ), call. = FALSE)
   }
 
   # Separate observation variance from variance of random effects
@@ -137,7 +142,6 @@
 # as list, since we need these information throughout the functions to
 # calculate the variance components...
 #
-#' @importFrom stats model.matrix cov2cor
 .get_variance_information <- function(x, faminfo, name_fun = "get_variances", verbose = TRUE, model_component = "conditional") {
   if (!requireNamespace("lme4", quietly = TRUE)) {
     stop("Package `lme4` needs to be installed to compute variances for mixed models.", call. = FALSE)
@@ -196,7 +200,7 @@
 
     vals <- list(
       beta = lme4::fixef(x),
-      X = stats::model.matrix(x),
+      X = get_modelmatrix(x),
       vc = vcorr,
       re = list(lme4::ranef(x))
     )
@@ -223,7 +227,7 @@
     # nlme
   } else if (inherits(x, "lme")) {
     re_names <- find_random(x, split_nested = TRUE, flatten = TRUE)
-    comp_x <- stats::model.matrix(x, data = get_data(x))
+    comp_x <- get_modelmatrix(x)
     rownames(comp_x) <- 1:nrow(comp_x)
     if (.is_nested_lme(x)) {
       vals_vc <- .get_nested_lme_varcorr(x)
@@ -244,10 +248,9 @@
     # ordinal
   } else if (inherits(x, "clmm")) {
     if (requireNamespace("ordinal", quietly = TRUE)) {
-      f <- find_formula(x)$conditional
-      mm <- stats::model.matrix(f, x$model)
+      mm <- get_modelmatrix(x)
       vals <- list(
-        beta = c("(Intercept)" = 1, stats::coef(x)[intersect(names(coef(x)), colnames(mm))]),
+        beta = c("(Intercept)" = 1, stats::coef(x)[intersect(names(stats::coef(x)), colnames(mm))]),
         X = mm,
         vc = ordinal::VarCorr(x),
         re = ordinal::ranef(x)
@@ -258,17 +261,14 @@
   } else if (inherits(x, "glmmadmb")) {
     vals <- list(
       beta = lme4::fixef(x),
-      X = stats::model.matrix(x),
+      X = get_modelmatrix(x),
       vc = lme4::VarCorr(x),
       re = lme4::ranef(x)
     )
 
     # brms
   } else if (inherits(x, "brmsfit")) {
-    # comp_x <- as.matrix(cbind(`(Intercept)` = 1, get_predictors(x)))
-    formula_rhs <- .safe_deparse(find_formula(x)$conditional[[3]])
-    formula_rhs <- stats::as.formula(paste0("~", formula_rhs))
-    comp_x <- stats::model.matrix(formula_rhs, data = get_data(x))
+    comp_x <- get_modelmatrix(x)
     rownames(comp_x) <- 1:nrow(comp_x)
     vc <- lapply(names(lme4::VarCorr(x)), function(i) {
       element <- lme4::VarCorr(x)[[i]]
@@ -347,7 +347,7 @@
 # helper-function, telling user if family / distribution is supported or not
 .badlink <- function(link, family, verbose = TRUE) {
   if (verbose) {
-    warning(sprintf("Model link '%s' is not yet supported for the %s distribution.", link, family), call. = FALSE)
+    warning(format_message(sprintf("Model link '%s' is not yet supported for the %s distribution.", link, family)), call. = FALSE)
   }
   return(NA)
 }
@@ -383,7 +383,6 @@
 
 # fixed effects variance ----
 
-#' @importFrom stats var
 .compute_variance_fixed <- function(vals) {
   with(vals, stats::var(as.vector(beta %*% t(X))))
 }
@@ -396,7 +395,6 @@
 
 # variance associated with a random-effects term (Johnson 2014) ----
 
-#' @importFrom stats nobs
 .compute_variance_random <- function(terms, x, vals) {
   if (is.null(terms)) {
     return(NULL)
@@ -528,7 +526,6 @@
 # Nakagawa et al. 2017 propose three different methods, here we only rely
 # on the lognormal-approximation.
 #
-#' @importFrom stats family
 .variance_distributional <- function(x, faminfo, sig, name, verbose = TRUE) {
   if (!requireNamespace("lme4", quietly = TRUE)) {
     stop("Package `lme4` needs to be installed to compute variances for mixed models.", call. = FALSE)
@@ -557,13 +554,13 @@
 
   if (is.na(mu)) {
     if (verbose) {
-      warning("Can't calculate model's distribution-specific variance. Results are not reliable.", call. = FALSE)
+      warning(format_message("Can't calculate model's distribution-specific variance. Results are not reliable."), call. = FALSE)
     }
     return(0)
   }
   else if (mu < 6) {
     if (verbose) {
-      warning(sprintf("mu of %0.1f is too close to zero, estimate of %s may be unreliable.", mu, name), call. = FALSE)
+      warning(format_message(sprintf("mu of %0.1f is too close to zero, estimate of %s may be unreliable.", mu, name)), call. = FALSE)
     }
   }
 
@@ -601,13 +598,13 @@
       )
 
       if (vv < 0 && isTRUE(verbose)) {
-        warning("Model's distribution-specific variance is negative. Results are not reliable.", call. = FALSE)
+        warning(format_message("Model's distribution-specific variance is negative. Results are not reliable."), call. = FALSE)
       }
       vv / mu^2
     },
     error = function(x) {
       if (verbose) {
-        warning("Can't calculate model's distribution-specific variance. Results are not reliable.", call. = FALSE)
+        warning(format_message("Can't calculate model's distribution-specific variance. Results are not reliable."), call. = FALSE)
       }
       0
     }
@@ -663,7 +660,6 @@
 
 
 # Get distributional variance for tweedie-family
-#' @importFrom stats plogis
 .variance_family_tweedie <- function(x, mu, phi) {
   p <- unname(stats::plogis(x$fit$par["thetaf"]) + 1)
   phi * mu^p
@@ -695,7 +691,6 @@
 # For zero-inflated negative-binomial models, the distributional variance
 # is based on Zuur et al. 2012
 #
-#' @importFrom stats plogis family predict
 .variance_zinb <- function(model, sig, faminfo, family_var) {
   if (inherits(model, "glmmTMB")) {
     v <- stats::family(model)$variance
@@ -735,7 +730,6 @@
 # For zero-inflated poisson models, the distributional variance
 # is based on Zuur et al. 2012
 #
-#' @importFrom stats plogis family predict
 .variance_zip <- function(model, faminfo, family_var) {
   if (inherits(model, "glmmTMB")) {
     p <- stats::predict(model, type = "zprob")
@@ -836,7 +830,6 @@
 
 
 # random slope-variances (tau 11)
-#' @importFrom stats setNames
 .random_slope_variance <- function(vals, x) {
   if (inherits(x, "lme")) {
     unlist(lapply(vals$vc, function(x) diag(x)[-1]))
@@ -888,8 +881,6 @@
 
 
 # slope-slope-correlations (rho 01)
-#' @importFrom utils combn
-#' @importFrom stats setNames
 .random_slopes_corr <- function(vals, x) {
   corrs <- lapply(vals$vc, attr, "correlation")
   rnd_slopes <- unlist(find_random_slopes(x))

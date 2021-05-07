@@ -4,13 +4,15 @@
 \alias{get_response}
 \title{Get the values from the response variable}
 \usage{
-get_response(x, select = NULL)
+get_response(x, select = NULL, verbose = TRUE)
 }
 \arguments{
 \item{x}{A fitted model.}
 
 \item{select}{Optional name(s) of response variables for which to extract values.
 Can be used in case of regression models with multiple response variables.}
+
+\item{verbose}{Toggle warnings.}
 }
 \value{
 The values of the response variable, as vector, or a data frame if

@@ -21,13 +21,22 @@
 #'    \itemize{
 #'      \item \code{conditional}, the "fixed effects" part from the model
 #'      \item \code{random}, the "random effects" part from the model
-#'      \item \code{zero_inflated}, the "fixed effects" part from the zero-inflation component of the model
-#'      \item \code{zero_inflated_random}, the "random effects" part from the zero-inflation component of the model
-#'      \item \code{simplex}, simplex parameters of monotonic effects (\pkg{brms} only)
+#'      \item \code{zero_inflated}, the "fixed effects" part from the
+#'      zero-inflation component of the model
+#'      \item \code{zero_inflated_random}, the "random effects" part from the
+#'      zero-inflation component of the model
 #'      \item \code{smooth_terms}, the smooth parameters
+#'    }
+#'
+#'    Furthermore, some models, especially from \pkg{brms}, can also return
+#'    auxiliary parameters. These may be one of the following:
+#'    \itemize{
 #'      \item \code{sigma}, the residual standard deviation (auxiliary parameter)
 #'      \item \code{dispersion}, the dispersion parameters (auxiliary parameter)
 #'      \item \code{beta}, the beta parameter (auxiliary parameter)
+#'      \item \code{simplex}, simplex parameters of monotonic effects (\pkg{brms} only)
+#'      \item \code{mix}, mixture parameters (\pkg{brms} only)
+#'      \item \code{shiftprop}, shifted proportion parameters (\pkg{brms} only)
 #'    }
 #'
 #' @examples
@@ -35,7 +44,10 @@
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' find_parameters(m)
 #' @export
-find_parameters.BGGM <- function(x, component = c("correlation", "conditional", "intercept", "all"), flatten = FALSE, ...) {
+find_parameters.BGGM <- function(x,
+                                 component = c("correlation", "conditional", "intercept", "all"),
+                                 flatten = FALSE,
+                                 ...) {
   component <- match.arg(component)
   l <- switch(component,
     "correlation" = list(correlation = colnames(get_parameters(x, component = "correlation"))),
@@ -61,7 +73,11 @@ find_parameters.BGGM <- function(x, component = c("correlation", "conditional", 
 
 #' @rdname find_parameters.BGGM
 #' @export
-find_parameters.BFBayesFactor <- function(x, effects = c("all", "fixed", "random"), component = c("all", "extra"), flatten = FALSE, ...) {
+find_parameters.BFBayesFactor <- function(x,
+                                          effects = c("all", "fixed", "random"),
+                                          component = c("all", "extra"),
+                                          flatten = FALSE,
+                                          ...) {
   conditional <- NULL
   random <- NULL
   extra <- NULL
@@ -83,7 +99,7 @@ find_parameters.BFBayesFactor <- function(x, effects = c("all", "fixed", "random
     ))
 
     params <- colnames(posteriors)
-    vars <- find_variables(x, effects = "all")
+    vars <- find_variables(x, effects = "all", verbose = FALSE)
     interactions <- find_interactions(x)
     dat <- get_data(x)
 
@@ -92,7 +108,7 @@ find_parameters.BFBayesFactor <- function(x, effects = c("all", "fixed", "random
         if (is.factor(dat[[i]])) {
           sprintf("%s-%s", i, levels(dat[[i]]))
         } else {
-          i
+          sprintf("%s-%s", i, i)
         }
       }))
     }
@@ -109,7 +125,7 @@ find_parameters.BFBayesFactor <- function(x, effects = c("all", "fixed", "random
         if (is.factor(dat[[i]])) {
           sprintf("%s-%s", i, levels(dat[[i]]))
         } else {
-          i
+          sprintf("%s-%s", i, i)
         }
       }))
     }
@@ -129,10 +145,12 @@ find_parameters.BFBayesFactor <- function(x, effects = c("all", "fixed", "random
 }
 
 
-
 #' @rdname find_parameters.BGGM
 #' @export
-find_parameters.MCMCglmm <- function(x, effects = c("all", "fixed", "random"), flatten = FALSE, ...) {
+find_parameters.MCMCglmm <- function(x,
+                                     effects = c("all", "fixed", "random"),
+                                     flatten = FALSE,
+                                     ...) {
   sc <- summary(x)
   effects <- match.arg(effects)
 
@@ -141,9 +159,12 @@ find_parameters.MCMCglmm <- function(x, effects = c("all", "fixed", "random"), f
     random = rownames(sc$Gcovariances)
   ))
 
-  .filter_parameters(l, effects = effects, flatten = flatten, recursive = FALSE)
+  .filter_parameters(l,
+    effects = effects,
+    flatten = flatten,
+    recursive = FALSE
+  )
 }
-
 
 
 #' @export
@@ -195,24 +216,46 @@ find_parameters.bamlss <- function(x,
 
 #' @rdname find_parameters.BGGM
 #' @export
-find_parameters.brmsfit <- function(x, effects = c("all", "fixed", "random"), component = c("all", "conditional", "location", "distributional", "auxiliary", "zi", "zero_inflated", "dispersion", "simplex", "sigma", "smooth_terms"), flatten = FALSE, parameters = NULL, ...) {
+find_parameters.brmsfit <- function(x,
+                                    effects = "all",
+                                    component = "all",
+                                    flatten = FALSE,
+                                    parameters = NULL,
+                                    ...) {
+  effects <- match.arg(effects, choices = c("all", "fixed", "random"))
+  component <- match.arg(component, choices = c("all", .all_elements()))
+
   ## TODO remove "optional = FALSE" in a future update?
   fe <- colnames(as.data.frame(x, optional = FALSE))
   is_mv <- NULL
+
+  # remove "Intercept"
+  fe <- fe[!grepl("^Intercept", fe)]
 
   cond <- fe[grepl("^(b_|bs_|bsp_|bcs_)(?!zi_)(.*)", fe, perl = TRUE)]
   zi <- fe[grepl("^(b_zi_|bs_zi_|bsp_zi_|bcs_zi_)", fe, perl = TRUE)]
   rand <- fe[grepl("(?!.*__zi)(?=.*^r_)", fe, perl = TRUE) & !grepl("^prior_", fe, perl = TRUE)]
   randzi <- fe[grepl("^r_(.*__zi)", fe, perl = TRUE)]
-  simo <- fe[grepl("^simo_", fe, perl = TRUE)]
-  smooth_terms <- fe[grepl("^sds_", fe, perl = TRUE)]
-  priors <- fe[grepl("^prior_", fe, perl = TRUE)]
-  sigma <- fe[grepl("^sigma_", fe, perl = TRUE)]
-  beta <- fe[grepl("beta", fe, fixed = TRUE)]
   rand_sd <- fe[grepl("(?!.*_zi)(?=.*^sd_)", fe, perl = TRUE)]
   randzi_sd <- fe[grepl("^sd_(.*_zi)", fe, perl = TRUE)]
   rand_cor <- fe[grepl("(?!.*_zi)(?=.*^cor_)", fe, perl = TRUE)]
   randzi_cor <- fe[grepl("^cor_(.*_zi)", fe, perl = TRUE)]
+  simo <- fe[grepl("^simo_", fe, perl = TRUE)]
+  smooth_terms <- fe[grepl("^sds_", fe, perl = TRUE)]
+  priors <- fe[grepl("^prior_", fe, perl = TRUE)]
+  sigma <- fe[grepl("^sigma_", fe, perl = TRUE) | grepl("sigma", fe, fixed = TRUE)]
+  beta <- fe[grepl("beta", fe, fixed = TRUE)]
+  mix <- fe[grepl("mix", fe, fixed = TRUE)]
+  shiftprop <- fe[grepl("shiftprop", fe, fixed = TRUE)]
+  dispersion <- fe[grepl("dispersion", fe, fixed = TRUE)]
+  auxiliary <- fe[grepl("(shape|precision|_ndt_)", fe)]
+
+  # if auxilliary is modelled directly, we need to remove duplicates here
+  # e.g. "b_sigma..." is in "cond" and in "sigma" now, we just need it in "cond".
+
+  sigma <- setdiff(sigma, c(cond, rand, rand_sd, rand_cor))
+  beta <- setdiff(beta, c(cond, rand, rand_sd, rand_cor))
+  auxiliary <- setdiff(auxiliary, c(cond, rand, rand_sd, rand_cor))
 
   l <- .compact_list(list(
     conditional = cond,
@@ -223,11 +266,13 @@ find_parameters.brmsfit <- function(x, effects = c("all", "fixed", "random"), co
     smooth_terms = smooth_terms,
     sigma = sigma,
     beta = beta,
+    dispersion = dispersion,
+    mix = mix,
+    shiftprop = shiftprop,
+    auxiliary = auxiliary,
     priors = priors
   ))
 
-  effects <- match.arg(effects)
-  component <- match.arg(component)
   elements <- .get_elements(effects = effects, component = component)
   elements <- c(elements, "priors")
 
@@ -280,6 +325,24 @@ find_parameters.brmsfit <- function(x, effects = c("all", "fixed", "random"), co
         beta <- NULL
       }
 
+      if (.obj_has_name(l, "dispersion")) {
+        dispersion <- l$dispersion[grepl(sprintf("^dispersion_\\Q%s\\E$", i), l$dispersion)]
+      } else {
+        dispersion <- NULL
+      }
+
+      if (.obj_has_name(l, "mix")) {
+        mix <- l$mix[grepl(sprintf("^mix_\\Q%s\\E$", i), l$mix)]
+      } else {
+        mix <- NULL
+      }
+
+      if (.obj_has_name(l, "shape") || .obj_has_name(l, "precision")) {
+        aux <- l$aux[grepl(sprintf("^(shape|precision)_\\Q%s\\E$", i), l$aux)]
+      } else {
+        aux <- NULL
+      }
+
       if (.obj_has_name(l, "smooth_terms")) {
         smooth_terms <- l$smooth_terms
       } else {
@@ -301,7 +364,10 @@ find_parameters.brmsfit <- function(x, effects = c("all", "fixed", "random"), co
         smooth_terms = smooth_terms,
         sigma = sigma,
         beta = beta,
-        priors = priors
+        dispersion = dispersion,
+        mix = mix,
+        priors = priors,
+        auxiliary = aux
       ))
 
       .compact_list(pars[elements])
@@ -325,10 +391,13 @@ find_parameters.brmsfit <- function(x, effects = c("all", "fixed", "random"), co
 
 
 
-#' @importFrom stats coef
 #' @rdname find_parameters.BGGM
 #' @export
-find_parameters.bayesx <- function(x, component = c("all", "conditional", "smooth_terms"), flatten = FALSE, parameters = NULL, ...) {
+find_parameters.bayesx <- function(x,
+                                   component = c("all", "conditional", "smooth_terms"),
+                                   flatten = FALSE,
+                                   parameters = NULL,
+                                   ...) {
   cond <- rownames(stats::coef(x))
   smooth_terms <- rownames(x$smooth.hyp)
 
@@ -392,7 +461,10 @@ find_parameters.stanreg <- function(x,
 
 
 #' @export
-find_parameters.bcplm <- function(x, flatten = FALSE, parameters = NULL, ...) {
+find_parameters.bcplm <- function(x,
+                                  flatten = FALSE,
+                                  parameters = NULL,
+                                  ...) {
   l <- .filter_pars(list(conditional = dimnames(x$sims.list[[1]])[[2]]), parameters)
   if (flatten) {
     unique(unlist(l))
@@ -404,7 +476,12 @@ find_parameters.bcplm <- function(x, flatten = FALSE, parameters = NULL, ...) {
 
 
 #' @export
-find_parameters.stanmvreg <- function(x, effects = c("all", "fixed", "random"), component = c("all", "conditional", "sigma"), flatten = FALSE, parameters = NULL, ...) {
+find_parameters.stanmvreg <- function(x,
+                                      effects = c("all", "fixed", "random"),
+                                      component = c("all", "conditional", "sigma"),
+                                      flatten = FALSE,
+                                      parameters = NULL,
+                                      ...) {
   fe <- colnames(as.data.frame(x))
   rn <- names(find_response(x))
 
@@ -480,7 +557,11 @@ find_parameters.stanmvreg <- function(x, effects = c("all", "fixed", "random"), 
 
 #' @rdname find_parameters.BGGM
 #' @export
-find_parameters.sim.merMod <- function(x, effects = c("all", "fixed", "random"), flatten = FALSE, parameters = NULL, ...) {
+find_parameters.sim.merMod <- function(x,
+                                       effects = c("all", "fixed", "random"),
+                                       flatten = FALSE,
+                                       parameters = NULL,
+                                       ...) {
   fe <- colnames(.get_armsim_fixef_parms(x))
   re <- colnames(.get_armsim_ranef_parms(x))
 
@@ -547,7 +628,11 @@ find_parameters.bayesQR <- function(x, flatten = FALSE, parameters = NULL, ...) 
 
 
 #' @export
-find_parameters.stanfit <- function(x, effects = c("all", "fixed", "random"), flatten = FALSE, parameters = NULL, ...) {
+find_parameters.stanfit <- function(x,
+                                    effects = c("all", "fixed", "random"),
+                                    flatten = FALSE,
+                                    parameters = NULL,
+                                    ...) {
   fe <- colnames(as.data.frame(x))
 
   cond <- fe[grepl("^(?!(b\\[|sigma|Sigma|lp__))", fe, perl = TRUE) & .grep_non_smoothers(fe)]

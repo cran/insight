@@ -96,7 +96,6 @@
 #' # different model components.
 #' x
 #' }
-#' @importFrom stats na.omit
 #' @export
 print_parameters <- function(x,
                              ...,
@@ -218,7 +217,7 @@ print_parameters <- function(x,
     # match parameters of pretty names here, and add this attributes
     # to each element here...
     if ("pretty_names" %in% names(att)) {
-      attr(element, "pretty_names") <- setNames(att$pretty_names[element$Parameter], element$Cleaned_Parameter)
+      attr(element, "pretty_names") <- stats::setNames(att$pretty_names[element$Parameter], element$Cleaned_Parameter)
     }
 
     # keep or remove old parameter column?

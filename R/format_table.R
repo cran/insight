@@ -121,8 +121,9 @@ format_table <- function(x,
   x <- .format_p_values(x, stars = stars, p_digits = p_digits)
 
 
-  # Main CI ----
+  # Main CI and Prediction Intervals ----
   x <- .format_main_ci_columns(x, att, ci_digits, ci_width, ci_brackets, zap_small)
+  x <- .format_main_ci_columns(x, att, ci_digits, ci_width, ci_brackets, zap_small, ci_name = "PI")
   x <- .format_broom_ci_columns(x, ci_digits, ci_width, ci_brackets, zap_small)
 
 
@@ -270,7 +271,6 @@ parameters_table <- format_table
 
 
 
-#' @importFrom stats na.omit
 .format_freq_stats <- function(x) {
   for (stats in c("t", "Chi2")) {
     if (stats %in% names(x) && "df" %in% names(x)) {
@@ -314,17 +314,21 @@ parameters_table <- format_table
 
 
 
-#' @importFrom stats na.omit
-.format_main_ci_columns <- function(x, att, ci_digits, ci_width = "auto", ci_brackets = TRUE, zap_small) {
+.format_main_ci_columns <- function(x, att, ci_digits, ci_width = "auto", ci_brackets = TRUE, zap_small, ci_name = "CI") {
   # Main CI
-  ci_low <- names(x)[grep("^CI_low", names(x))]
-  ci_high <- names(x)[grep("^CI_high", names(x))]
+  ci_low <- names(x)[grep(paste0("^", ci_name, "_low"), names(x))]
+  ci_high <- names(x)[grep(paste0("^", ci_name, "_high"), names(x))]
   ci_value <- att[["ci"]]
 
   # CI or SI?
   ci_method <- att[["ci_method"]]
 
   if (!is.null(ci_method) && all(tolower(ci_method) == "si")) {
+
+    # return when we have no CI columns
+    if (length(ci_low) == 0 || length(ci_high) == 0) {
+      return(x)
+    }
 
     # Support Intervals
 
@@ -354,24 +358,24 @@ parameters_table <- format_table
     if (length(ci_low) >= 1 && length(ci_low) == length(ci_high)) {
       if (!is.null(ci_value)) {
         if (length(unique(stats::na.omit(ci_value))) > 1) {
-          ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(ci_value)) * 100)
+          ci_colname <- sprintf("%i%% %s", unique(stats::na.omit(ci_value)) * 100, ci_name)
         } else {
-          ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(ci_value))[1] * 100)
+          ci_colname <- sprintf("%i%% %s", unique(stats::na.omit(ci_value))[1] * 100, ci_name)
         }
         x$CI <- NULL
       } else if (!is.null(x$CI)) {
-        ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(x$CI))[1] * 100)
+        ci_colname <- sprintf("%i%% %s", unique(stats::na.omit(x$CI))[1] * 100, ci_name)
         x$CI <- NULL
       } else {
         # all these edge cases... for some objects in "parameters::model_parameters()",
         # when we have multiple ci-levels, column names can be "CI_low_0.8" or
         # "CI_low_0.95" etc. - this is handled here, if we have no ci-attribute
-        if (grepl("CI_low_(\\d)\\.(\\d)", ci_low) && grepl("CI_high_(\\d)\\.(\\d)", ci_high)) {
-          ci_levels <- as.numeric(gsub("CI_low_(\\d)\\.(\\d)", "\\1.\\2", ci_low))
-          ci_colname <- sprintf("%i%% CI", unique(stats::na.omit(ci_levels)) * 100)
+        if (grepl(paste0(ci_name, "_low_(\\d)\\.(\\d)"), ci_low) && grepl(paste0(ci_name, "_high_(\\d)\\.(\\d)"), ci_high)) {
+          ci_levels <- as.numeric(gsub(paste0(ci_name, "_low_(\\d)\\.(\\d)"), "\\1.\\2", ci_low))
+          ci_colname <- sprintf("%i%% %s", unique(stats::na.omit(ci_levels)) * 100, ci_name)
           x$CI <- NULL
         } else {
-          ci_colname <- "CI"
+          ci_colname <- ci_name
         }
       }
 
@@ -394,7 +398,6 @@ parameters_table <- format_table
 
 
 
-#' @importFrom stats na.omit
 .format_other_ci_columns <- function(x, att, ci_digits, ci_width = "auto", ci_brackets = TRUE, zap_small) {
   other_ci_low <- names(x)[grep("_CI_low$", names(x))]
   other_ci_high <- names(x)[grep("_CI_high$", names(x))]

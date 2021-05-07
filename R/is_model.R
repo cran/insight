@@ -72,17 +72,17 @@ is_regression_model <- function(x) {
     # d --------------------
     "DirichletRegModel", "drc",
     # e --------------------
-    "eglm", "elm", "emmGrid", "emm_list",  "epi.2by2", "ergm",
+    "eglm", "elm", "emmGrid", "emm_list", "epi.2by2", "ergm",
     # f --------------------
     "feglm", "feis", "felm", "fitdistr", "fixest", "flexmix",
     "flexsurvreg",
     # g --------------------
     "gam", "Gam", "GAMBoost", "gamlr", "gamlss", "gamm", "gamm4",
-    "garch", "gbm", "gee", "geeglm", "glht", "glimML", "Glm", "glm",
+    "garch", "gbm", "gee", "geeglm", "gjrm", "glht", "glimML", "Glm", "glm",
     "glmaag", "glmbb", "glmboostLSS", "glmc", "glmdm", "glmdisc",
     "glmerMod", "glmlep", "glmm", "glmmadmb", "glmmEP", "glmmfields",
     "glmmLasso", "glmmPQL", "glmmTMB", "glmnet", "glmrob", "glmRob",
-    "glmx", "gls", "gmnl", "gmm", "gsm",
+    "glmx", "gls", "gmnl", "gmm", "gnls", "gsm",
     # h --------------------
     "heavyLme", "HLfit", "htest", "hurdle",
     # i --------------------
@@ -101,9 +101,9 @@ is_regression_model <- function(x) {
     "mclogit", "mcp1", "mcp2", "mmclogit", "mcmc", "mcmc.list",
     "MCMCglmm", "mediate", "merMod", "merModList", "meta_bma",
     "meta_fixed", "meta_random", "meta_ordered", "metaplus",
-    "mhurdle", "mipo","mira", "mixed", "mixor", "MixMod", "mjoint",
+    "mhurdle", "mipo", "mira", "mixed", "mixor", "MixMod", "mjoint",
     "mle", "mle2", "mlergm", "mlm", "mlma", "mlogit", "model_fit",
-    "multinom", "mvmeta", "mvr",
+    "multinom", "mvmeta", "mvord", "mvr",
     # n --------------------
     "negbin", "negbinmfx", "negbinirr", "nlreg", "nlrq", "nls",
     "nparLD",
@@ -119,9 +119,9 @@ is_regression_model <- function(x) {
     "rjags", "rlm", "rlme", "rlmerMod", "RM", "rma", "rmanovab",
     "rma.uni", "rms", "robmixglm", "robtab", "rq", "rqs", "rqss",
     # s --------------------
-    "sarlm", "scam", "sem", "slm", "speedlm", "speedglm", "splmm",
-    "spml", "stanmvreg", "stanreg", "summary.lm", "survfit", "survreg",
-    "survPresmooth", "svyglm", "svy_vglm", "svyolr",
+    "sarlm", "scam", "selection", "sem", "SemiParBIV", "slm", "speedlm",
+    "speedglm", "splmm", "spml", "stanmvreg", "stanreg", "summary.lm",
+    "survfit", "survreg", "survPresmooth", "svyglm", "svy_vglm", "svyolr",
     # t --------------------
     "t1way", "t2way", "t3way", "test_mediation", "tobit", "trendPMCMR",
     "truncreg",

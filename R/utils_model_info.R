@@ -1,4 +1,4 @@
-.make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, hurdle = FALSE, logit.link = FALSE, multi.var = FALSE, link.fun = "identity", dispersion = FALSE, ...) {
+.make_family <- function(x, fitfam = "gaussian", zero.inf = FALSE, hurdle = FALSE, logit.link = FALSE, multi.var = FALSE, link.fun = "identity", dispersion = FALSE, verbose = TRUE, ...) {
   # create logical for family
 
   # binomial family --------
@@ -6,6 +6,23 @@
   binom_fam <-
     fitfam %in% c("bernoulli", "binomial", "quasibinomial", "binomialff") |
       grepl("\\Qbinomial\\E", fitfam, ignore.case = TRUE)
+
+
+  # bernoulli family --------
+
+  is_bernoulli <- FALSE
+
+  if (binom_fam && inherits(x, "glm")) {
+    resp <- get_response(x, verbose = FALSE)
+    if (is.data.frame(resp) && ncol(resp) == 1) {
+      resp <- as.vector(resp[[1]])
+    }
+    if (!is.data.frame(resp) && all(.is.int(.factor_to_numeric(resp[[1]])))) {
+      is_bernoulli <- TRUE
+    }
+  } else if (fitfam %in% "bernoulli") {
+    is_bernoulli <- TRUE
+  }
 
 
   # poisson family --------
@@ -81,7 +98,7 @@
   # ordinal family --------
 
   is.ordinal <-
-    inherits(x, c("svyolr", "polr", "clm", "clm2", "clmm", "mixor", "LORgee")) |
+    inherits(x, c("svyolr", "polr", "clm", "clm2", "clmm", "mixor", "LORgee", "mvord")) |
       fitfam %in% c("cumulative", "ordinal")
 
 
@@ -89,7 +106,7 @@
 
   is.multinomial <-
     inherits(x, c("gmnl", "mlogit", "DirichletRegModel", "multinom", "brmultinom")) |
-      fitfam %in% c("cratio", "sratio", "acat", "multinomial", "multinomial2", "dirichlet")
+      fitfam %in% c("cratio", "sratio", "acat", "multinom", "multinomial", "multinomial2", "dirichlet")
 
 
   # categorical family --------
@@ -100,7 +117,7 @@
   # special handling of rms --------------
 
   if (inherits(x, c("lrm", "blrm"))) {
-    resp <- get_response(x)
+    resp <- get_response(x, verbose = FALSE)
     if (.n_unique(resp) == 2) {
       binom_fam <- TRUE
     } else {
@@ -169,7 +186,7 @@
     } else {
       model_terms <- tryCatch(
         {
-          find_variables(x, effects = "all", component = "all", flatten = FALSE)
+          find_variables(x, effects = "all", component = "all", flatten = FALSE, verbose = FALSE)
         },
         error = function(x) {
           NULL
@@ -192,7 +209,12 @@
   is_levenetest <- FALSE
 
   if (inherits(x, "htest")) {
-    if (grepl("kruskal-wallis", tolower(x$method), fixed = TRUE) || grepl("wilcoxon", tolower(x$method), fixed = TRUE)) {
+    if (grepl("kruskal-wallis", tolower(x$method), fixed = TRUE) ||
+      grepl("design-based kruskalwallis", tolower(x$method), fixed = TRUE) ||
+      grepl("design-based median", tolower(x$method), fixed = TRUE) ||
+      grepl("design-based vanderwaerden", tolower(x$method), fixed = TRUE) ||
+      grepl("wilcoxon", tolower(x$method), fixed = TRUE) ||
+      grepl("friedman", tolower(x$method), fixed = TRUE)) {
       is_ranktest <- TRUE
     } else if (grepl("t-test", x$method)) {
       is_ttest <- TRUE
@@ -207,7 +229,8 @@
       is_proptest <- TRUE
       fitfam <- "binomial"
     } else if (any(grepl("chi-squared", c(tolower(x$method), tolower(attributes(x$statistic)$names)), fixed = TRUE)) ||
-      grepl("Fisher's Exact Test", x$method, fixed = TRUE)) {
+      grepl("Fisher's Exact Test", x$method, fixed = TRUE) ||
+      grepl("pearson's x^2", tolower(x$method), fixed = TRUE)) {
       is_chi2test <- TRUE
       is_xtab <- TRUE
       fitfam <- "categorical"
@@ -262,7 +285,7 @@
   }
 
   if (inherits(x, "brmsfit") && !is_multivariate(x)) {
-    is_meta <- grepl("(.*)\\|(.*)se\\((.*)\\)", .safe_deparse(find_formula(x)$conditional[[2]]))
+    is_meta <- grepl("(.*)\\|(.*)se\\((.*)\\)", .safe_deparse(find_formula(x, verbose = FALSE)$conditional[[2]]))
   }
 
 
@@ -291,6 +314,7 @@
 
   list(
     is_binomial = binom_fam & !neg_bin_fam,
+    is_bernoulli = is_bernoulli,
     is_count = poisson_fam | neg_bin_fam,
     is_poisson = poisson_fam,
     is_negbin = neg_bin_fam,
@@ -346,7 +370,6 @@
 }
 
 
-#' @importFrom stats gaussian binomial Gamma
 .make_tobit_family <- function(x, dist = NULL) {
   if (is.null(dist)) {
     if (inherits(x, "flexsurvreg")) {

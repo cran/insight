@@ -279,7 +279,7 @@ clean_parameters.blavaan <- function(x, ...) {
   params$Estimate <- NULL
   params$Group <- ""
   params$Function <- ""
-  params$Cleaned_Parameter = params$Parameter
+  params$Cleaned_Parameter <- params$Parameter
   params
 }
 
@@ -418,6 +418,16 @@ clean_parameters.mlm <- function(x, ...) {
       "distributional"
     } else if (grepl("beta", i, fixed = TRUE)) {
       "distributional"
+    } else if (grepl("mix", i, fixed = TRUE)) {
+      "distributional"
+    } else if (grepl("shiftprop", i, fixed = TRUE)) {
+      "distributional"
+    } else if (grepl("shape", i, fixed = TRUE)) {
+      "distributional"
+    } else if (grepl("auxiliary", i, fixed = TRUE)) {
+      "distributional"
+    } else if (grepl("dispersion", i, fixed = TRUE)) {
+      "dispersion"
     } else {
       "conditional"
     }
@@ -617,7 +627,6 @@ clean_parameters.mlm <- function(x, ...) {
 
 
 
-#' @importFrom stats na.omit
 .clean_bfbayesfactor_params <- function(out) {
   pars <- do.call(rbind, strsplit(out$Parameter, "-", TRUE))
 

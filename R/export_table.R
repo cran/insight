@@ -113,6 +113,8 @@ export_table <- function(x,
 
   # single data frame
   if (is.data.frame(x)) {
+
+    # check default attributes for caption, sub-title and footer
     if (!is.null(title)) {
       caption <- title
     }
@@ -126,6 +128,8 @@ export_table <- function(x,
     if (is.null(footer)) {
       footer <- attributes(x)$table_footer
     }
+
+    # convert data frame into specified output format
     out <- .export_table(
       x = x,
       sep = sep,
@@ -144,9 +148,32 @@ export_table <- function(x,
       empty_line = empty_line
     )
   } else if (is.list(x)) {
+
+    # remove empty elements
+    l <- .compact_list(x)
+
     # list of data frames
-    tmp <- lapply(.compact_list(x), function(i) {
+    tmp <- lapply(1:length(l), function(element) {
+      i <- l[[element]]
+
+      # use individual footer for each list element...
+      t_footer <- attributes(i)$table_footer
+
+      # ...unless we have a footer-argument.
+      # Then use this as last (final) footer
+      if (element == length(l) &&
+        is.null(attributes(i)$table_footer) &&
+        !is.null(footer)) {
+        t_footer <- footer
+      }
+
+      # for lists of data frame, each list element may have
+      # an own attribute for the title, to have "subheadings"
+      # for each table
+
       attr_name <- .check_caption_attr_name(i)
+
+      # convert data frame into specified output format
       .export_table(
         x = i,
         sep = sep,
@@ -158,13 +185,15 @@ export_table <- function(x,
         format = format,
         caption = attributes(i)[[attr_name]],
         subtitle = attributes(i)$table_subtitle,
-        footer = attributes(i)$table_footer,
+        footer = t_footer,
         align = align,
         group_by = group_by,
         zap_small = zap_small,
         empty_line = empty_line
       )
     })
+
+    # insert new lines between tables
     out <- c()
     if (format == "text") {
       for (i in 1:length(tmp)) {
@@ -181,6 +210,7 @@ export_table <- function(x,
     return(NULL)
   }
 
+  # add specific knitr-attribute for proper printing inside rmarkdown
   if (format == "markdown") {
     attr(out, "format") <- "pipe"
     class(out) <- c("knitr_kable", "character")
@@ -224,7 +254,10 @@ export_table <- function(x,
   df[is.na(df)] <- as.character(missing)
 
   if (identical(format, "html")) {
+    # html formatting starts here, needs less preparation of table matrix
     out <- .format_html_table(df, caption = caption, subtitle = subtitle, footer = footer, align = align, group_by = group_by)
+
+    # text and markdown go here...
   } else {
     # Add colnames as row
     df <- rbind(colnames(df), df)
@@ -294,6 +327,7 @@ export_table <- function(x,
   rows <- c()
   for (row in 1:nrow(final)) {
     final_row <- paste0(final[row, ], collapse = sep)
+
     # check if we have an empty row
     if (!is.null(empty_line) && all(nchar(trimws(final[row, ])) == 0)) {
       rows <- paste0(rows, paste0(rep_len(empty_line, nchar(final_row)), collapse = ""), sep = "\n")
@@ -309,7 +343,8 @@ export_table <- function(x,
     }
   }
 
-  if (!is.null(caption)) {
+  # if caption is available, add a row with a headline
+  if (!is.null(caption) && caption != "") {
     if (length(caption) == 2 && .is_valid_colour(caption[2])) {
       caption <- .colour(caption[2], caption[1])
     }
@@ -325,6 +360,10 @@ export_table <- function(x,
     title_line <- gsub("  ", " ", title_line, fixed = TRUE)
     rows <- paste0(title_line, "\n\n", rows)
   }
+
+  # if footer is available, add a row with a footer. footers may
+  # also be provided as list of character vectors, so each footer
+  # line can get its own color
 
   if (!is.null(footer)) {
     if (is.list(footer)) {
@@ -471,8 +510,10 @@ export_table <- function(x,
   if (!length(group_by_columns)) {
     group_by_columns <- NULL
   } else {
+
     # remove columns with only 1 unique value - this *should* be safe to
     # remove, but we may check if all printed sub titles look like intended
+
     for (i in group_by_columns) {
       if (.n_unique(final[[i]]) <= 1) {
         final[[i]] <- NULL
