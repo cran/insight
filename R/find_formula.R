@@ -420,10 +420,10 @@ find_formula.betareg <- function(x, verbose = TRUE, ...) {
 
 #' @export
 find_formula.afex_aov <- function(x, verbose = TRUE, ...) {
-  if ("aov" %in% names(x)) {
-    find_formula(x$aov)
+  if (!is.null(x$aov)) {
+    find_formula(x$aov, verbose = verbose, ...)
   } else {
-    find_formula(x$lm)
+    find_formula(x$lm, verbose = verbose, ...)
   }
 }
 
@@ -661,6 +661,9 @@ find_formula.plm <- function(x, verbose = TRUE, ...) {
   .find_formula_return(f, verbose = verbose)
 }
 
+
+#' @export
+find_formula.pgmm <- find_formula.plm
 
 
 #' @export

@@ -289,7 +289,7 @@ model_info.mlm <- function(x, ...) {
 
 #' @export
 model_info.afex_aov <- function(x, verbose = TRUE, ...) {
-  if ("aov" %in% names(x)) {
+  if (!is.null(x$aov)) {
     .make_family(x$aov, verbose = verbose, ...)
   } else {
     .make_family(x$lm, verbose = verbose, ...)
@@ -663,6 +663,10 @@ model_info.mhurdle <- function(x, ...) {
 
 
 # Bayesian Models ---------------------------
+
+
+#' @export
+model_info.stanreg <- model_info.default
 
 
 #' @export
@@ -1068,9 +1072,8 @@ model_info.svy_vglm <- function(x, ...) {
 
 #' @export
 model_info.glmmTMB <- function(x, ...) {
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("To use this function, please install package 'lme4'.")
-  }
+  # installed?
+  check_if_installed("lme4")
 
   faminfo <- stats::family(x)
   .make_family(

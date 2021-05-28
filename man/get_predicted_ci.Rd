@@ -13,8 +13,8 @@ get_predicted_ci(
   vcov_estimation = NULL,
   vcov_type = NULL,
   vcov_args = NULL,
-  dispersion_function = "sd",
-  interval_function = "quantile",
+  dispersion_method = "sd",
+  ci_method = "quantile",
   ...
 )
 }
@@ -63,10 +63,10 @@ for details).}
 passed down to the \pkg{sandwich}-function specified in
 \code{vcov_estimation}.}
 
-\item{dispersion_function, interval_function}{These arguments are only used in
+\item{dispersion_method, ci_method}{These arguments are only used in
 the context of bootstrapped and Bayesian models. Possible values are
-\code{dispersion_function = c("sd", "mad")} and
-\code{interval_function = c("quantile", "hdi", "eti")}. For the latter, the
+\code{dispersion_method = c("sd", "mad")} and
+\code{ci_method = c("quantile", "hdi", "eti")}. For the latter, the
 \pkg{bayestestR} package is required.}
 
 \item{...}{Not used for now.}
@@ -82,13 +82,18 @@ predictions made by a model.
 data(mtcars)
 
 # Linear model
+# ------------
 x <- lm(mpg ~ cyl + hp, data = mtcars)
 predictions <- predict(x)
 ci_vals <- get_predicted_ci(x, predictions, ci_type = "prediction")
 head(ci_vals)
 ci_vals <- get_predicted_ci(x, predictions, ci_type = "confidence")
 head(ci_vals)
+ci_vals <- get_predicted_ci(x, predictions, ci = c(0.8, 0.9, 0.95))
+head(ci_vals)
 
+# Bootstrapped
+# ------------
 predictions <- get_predicted(x, iterations = 500)
 get_predicted_ci(x, predictions)
 
@@ -99,14 +104,15 @@ if (require("bayestestR")) {
 
   ci_vals <- get_predicted_ci(x,
     predictions,
-    dispersion_function = "MAD",
-    interval_function = "HDI"
+    dispersion_method = "MAD",
+    ci_method = "HDI"
   )
   head(ci_vals)
 }
 
 
 # Logistic model
+# --------------
 x <- glm(vs ~ wt, data = mtcars, family = "binomial")
 predictions <- predict(x, type = "link")
 ci_vals <- get_predicted_ci(x, predictions, ci_type = "prediction")

@@ -76,7 +76,10 @@ get_varcov.mlm <- function(x, ...) {
 
 #' @rdname get_varcov
 #' @export
-get_varcov.betareg <- function(x, component = c("conditional", "precision", "all"), verbose = TRUE, ...) {
+get_varcov.betareg <- function(x,
+                               component = c("conditional", "precision", "all"),
+                               verbose = TRUE,
+                               ...) {
   component <- match.arg(component)
 
   vc <- switch(component,
@@ -90,7 +93,10 @@ get_varcov.betareg <- function(x, component = c("conditional", "precision", "all
 
 #' @rdname get_varcov
 #' @export
-get_varcov.DirichletRegModel <- function(x, component = c("conditional", "precision", "all"), verbose = TRUE, ...) {
+get_varcov.DirichletRegModel <- function(x,
+                                         component = c("conditional", "precision", "all"),
+                                         verbose = TRUE,
+                                         ...) {
   component <- match.arg(component)
   if (x$parametrization == "common") {
     vc <- stats::vcov(x)
@@ -148,6 +154,19 @@ get_varcov.clmm2 <- get_varcov.clm2
 get_varcov.glmx <- function(x, component = c("all", "conditional", "extra"), ...) {
   component <- match.arg(component)
   vc <- stats::vcov(object = x)
+
+  if (component != "all") {
+    keep <- match(find_parameters(x)[[component]], rownames(vc))
+    vc <- vc[keep, keep, drop = FALSE]
+  }
+  .process_vcov(vc)
+}
+
+
+#' @export
+get_varcov.pgmm <- function(x, component = c("conditional", "all"), ...) {
+  component <- match.arg(component)
+  vc <- stats::vcov(x)
 
   if (component != "all") {
     keep <- match(find_parameters(x)[[component]], rownames(vc))
@@ -253,7 +272,9 @@ get_varcov.gamlss <- function(x, component = c("conditional", "all"), ...) {
 
 #' @rdname get_varcov
 #' @export
-get_varcov.hurdle <- function(x, component = c("conditional", "zero_inflated", "zi", "all"), ...) {
+get_varcov.hurdle <- function(x,
+                              component = c("conditional", "zero_inflated", "zi", "all"),
+                              ...) {
   component <- match.arg(component)
 
   vc <- switch(component,
@@ -273,12 +294,13 @@ get_varcov.zerocount <- get_varcov.hurdle
 
 #' @rdname get_varcov
 #' @export
-get_varcov.zcpglm <- function(x, component = c("conditional", "zero_inflated", "zi", "all"), ...) {
+get_varcov.zcpglm <- function(x,
+                              component = c("conditional", "zero_inflated", "zi", "all"),
+                              ...) {
   component <- match.arg(component)
 
-  if (!requireNamespace("cplm", quietly = TRUE)) {
-    stop("To use this function, please install package 'cplm'.")
-  }
+  # installed?
+  check_if_installed("cplm")
 
   vc <- cplm::vcov(x)
   tweedie <- which(grepl("^tw_", rownames(vc)))
@@ -295,16 +317,14 @@ get_varcov.zcpglm <- function(x, component = c("conditional", "zero_inflated", "
 
 
 
-
-
-
-
 # Zero-Inflated mixed models ------------------------------------------------
 
 
 #' @rdname get_varcov
 #' @export
-get_varcov.MixMod <- function(x, component = c("conditional", "zero_inflated", "zi", "all"), ...) {
+get_varcov.MixMod <- function(x,
+                              component = c("conditional", "zero_inflated", "zi", "all"),
+                              ...) {
   component <- match.arg(component)
 
   vc <- switch(component,
@@ -319,7 +339,9 @@ get_varcov.MixMod <- function(x, component = c("conditional", "zero_inflated", "
 
 #' @rdname get_varcov
 #' @export
-get_varcov.glmmTMB <- function(x, component = c("conditional", "zero_inflated", "zi", "dispersion", "all"), ...) {
+get_varcov.glmmTMB <- function(x,
+                               component = c("conditional", "zero_inflated", "zi", "dispersion", "all"),
+                               ...) {
   component <- match.arg(component)
 
   vc <- switch(component,
@@ -331,9 +353,6 @@ get_varcov.glmmTMB <- function(x, component = c("conditional", "zero_inflated", 
   )
   .process_vcov(vc)
 }
-
-
-
 
 
 
@@ -352,16 +371,14 @@ get_varcov.brmsfit <- function(x, component = "conditional", ...) {
 }
 
 
-
-
-
-
 # mfx models -------------------------------------------------------
 
 
 #' @rdname get_varcov
 #' @export
-get_varcov.betamfx <- function(x, component = c("conditional", "precision", "all"), ...) {
+get_varcov.betamfx <- function(x,
+                               component = c("conditional", "precision", "all"),
+                               ...) {
   component <- match.arg(component)
   get_varcov.betareg(x$fit, component = component, ...)
 }
@@ -394,10 +411,6 @@ get_varcov.negbinirr <- get_varcov.logitmfx
 
 #' @export
 get_varcov.model_fit <- get_varcov.logitmfx
-
-
-
-
 
 
 # Other models with special handling -----------------------------------------
@@ -524,11 +537,7 @@ get_varcov.flexsurvreg <- function(x, ...) {
 
 #' @export
 get_varcov.afex_aov <- function(x, ...) {
-  if ("lm" %in% names(x)) {
-    get_varcov(x$lm)
-  } else {
-    NULL
-  }
+  get_varcov(x$lm, ...)
 }
 
 
@@ -652,19 +661,19 @@ get_varcov.feis <- function(x, ...) {
 
 #' @export
 get_varcov.glimML <- function(x, ...) {
-  if (!requireNamespace("aod", quietly = TRUE)) {
-    stop("Package 'aod' required for this function to work. Please install it.")
-  }
+  # installed?
+  check_if_installed("aod")
+
   vc <- aod::vcov(x)
+
   .process_vcov(vc)
 }
 
 
 #' @export
 get_varcov.vglm <- function(x, ...) {
-  if (!requireNamespace("VGAM", quietly = TRUE)) {
-    stop("Package 'VGAM' required for this function to work. Please install it.")
-  }
+  # installed?
+  check_if_installed("VGAM")
   vc <- VGAM::vcov(x)
   .process_vcov(vc)
 }
@@ -717,10 +726,6 @@ get_varcov.gee <- function(x, ...) {
 
 #' @export
 get_varcov.LORgee <- get_varcov.gee
-
-
-
-
 
 
 

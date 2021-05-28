@@ -3,12 +3,13 @@
 #' @export
 print.get_predicted <- function(x, ...) {
   print_colour("Predicted values:\n\n", "blue")
-  print(as.numeric(x))
+  if(is.null(ncol(x))) {
+    print.default(as.numeric(x))
+  } else {
+    print.data.frame(x)
+  }
   print_colour("\nNOTE: Confidence intervals, if available, are stored as attributes and can be acccessed using `as.data.frame()` on this output.", "yellow")
 }
-
-
-
 
 
 
@@ -31,20 +32,23 @@ print.get_predicted <- function(x, ...) {
 
 
 
-
-
 # As data frame -----------------------------------------------------------
-
-
 
 #' @export
 as.data.frame.get_predicted <- function(x, ..., keep_iterations = TRUE) {
-  out <- data.frame("Predicted" = as.numeric(x))
-  if ("ci_data" %in% names(attributes(x))) {
-    out <- cbind(out, attributes(x)$ci_data)
-  }
-  if ("iterations" %in% names(attributes(x)) && keep_iterations == TRUE) {
-    out <- cbind(out, attributes(x)$iterations)
+  if(inherits(x, "data.frame") && !"iterations" %in% names(attributes(x))) {
+    # Then it must be a regular data.frame (e.g., from PCA/FA)
+    out <- as.data.frame.data.frame(x)
+
+  } else {
+    # Then it must be predictions from a regression model
+    out <- data.frame("Predicted" = as.numeric(x))
+    if ("ci_data" %in% names(attributes(x))) {
+      out <- cbind(out, attributes(x)$ci_data)
+    }
+    if ("iterations" %in% names(attributes(x)) && keep_iterations == TRUE) {
+      out <- cbind(out, attributes(x)$iterations)
+    }
   }
 
   out
@@ -56,8 +60,6 @@ as.data.frame.get_predicted <- function(x, ..., keep_iterations = TRUE) {
 summary.get_predicted <- function(object, ...) {
   as.data.frame(object, keep_iterations = FALSE, ...)
 }
-
-
 
 
 

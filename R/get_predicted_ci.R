@@ -36,10 +36,10 @@
 #' @param vcov_args List of named vectors, used as additional arguments that are
 #'   passed down to the \pkg{sandwich}-function specified in
 #'   \code{vcov_estimation}.
-#' @param dispersion_function,interval_function These arguments are only used in
+#' @param dispersion_method,ci_method These arguments are only used in
 #'   the context of bootstrapped and Bayesian models. Possible values are
-#'   \code{dispersion_function = c("sd", "mad")} and
-#'   \code{interval_function = c("quantile", "hdi", "eti")}. For the latter, the
+#'   \code{dispersion_method = c("sd", "mad")} and
+#'   \code{ci_method = c("quantile", "hdi", "eti")}. For the latter, the
 #'   \pkg{bayestestR} package is required.
 #' @param ... Not used for now.
 #'
@@ -51,13 +51,18 @@
 #' data(mtcars)
 #'
 #' # Linear model
+#' # ------------
 #' x <- lm(mpg ~ cyl + hp, data = mtcars)
 #' predictions <- predict(x)
 #' ci_vals <- get_predicted_ci(x, predictions, ci_type = "prediction")
 #' head(ci_vals)
 #' ci_vals <- get_predicted_ci(x, predictions, ci_type = "confidence")
 #' head(ci_vals)
+#' ci_vals <- get_predicted_ci(x, predictions, ci = c(0.8, 0.9, 0.95))
+#' head(ci_vals)
 #'
+#' # Bootstrapped
+#' # ------------
 #' predictions <- get_predicted(x, iterations = 500)
 #' get_predicted_ci(x, predictions)
 #'
@@ -68,14 +73,15 @@
 #'
 #'   ci_vals <- get_predicted_ci(x,
 #'     predictions,
-#'     dispersion_function = "MAD",
-#'     interval_function = "HDI"
+#'     dispersion_method = "MAD",
+#'     ci_method = "HDI"
 #'   )
 #'   head(ci_vals)
 #' }
 #'
 #'
 #' # Logistic model
+#' # --------------
 #' x <- glm(vs ~ wt, data = mtcars, family = "binomial")
 #' predictions <- predict(x, type = "link")
 #' ci_vals <- get_predicted_ci(x, predictions, ci_type = "prediction")
@@ -91,27 +97,48 @@ get_predicted_ci <- function(x,
                              vcov_estimation = NULL,
                              vcov_type = NULL,
                              vcov_args = NULL,
-                             dispersion_function = "sd",
-                             interval_function = "quantile",
+                             dispersion_method = "sd",
+                             ci_method = "quantile",
                              ...) {
 
-  # If draws are present
+  # If draws are present (bootstrapped or Bayesian)
   if ("iterations" %in% names(attributes(predictions))) {
     iter <- attributes(predictions)$iteration
 
-    se <- .get_predicted_se_from_iter(iter = iter, dispersion_function)
-    out <- .get_predicted_interval_from_iter(iter = iter, ci = ci, interval_function)
+    se <- .get_predicted_se_from_iter(iter = iter, dispersion_method)
+    out <- .get_predicted_ci_from_iter(iter = iter, ci = ci, ci_method)
 
     return(cbind(se, out))
   }
 
   # Analytical solution
+  # 1. Find appropriate interval function
   if (ci_type == "confidence" || get_family(x)$family %in% c("gaussian")) { # gaussian or CI
-    se <- .get_predicted_ci_se(x, predictions, data = data, ci_type = ci_type, vcov_estimation = vcov_estimation, vcov_type = vcov_type, vcov_args = vcov_args)
-    return(.get_predicted_se_to_ci(x, predictions, se = se, ci = ci))
+    se <- get_predicted_se(x, predictions, data = data, ci_type = ci_type, vcov_estimation = vcov_estimation, vcov_type = vcov_type, vcov_args = vcov_args)
+    ci_function <- .get_predicted_se_to_ci
   } else {
-    return(.get_predicted_pi_glm(x, predictions, ci = ci))
+    se <- rep(NA, length(predictions))
+    ci_function <- .get_predicted_pi_glm
   }
+
+  # 2. Run it once or multiple times if multiple CI levels are requested
+  if(is.null(ci)) {
+    out <- data.frame(SE = se)
+
+  } else if(length(ci) == 1) {
+    out <- ci_function(x, predictions, ci = ci, se = se)
+
+  } else {
+    out <- data.frame(SE = se)
+    for(ci_val in ci) {
+      temp <- ci_function(x, predictions, ci = ci_val, se = se)
+      temp$SE <- NULL
+      names(temp) <- paste0(names(temp), "_", ci_val)
+      out <- cbind(out, temp)
+    }
+  }
+
+  out
 }
 
 
@@ -132,15 +159,13 @@ get_predicted_ci <- function(x,
       vcov_type <- "CR0"
     }
     if (!is.null(vcov_type) && vcov_type %in% c("CR0", "CR1", "CR1p", "CR1S", "CR2", "CR3")) {
-      if (!requireNamespace("clubSandwich", quietly = TRUE)) {
-        stop("Package `clubSandwich` needed for this function. Please install and try again.")
-      }
+      # installed?
+      check_if_installed("clubSandwich")
       robust_package <- "clubSandwich"
       vcov_estimation <- "vcovCR"
     } else {
-      if (!requireNamespace("sandwich", quietly = TRUE)) {
-        stop("Package `sandwich` needed for this function. Please install and try again.")
-      }
+      # installed?
+      check_if_installed("sandwich")
       robust_package <- "sandwich"
     }
     # compute robust standard errors based on vcov
@@ -224,7 +249,7 @@ get_predicted_ci <- function(x,
 
 
 
-.get_predicted_ci_se <- function(x, predictions = NULL, data = NULL, ci_type = "confidence", vcov_estimation = NULL, vcov_type = NULL, vcov_args = NULL) {
+get_predicted_se <- function(x, predictions = NULL, data = NULL, ci_type = "confidence", vcov_estimation = NULL, vcov_type = NULL, vcov_args = NULL) {
 
   # Matrix-multiply X by the parameter vector B to get the predictions, then
   # extract the variance-covariance matrix V of the parameters and compute XVX'
@@ -259,7 +284,7 @@ get_predicted_ci <- function(x,
 
 
 
-.get_predicted_se_to_ci <- function(x, predictions = NULL, se = NULL, ci = 0.95) {
+.get_predicted_se_to_ci <- function(x, predictions = NULL, se = NULL, ci = 0.95, ...) {
 
   # TODO: Prediction interval for binomial: https://fromthebottomoftheheap.net/2017/05/01/glm-prediction-intervals-i/
   # TODO: Prediction interval for poisson: https://fromthebottomoftheheap.net/2017/05/01/glm-prediction-intervals-ii/
@@ -311,7 +336,7 @@ get_predicted_ci <- function(x,
 
 # Get PI ------------------------------------------------------------------
 
-.get_predicted_pi_glm <- function(x, predictions, ci = 0.95) {
+.get_predicted_pi_glm <- function(x, predictions, ci = 0.95, ...) {
   info <- model_info(x)
   linkfun <- link_function(x)
   linkinv <- link_inverse(x)
@@ -337,32 +362,32 @@ get_predicted_ci <- function(x,
 
 # Interval helpers --------------------------------------------------------
 
-.get_predicted_se_from_iter <- function(iter, dispersion_function = "SD") {
+.get_predicted_se_from_iter <- function(iter, dispersion_method = "SD") {
   data <- as.data.frame(t(iter)) # Reshape
 
   # Dispersion
-  if (is.character(dispersion_function)) {
-    dispersion_function <- match.arg(tolower(dispersion_function), c("sd", "mad"))
-    if (dispersion_function == "sd") {
+  if (is.character(dispersion_method)) {
+    dispersion_method <- match.arg(tolower(dispersion_method), c("sd", "mad"))
+    if (dispersion_method == "sd") {
       se <- apply(data, 2, stats::sd)
-    } else if (dispersion_function == "mad") {
+    } else if (dispersion_method == "mad") {
       se <- apply(data, 2, stats::mad)
     } else {
-      stop("`dispersion_function` argument not recognized.")
+      stop("`dispersion_method` argument not recognized.")
     }
   } else {
-    se <- apply(data, 2, dispersion_function)
+    se <- apply(data, 2, dispersion_method)
   }
-  data.frame(SE = se)
+  data.frame(SE = se, row.names = 1:length(se))
 }
 
 
 
-.get_predicted_interval_from_iter <- function(iter, ci = 0.95, interval_function = "quantile") {
+.get_predicted_ci_from_iter <- function(iter, ci = 0.95, ci_method = "quantile") {
 
   # Interval
-  interval_function <- match.arg(tolower(interval_function), c("quantile", "hdi", "eti"))
-  if (interval_function == "quantile") {
+  ci_method <- match.arg(tolower(ci_method), c("quantile", "hdi", "eti"))
+  if (ci_method == "quantile") {
     out <- data.frame(Parameter = 1:nrow(iter))
     for (i in ci) {
       temp <- data.frame(
@@ -374,10 +399,9 @@ get_predicted_ci <- function(x,
     }
     if (length(ci) == 1) names(out) <- c("Parameter", "CI_low", "CI_high")
   } else {
-    if (!requireNamespace("bayestestR", quietly = TRUE)) {
-      stop("Package `bayestestR` needed for this function. Please install and try again.")
-    }
-    out <- as.data.frame(bayestestR::ci(as.data.frame(t(iter)), ci = ci, method = interval_function))
+    # installed?
+    check_if_installed("bayestestR")
+    out <- as.data.frame(bayestestR::ci(as.data.frame(t(iter)), ci = ci, method = ci_method))
     if (length(ci) > 1) out <- reshape_ci(out)
   }
   out$Parameter <- out$CI <- NULL

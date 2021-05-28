@@ -285,9 +285,8 @@ get_parameters.mipo <- function(x, ...) {
 
 #' @export
 get_parameters.mira <- function(x, ...) {
-  if (!requireNamespace("mice", quietly = TRUE)) {
-    stop("Package `mice` required. Please install it.", call. = FALSE)
-  }
+  # installed?
+  check_if_installed("mice")
   get_parameters(mice::pool(x), ...)
 }
 
@@ -332,9 +331,8 @@ get_parameters.glht <- function(x, ...) {
 
 #' @export
 get_parameters.mle2 <- function(x, ...) {
-  if (!requireNamespace("bbmle", quietly = TRUE)) {
-    stop("Package `bbmle` needs to be installed to extract parameters.", call. = FALSE)
-  }
+  # installed?
+  check_if_installed("bbmle")
   s <- bbmle::summary(x)
 
   params <- data.frame(
@@ -539,13 +537,9 @@ get_parameters.metaplus <- function(x, ...) {
 
 #' @export
 get_parameters.blavaan <- function(x, summary = FALSE, centrality = "mean", ...) {
-  if (!requireNamespace("lavaan", quietly = TRUE)) {
-    stop("Package 'lavaan' required for this function to work. Please install it.")
-  }
-
-  if (!requireNamespace("blavaan", quietly = TRUE)) {
-    stop("Package 'blavaan' required for this function to work. Please install it.")
-  }
+  # installed?
+  check_if_installed("lavaan")
+  check_if_installed("blavaan")
 
   draws <- blavaan::blavInspect(x, "draws")
   posteriors <- as.data.frame(as.matrix(draws))
@@ -590,9 +584,8 @@ get_parameters.blavaan <- function(x, summary = FALSE, centrality = "mean", ...)
 
 #' @export
 get_parameters.lavaan <- function(x, ...) {
-  if (!requireNamespace("lavaan", quietly = TRUE)) {
-    stop("Package 'lavaan' required for this function to work. Please install it.")
-  }
+  # installed?
+  check_if_installed("lavaan")
 
   params <- lavaan::parameterEstimates(x)
 
@@ -717,7 +710,7 @@ get_parameters.maov <- get_parameters.manova
 
 #' @export
 get_parameters.afex_aov <- function(x, ...) {
-  if ("aov" %in% names(x)) {
+  if (!is.null(x$aov)) {
     get_parameters(x$aov, ...)
   } else {
     get_parameters(x$lm, ...)
@@ -725,7 +718,26 @@ get_parameters.afex_aov <- function(x, ...) {
 }
 
 
+#' @export
+get_parameters.pgmm <- function(x, component = c("conditional", "all"), ...) {
+  s <- summary(x, time.dummies = TRUE)
+  params <- data.frame(
+    Parameter = rownames(s$coefficients),
+    Estimate = unname(s$coefficients),
+    Component = "conditional",
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
 
+  params$Component[params$Parameter %in% x$args$namest] <- "time_dummies"
+
+  if (component == "conditional") {
+    params <- params[params$Component == "conditional", ]
+    params <- .remove_column(params, "Component")
+  }
+
+  .remove_backticks_from_parameter_names(params)
+}
 
 
 

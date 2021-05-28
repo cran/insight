@@ -936,6 +936,32 @@ get_statistic.negbinirr <- get_statistic.logitor
 
 
 #' @export
+get_statistic.pgmm <- function(x, component = c("conditional", "all"), verbose = TRUE, ...) {
+  component <- match.arg(component)
+  cs <- stats::coef(summary(x, time.dummies = TRUE))
+
+  out <- data.frame(
+    Parameter = row.names(cs),
+    Statistic = as.vector(cs[, 3]),
+    Component = "conditional",
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  out$Component[out$Parameter %in% x$args$namest] <- "time_dummies"
+
+  if (component == "conditional") {
+    out <- out[out$Component == "conditional", ]
+    out <- .remove_column(out, "Component")
+  }
+
+  out <- .remove_backticks_from_parameter_names(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
 get_statistic.selection <- function(x, component = c("all", "selection", "outcome", "auxiliary"), ...) {
   component <- match.arg(component)
   s <- summary(x)
@@ -963,9 +989,8 @@ get_statistic.selection <- function(x, component = c("all", "selection", "outcom
 
 #' @export
 get_statistic.lavaan <- function(x, ...) {
-  if (!requireNamespace("lavaan", quietly = TRUE)) {
-    stop("Package 'lavaan' required for this function to work. Please install it.")
-  }
+  # installed?
+  check_if_installed("lavaan")
 
   params <- lavaan::parameterEstimates(x)
 
@@ -1484,9 +1509,8 @@ get_statistic.wbgee <- get_statistic.wbm
 
 #' @export
 get_statistic.cpglmm <- function(x, ...) {
-  if (!requireNamespace("cplm", quietly = TRUE)) {
-    stop("To use this function, please install package 'cplm'.")
-  }
+  # installed?
+  check_if_installed("cplm")
 
   stats <- cplm::summary(x)$coefs
   params <- get_parameters(x)
@@ -1530,9 +1554,8 @@ get_statistic.sem <- function(x, ...) {
 
 #' @export
 get_statistic.cpglm <- function(x, ...) {
-  if (!requireNamespace("cplm", quietly = TRUE)) {
-    stop("To use this function, please install package 'cplm'.")
-  }
+  # installed?
+  check_if_installed("cplm")
 
   junk <- utils::capture.output(stats <- cplm::summary(x)$coefficients)
   params <- get_parameters(x)
@@ -1552,9 +1575,8 @@ get_statistic.cpglm <- function(x, ...) {
 
 #' @export
 get_statistic.zcpglm <- function(x, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
-  if (!requireNamespace("cplm", quietly = TRUE)) {
-    stop("To use this function, please install package 'cplm'.")
-  }
+  # installed?
+  check_if_installed("cplm")
 
   component <- match.arg(component)
   junk <- utils::capture.output(stats <- cplm::summary(x)$coefficients)
@@ -2061,9 +2083,8 @@ get_statistic.DirichletRegModel <- function(x, component = c("all", "conditional
 
 #' @export
 get_statistic.glimML <- function(x, ...) {
-  if (!requireNamespace("aod", quietly = TRUE)) {
-    stop("Package 'aod' required for this function to work. Please install it.")
-  }
+  # installed?
+  check_if_installed("aod")
 
   parms <- get_parameters(x)
   s <- methods::slot(aod::summary(x), "Coef")

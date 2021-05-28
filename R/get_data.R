@@ -502,8 +502,16 @@ get_data.mixed <- function(x, effects = c("all", "fixed", "random"), ...) {
 
 
 #' @export
-get_data.afex_aov <- function(x, ...) {
-  .get_data_from_modelframe(x, x$data$long, "all")
+#' @rdname get_data
+#' @param shape Return long or wide data? Only applicable in repeated measures
+#'   designs.
+get_data.afex_aov <- function(x, shape = c("long", "wide"), ...) {
+  if (!length(attr(x, "within"))) {
+    shape <- "long"
+  } else {
+    shape <- match.arg(shape)
+  }
+  x$data[[shape]]
 }
 
 
@@ -754,6 +762,21 @@ get_data.fixest <- function(x, ...) {
 get_data.feglm <- function(x, ...) {
   mf <- as.data.frame(x$data)
   .get_data_from_modelframe(x, mf, effects = "all")
+}
+
+
+#' @export
+get_data.pgmm <- function(x, verbose = TRUE, ...) {
+  model_terms <- find_variables(x, effects = "all", component = "all", flatten = TRUE)
+  mf <- tryCatch(
+    {
+      .get_data_from_env(x)[, model_terms, drop = FALSE]
+    },
+    error = function(x) {
+      NULL
+    }
+  )
+  .prepare_get_data(x, mf, verbose = verbose)
 }
 
 

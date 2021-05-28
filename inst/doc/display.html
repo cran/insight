@@ -14,35 +14,7 @@
 
 <title>Formatting, printing and exporting tables</title>
 
-<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
-// be compatible with the behavior of Pandoc < 2.8).
-document.addEventListener('DOMContentLoaded', function(e) {
-  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
-  var i, h, a;
-  for (i = 0; i < hs.length; i++) {
-    h = hs[i];
-    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
-    a = h.attributes;
-    while (a.length > 0) h.removeAttribute(a[0].name);
-  }
-});
-</script>
-<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
-// v0.0.1
-// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
-
-document.addEventListener('DOMContentLoaded', function() {
-  const codeList = document.getElementsByClassName("sourceCode");
-  for (var i = 0; i < codeList.length; i++) {
-    var linkList = codeList[i].getElementsByTagName('a');
-    for (var j = 0; j < linkList.length; j++) {
-      if (linkList[j].innerHTML === "") {
-        linkList[j].setAttribute('aria-hidden', 'true');
-      }
-    }
-  }
-});
-</script>
+<script src="data:application/javascript;base64,Ly8gUGFuZG9jIDIuOSBhZGRzIGF0dHJpYnV0ZXMgb24gYm90aCBoZWFkZXIgYW5kIGRpdi4gV2UgcmVtb3ZlIHRoZSBmb3JtZXIgKHRvCi8vIGJlIGNvbXBhdGlibGUgd2l0aCB0aGUgYmVoYXZpb3Igb2YgUGFuZG9jIDwgMi44KS4KZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKGUpIHsKICB2YXIgaHMgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCJkaXYuc2VjdGlvbltjbGFzcyo9J2xldmVsJ10gPiA6Zmlyc3QtY2hpbGQiKTsKICB2YXIgaSwgaCwgYTsKICBmb3IgKGkgPSAwOyBpIDwgaHMubGVuZ3RoOyBpKyspIHsKICAgIGggPSBoc1tpXTsKICAgIGlmICghL15oWzEtNl0kL2kudGVzdChoLnRhZ05hbWUpKSBjb250aW51ZTsgIC8vIGl0IHNob3VsZCBiZSBhIGhlYWRlciBoMS1oNgogICAgYSA9IGguYXR0cmlidXRlczsKICAgIHdoaWxlIChhLmxlbmd0aCA+IDApIGgucmVtb3ZlQXR0cmlidXRlKGFbMF0ubmFtZSk7CiAgfQp9KTsK"></script>
 
 <style type="text/css">
   code{white-space: pre-wrap;}
@@ -66,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
@@ -152,187 +125,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 
 
-<style type="text/css">body {
-background-color: #fff;
-margin: 1em auto;
-max-width: 700px;
-overflow: visible;
-padding-left: 2em;
-padding-right: 2em;
-font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-font-size: 14px;
-line-height: 1.35;
-}
-#TOC {
-clear: both;
-margin: 0 0 10px 10px;
-padding: 4px;
-width: 400px;
-border: 1px solid #CCCCCC;
-border-radius: 5px;
-background-color: #f6f6f6;
-font-size: 13px;
-line-height: 1.3;
-}
-#TOC .toctitle {
-font-weight: bold;
-font-size: 15px;
-margin-left: 5px;
-}
-#TOC ul {
-padding-left: 40px;
-margin-left: -1.5em;
-margin-top: 5px;
-margin-bottom: 5px;
-}
-#TOC ul ul {
-margin-left: -2em;
-}
-#TOC li {
-line-height: 16px;
-}
-table {
-margin: 1em auto;
-border-width: 1px;
-border-color: #DDDDDD;
-border-style: outset;
-border-collapse: collapse;
-}
-table th {
-border-width: 2px;
-padding: 5px;
-border-style: inset;
-}
-table td {
-border-width: 1px;
-border-style: inset;
-line-height: 18px;
-padding: 5px 5px;
-}
-table, table th, table td {
-border-left-style: none;
-border-right-style: none;
-}
-table thead, table tr.even {
-background-color: #f7f7f7;
-}
-p {
-margin: 0.5em 0;
-}
-blockquote {
-background-color: #f6f6f6;
-padding: 0.25em 0.75em;
-}
-hr {
-border-style: solid;
-border: none;
-border-top: 1px solid #777;
-margin: 28px 0;
-}
-dl {
-margin-left: 0;
-}
-dl dd {
-margin-bottom: 13px;
-margin-left: 13px;
-}
-dl dt {
-font-weight: bold;
-}
-ul {
-margin-top: 0;
-}
-ul li {
-list-style: circle outside;
-}
-ul ul {
-margin-bottom: 0;
-}
-pre, code {
-background-color: #f7f7f7;
-border-radius: 3px;
-color: #333;
-white-space: pre-wrap; 
-}
-pre {
-border-radius: 3px;
-margin: 5px 0px 10px 0px;
-padding: 10px;
-}
-pre:not([class]) {
-background-color: #f7f7f7;
-}
-code {
-font-family: Consolas, Monaco, 'Courier New', monospace;
-font-size: 85%;
-}
-p > code, li > code {
-padding: 2px 0px;
-}
-div.figure {
-text-align: center;
-}
-img {
-background-color: #FFFFFF;
-padding: 2px;
-border: 1px solid #DDDDDD;
-border-radius: 3px;
-border: 1px solid #CCCCCC;
-margin: 0 5px;
-}
-h1 {
-margin-top: 0;
-font-size: 35px;
-line-height: 40px;
-}
-h2 {
-border-bottom: 4px solid #f7f7f7;
-padding-top: 10px;
-padding-bottom: 2px;
-font-size: 145%;
-}
-h3 {
-border-bottom: 2px solid #f7f7f7;
-padding-top: 10px;
-font-size: 120%;
-}
-h4 {
-border-bottom: 1px solid #f7f7f7;
-margin-left: 8px;
-font-size: 105%;
-}
-h5, h6 {
-border-bottom: 1px solid #ccc;
-font-size: 105%;
-}
-a {
-color: #0033dd;
-text-decoration: none;
-}
-a:hover {
-color: #6666ff; }
-a:visited {
-color: #800080; }
-a:visited:hover {
-color: #BB00BB; }
-a[href^="http:"] {
-text-decoration: underline; }
-a[href^="https:"] {
-text-decoration: underline; }
-
-code > span.kw { color: #555; font-weight: bold; } 
-code > span.dt { color: #902000; } 
-code > span.dv { color: #40a070; } 
-code > span.bn { color: #d14; } 
-code > span.fl { color: #d14; } 
-code > span.ch { color: #d14; } 
-code > span.st { color: #d14; } 
-code > span.co { color: #888888; font-style: italic; } 
-code > span.ot { color: #007020; } 
-code > span.al { color: #ff0000; font-weight: bold; } 
-code > span.fu { color: #900; font-weight: bold; } 
-code > span.er { color: #a61717; background-color: #e3d2d2; } 
-</style>
+<link rel="stylesheet" href="data:text/css,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" type="text/css" />
 
 
 
@@ -351,27 +144,27 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <div id="the-difference-between-a-dataframe-and-its-render" class="section level2">
 <h2>The difference between a dataframe and its render</h2>
 <p>Most of objects encountered throughout the <strong>easystats</strong> packages are “tables”, i.e., a 2D matrix with columns and rows. In R, these objects are often, at their core, <em>data frames</em>. Let’s create one to use as an example:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(insight)</span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">library</span>(dplyr)</span>
-<span id="cb1-3"><a href="#cb1-3"></a></span>
-<span id="cb1-4"><a href="#cb1-4"></a>df &lt;-<span class="st"> </span><span class="kw">data.frame</span>(</span>
-<span id="cb1-5"><a href="#cb1-5"></a>  <span class="dt">Variable =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">5</span>, <span class="dv">3</span>, <span class="dv">1</span>),</span>
-<span id="cb1-6"><a href="#cb1-6"></a>  <span class="dt">Group =</span> <span class="kw">c</span>(<span class="st">&quot;A&quot;</span>, <span class="st">&quot;A&quot;</span>, <span class="st">&quot;A&quot;</span>, <span class="st">&quot;B&quot;</span>, <span class="st">&quot;B&quot;</span>),</span>
-<span id="cb1-7"><a href="#cb1-7"></a>  <span class="dt">CI =</span> <span class="kw">c</span>(<span class="fl">0.95</span>, <span class="fl">0.95</span>, <span class="fl">0.95</span>, <span class="fl">0.95</span>, <span class="fl">0.95</span>),</span>
-<span id="cb1-8"><a href="#cb1-8"></a>  <span class="dt">CI_low =</span> <span class="kw">c</span>(<span class="fl">3.35</span>, <span class="fl">2.425</span>, <span class="fl">6.213</span>, <span class="fl">12.1</span>, <span class="fl">1.23</span>),</span>
-<span id="cb1-9"><a href="#cb1-9"></a>  <span class="dt">CI_high =</span> <span class="kw">c</span>(<span class="fl">4.23</span>, <span class="fl">5.31</span>, <span class="fl">7.123</span>, <span class="fl">13.5</span>, <span class="fl">3.61</span>),</span>
-<span id="cb1-10"><a href="#cb1-10"></a>  <span class="dt">p =</span> <span class="kw">c</span>(<span class="fl">0.001</span>, <span class="fl">0.0456</span>, <span class="fl">0.45</span>, <span class="fl">0.0042</span>, <span class="fl">0.34</span>)</span>
-<span id="cb1-11"><a href="#cb1-11"></a>)</span>
-<span id="cb1-12"><a href="#cb1-12"></a></span>
-<span id="cb1-13"><a href="#cb1-13"></a>df</span>
-<span id="cb1-14"><a href="#cb1-14"></a><span class="co">#&gt;   Variable Group   CI CI_low CI_high      p</span></span>
-<span id="cb1-15"><a href="#cb1-15"></a><span class="co">#&gt; 1        1     A 0.95  3.350   4.230 0.0010</span></span>
-<span id="cb1-16"><a href="#cb1-16"></a><span class="co">#&gt; 2        3     A 0.95  2.425   5.310 0.0456</span></span>
-<span id="cb1-17"><a href="#cb1-17"></a><span class="co">#&gt; 3        5     A 0.95  6.213   7.123 0.4500</span></span>
-<span id="cb1-18"><a href="#cb1-18"></a><span class="co">#&gt; 4        3     B 0.95 12.100  13.500 0.0042</span></span>
-<span id="cb1-19"><a href="#cb1-19"></a><span class="co">#&gt; 5        1     B 0.95  1.230   3.610 0.3400</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(insight)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">Variable =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">5</span>, <span class="dv">3</span>, <span class="dv">1</span>),</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">Group =</span> <span class="fu">c</span>(<span class="st">&quot;A&quot;</span>, <span class="st">&quot;A&quot;</span>, <span class="st">&quot;A&quot;</span>, <span class="st">&quot;B&quot;</span>, <span class="st">&quot;B&quot;</span>),</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">CI =</span> <span class="fu">c</span>(<span class="fl">0.95</span>, <span class="fl">0.95</span>, <span class="fl">0.95</span>, <span class="fl">0.95</span>, <span class="fl">0.95</span>),</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">CI_low =</span> <span class="fu">c</span>(<span class="fl">3.35</span>, <span class="fl">2.425</span>, <span class="fl">6.213</span>, <span class="fl">12.1</span>, <span class="fl">1.23</span>),</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">CI_high =</span> <span class="fu">c</span>(<span class="fl">4.23</span>, <span class="fl">5.31</span>, <span class="fl">7.123</span>, <span class="fl">13.5</span>, <span class="fl">3.61</span>),</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">p =</span> <span class="fu">c</span>(<span class="fl">0.001</span>, <span class="fl">0.0456</span>, <span class="fl">0.45</span>, <span class="fl">0.0042</span>, <span class="fl">0.34</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>df</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   Variable Group   CI CI_low CI_high      p</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1        1     A 0.95  3.350   4.230 0.0010</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2        3     A 0.95  2.425   5.310 0.0456</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3        5     A 0.95  6.213   7.123 0.4500</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4        3     B 0.95 12.100  13.500 0.0042</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5        1     B 0.95  1.230   3.610 0.3400</span></span></code></pre></div>
 <p>When I display in in the console (calling an object - e.g. <code>df</code> - is actually equivalent to calling <code>print(df)</code>), the output looks alright, but it could be improved. Some packages, such as <strong>knitr</strong>, have functions to create a nicer output. For instance, in markdown, so that it can be nicely rendered in markdown documents when copied:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>knitr<span class="op">::</span><span class="kw">kable</span>(df, <span class="dt">format =</span> <span class="st">&quot;markdown&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(df, <span class="at">format =</span> <span class="st">&quot;markdown&quot;</span>)</span></code></pre></div>
 <pre><code>| Variable|Group |   CI| CI_low| CI_high|      p|
 |--------:|:-----|----:|------:|-------:|------:|
 |        1|A     | 0.95|  3.350|   4.230| 0.0010|
@@ -380,7 +173,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 |        3|B     | 0.95| 12.100|  13.500| 0.0042|
 |        1|B     | 0.95|  1.230|   3.610| 0.3400|</code></pre>
 <p>Or HTML, which again makes it look great in HTML files (such as this webpage you’re reading):</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>knitr<span class="op">::</span><span class="kw">kable</span>(df, <span class="dt">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(df, <span class="at">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
 <table>
 <thead>
 <tr>
@@ -514,38 +307,38 @@ B
 <div id="formatting" class="section level3">
 <h3>Formatting</h3>
 <p>The purpose of formatting is to improve a given table, while still keeping it as a regular R data frame, so that it can be for instance further modified by the user.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">format_table</span>(df)</span>
-<span id="cb5-2"><a href="#cb5-2"></a><span class="co">#&gt;   Variable Group         95% CI     p</span></span>
-<span id="cb5-3"><a href="#cb5-3"></a><span class="co">#&gt; 1     1.00     A [ 3.35,  4.23] 0.001</span></span>
-<span id="cb5-4"><a href="#cb5-4"></a><span class="co">#&gt; 2     3.00     A [ 2.42,  5.31] 0.046</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a><span class="co">#&gt; 3     5.00     A [ 6.21,  7.12] 0.450</span></span>
-<span id="cb5-6"><a href="#cb5-6"></a><span class="co">#&gt; 4     3.00     B [12.10, 13.50] 0.004</span></span>
-<span id="cb5-7"><a href="#cb5-7"></a><span class="co">#&gt; 5     1.00     B [ 1.23,  3.61] 0.340</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">format_table</span>(df)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   Variable Group         95% CI     p</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1     1.00     A [ 3.35,  4.23] 0.001</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2     3.00     A [ 2.42,  5.31] 0.046</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3     5.00     A [ 6.21,  7.12] 0.450</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4     3.00     B [12.10, 13.50] 0.004</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5     1.00     B [ 1.23,  3.61] 0.340</span></span></code></pre></div>
 <p>As you can see, <code>format_table()</code> modifies columns, turning number into characters (so that it has the same amount of digits), and detecting confidence intervals. This is usually combined with column-specific formatting functions, like <code>format_p()</code>:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>df <span class="op">%&gt;%</span><span class="st"> </span></span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="st">  </span><span class="kw">mutate</span>(<span class="dt">p =</span> <span class="kw">format_p</span>(p, <span class="dt">stars =</span> <span class="ot">TRUE</span>)) <span class="op">%&gt;%</span><span class="st"> </span></span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="st">  </span><span class="kw">format_table</span>()</span>
-<span id="cb6-4"><a href="#cb6-4"></a><span class="co">#&gt;   Variable Group         95% CI           p</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a><span class="co">#&gt; 1     1.00     A [ 3.35,  4.23] p = 0.001**</span></span>
-<span id="cb6-6"><a href="#cb6-6"></a><span class="co">#&gt; 2     3.00     A [ 2.42,  5.31] p = 0.046* </span></span>
-<span id="cb6-7"><a href="#cb6-7"></a><span class="co">#&gt; 3     5.00     A [ 6.21,  7.12] p = 0.450  </span></span>
-<span id="cb6-8"><a href="#cb6-8"></a><span class="co">#&gt; 4     3.00     B [12.10, 13.50] p = 0.004**</span></span>
-<span id="cb6-9"><a href="#cb6-9"></a><span class="co">#&gt; 5     1.00     B [ 1.23,  3.61] p = 0.340</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span> </span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">p =</span> <span class="fu">format_p</span>(p, <span class="at">stars =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">format_table</span>()</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   Variable Group         95% CI           p</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1     1.00     A [ 3.35,  4.23] p = 0.001**</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2     3.00     A [ 2.42,  5.31] p = 0.046* </span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3     5.00     A [ 6.21,  7.12] p = 0.450  </span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4     3.00     B [12.10, 13.50] p = 0.004**</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5     1.00     B [ 1.23,  3.61] p = 0.340</span></span></code></pre></div>
 </div>
 <div id="exporting" class="section level3">
 <h3>Exporting</h3>
 <p>The next step is <em>exporting</em>, which takes a data frame and renders it in a given format, so that it looks good in the console, or in markdown, HTML or latex.</p>
 <p>For console output, we need to <code>cat()</code> the returned result to get nicely printed code:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">cat</span>(<span class="kw">export_table</span>(df))</span>
-<span id="cb7-2"><a href="#cb7-2"></a><span class="co">#&gt; Variable | Group |   CI | CI_low | CI_high |        p</span></span>
-<span id="cb7-3"><a href="#cb7-3"></a><span class="co">#&gt; -----------------------------------------------------</span></span>
-<span id="cb7-4"><a href="#cb7-4"></a><span class="co">#&gt;        1 |     A | 0.95 |   3.35 |    4.23 | 1.00e-03</span></span>
-<span id="cb7-5"><a href="#cb7-5"></a><span class="co">#&gt;        3 |     A | 0.95 |   2.42 |    5.31 |     0.05</span></span>
-<span id="cb7-6"><a href="#cb7-6"></a><span class="co">#&gt;        5 |     A | 0.95 |   6.21 |    7.12 |     0.45</span></span>
-<span id="cb7-7"><a href="#cb7-7"></a><span class="co">#&gt;        3 |     B | 0.95 |  12.10 |   13.50 | 4.20e-03</span></span>
-<span id="cb7-8"><a href="#cb7-8"></a><span class="co">#&gt;        1 |     B | 0.95 |   1.23 |    3.61 |     0.34</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">export_table</span>(df))</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Variable | Group |   CI | CI_low | CI_high |        p</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; -----------------------------------------------------</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;        1 |     A | 0.95 |   3.35 |    4.23 | 1.00e-03</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;        3 |     A | 0.95 |   2.42 |    5.31 |     0.05</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;        5 |     A | 0.95 |   6.21 |    7.12 |     0.45</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;        3 |     B | 0.95 |  12.10 |   13.50 | 4.20e-03</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;        1 |     B | 0.95 |   1.23 |    3.61 |     0.34</span></span></code></pre></div>
 <p>For markdown or HTML, simply modify the <code>format</code> argument to markdown (“md”)…</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">export_table</span>(df, <span class="dt">format =</span> <span class="st">&quot;md&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">export_table</span>(df, <span class="at">format =</span> <span class="st">&quot;md&quot;</span>)</span></code></pre></div>
 <table>
 <thead>
 <tr class="header">
@@ -601,12 +394,13 @@ B
 </tbody>
 </table>
 <p>…or HTML format.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">export_table</span>(df, <span class="dt">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">export_table</span>(df, <span class="at">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
+<div id="okhnplumyn" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <style>html {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#sbyszscimt .gt_table {
+#okhnplumyn .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -631,7 +425,7 @@ B
   border-left-color: #D3D3D3;
 }
 
-#sbyszscimt .gt_heading {
+#okhnplumyn .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -643,7 +437,7 @@ B
   border-right-color: #D3D3D3;
 }
 
-#sbyszscimt .gt_title {
+#okhnplumyn .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -653,7 +447,7 @@ B
   border-bottom-width: 0;
 }
 
-#sbyszscimt .gt_subtitle {
+#okhnplumyn .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -663,13 +457,13 @@ B
   border-top-width: 0;
 }
 
-#sbyszscimt .gt_bottom_border {
+#okhnplumyn .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#sbyszscimt .gt_col_headings {
+#okhnplumyn .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -684,7 +478,7 @@ B
   border-right-color: #D3D3D3;
 }
 
-#sbyszscimt .gt_col_heading {
+#okhnplumyn .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -704,7 +498,7 @@ B
   overflow-x: hidden;
 }
 
-#sbyszscimt .gt_column_spanner_outer {
+#okhnplumyn .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -716,15 +510,15 @@ B
   padding-right: 4px;
 }
 
-#sbyszscimt .gt_column_spanner_outer:first-child {
+#okhnplumyn .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#sbyszscimt .gt_column_spanner_outer:last-child {
+#okhnplumyn .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#sbyszscimt .gt_column_spanner {
+#okhnplumyn .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -736,7 +530,7 @@ B
   width: 100%;
 }
 
-#sbyszscimt .gt_group_heading {
+#okhnplumyn .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -758,7 +552,7 @@ B
   vertical-align: middle;
 }
 
-#sbyszscimt .gt_empty_group_heading {
+#okhnplumyn .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -773,15 +567,15 @@ B
   vertical-align: middle;
 }
 
-#sbyszscimt .gt_from_md > :first-child {
+#okhnplumyn .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#sbyszscimt .gt_from_md > :last-child {
+#okhnplumyn .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#sbyszscimt .gt_row {
+#okhnplumyn .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -800,7 +594,7 @@ B
   overflow-x: hidden;
 }
 
-#sbyszscimt .gt_stub {
+#okhnplumyn .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -812,7 +606,7 @@ B
   padding-left: 12px;
 }
 
-#sbyszscimt .gt_summary_row {
+#okhnplumyn .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -822,7 +616,7 @@ B
   padding-right: 5px;
 }
 
-#sbyszscimt .gt_first_summary_row {
+#okhnplumyn .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -832,7 +626,7 @@ B
   border-top-color: #D3D3D3;
 }
 
-#sbyszscimt .gt_grand_summary_row {
+#okhnplumyn .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -842,7 +636,7 @@ B
   padding-right: 5px;
 }
 
-#sbyszscimt .gt_first_grand_summary_row {
+#okhnplumyn .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -852,11 +646,11 @@ B
   border-top-color: #D3D3D3;
 }
 
-#sbyszscimt .gt_striped {
+#okhnplumyn .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#sbyszscimt .gt_table_body {
+#okhnplumyn .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -865,7 +659,7 @@ B
   border-bottom-color: #D3D3D3;
 }
 
-#sbyszscimt .gt_footnotes {
+#okhnplumyn .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -879,13 +673,13 @@ B
   border-right-color: #D3D3D3;
 }
 
-#sbyszscimt .gt_footnote {
+#okhnplumyn .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#sbyszscimt .gt_sourcenotes {
+#okhnplumyn .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -899,46 +693,47 @@ B
   border-right-color: #D3D3D3;
 }
 
-#sbyszscimt .gt_sourcenote {
+#okhnplumyn .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#sbyszscimt .gt_left {
+#okhnplumyn .gt_left {
   text-align: left;
 }
 
-#sbyszscimt .gt_center {
+#okhnplumyn .gt_center {
   text-align: center;
 }
 
-#sbyszscimt .gt_right {
+#okhnplumyn .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#sbyszscimt .gt_font_normal {
+#okhnplumyn .gt_font_normal {
   font-weight: normal;
 }
 
-#sbyszscimt .gt_font_bold {
+#okhnplumyn .gt_font_bold {
   font-weight: bold;
 }
 
-#sbyszscimt .gt_font_italic {
+#okhnplumyn .gt_font_italic {
   font-style: italic;
 }
 
-#sbyszscimt .gt_super {
+#okhnplumyn .gt_super {
   font-size: 65%;
 }
 
-#sbyszscimt .gt_footnote_marks {
+#okhnplumyn .gt_footnote_marks {
   font-style: italic;
+  font-weight: normal;
   font-size: 65%;
 }
 </style>
-<div id="sbyszscimt" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+<table class="gt_table">
   
   <thead class="gt_col_headings">
     <tr>
@@ -953,57 +748,49 @@ B
     <tr class="gt_group_heading_row">
       <td colspan="5" class="gt_group_heading">A</td>
     </tr>
-    <tr>
-      <td class="gt_row gt_left">1</td>
-      <td class="gt_row gt_center">0.95</td>
-      <td class="gt_row gt_center">3.35</td>
-      <td class="gt_row gt_center">4.23</td>
-      <td class="gt_row gt_center">1.00e-03</td>
-    </tr>
-    <tr>
-      <td class="gt_row gt_left">3</td>
-      <td class="gt_row gt_center">0.95</td>
-      <td class="gt_row gt_center">2.42</td>
-      <td class="gt_row gt_center">5.31</td>
-      <td class="gt_row gt_center">0.05</td>
-    </tr>
-    <tr>
-      <td class="gt_row gt_left">5</td>
-      <td class="gt_row gt_center">0.95</td>
-      <td class="gt_row gt_center">6.21</td>
-      <td class="gt_row gt_center">7.12</td>
-      <td class="gt_row gt_center">0.45</td>
-    </tr>
+    <tr><td class="gt_row gt_left">1</td>
+<td class="gt_row gt_center">0.95</td>
+<td class="gt_row gt_center">3.35</td>
+<td class="gt_row gt_center">4.23</td>
+<td class="gt_row gt_center">1.00e-03</td></tr>
+    <tr><td class="gt_row gt_left">3</td>
+<td class="gt_row gt_center">0.95</td>
+<td class="gt_row gt_center">2.42</td>
+<td class="gt_row gt_center">5.31</td>
+<td class="gt_row gt_center">0.05</td></tr>
+    <tr><td class="gt_row gt_left">5</td>
+<td class="gt_row gt_center">0.95</td>
+<td class="gt_row gt_center">6.21</td>
+<td class="gt_row gt_center">7.12</td>
+<td class="gt_row gt_center">0.45</td></tr>
     <tr class="gt_group_heading_row">
       <td colspan="5" class="gt_group_heading">B</td>
     </tr>
-    <tr>
-      <td class="gt_row gt_left">3</td>
-      <td class="gt_row gt_center">0.95</td>
-      <td class="gt_row gt_center">12.10</td>
-      <td class="gt_row gt_center">13.50</td>
-      <td class="gt_row gt_center">4.20e-03</td>
-    </tr>
-    <tr>
-      <td class="gt_row gt_left">1</td>
-      <td class="gt_row gt_center">0.95</td>
-      <td class="gt_row gt_center">1.23</td>
-      <td class="gt_row gt_center">3.61</td>
-      <td class="gt_row gt_center">0.34</td>
-    </tr>
+    <tr><td class="gt_row gt_left">3</td>
+<td class="gt_row gt_center">0.95</td>
+<td class="gt_row gt_center">12.10</td>
+<td class="gt_row gt_center">13.50</td>
+<td class="gt_row gt_center">4.20e-03</td></tr>
+    <tr><td class="gt_row gt_left">1</td>
+<td class="gt_row gt_center">0.95</td>
+<td class="gt_row gt_center">1.23</td>
+<td class="gt_row gt_center">3.61</td>
+<td class="gt_row gt_center">0.34</td></tr>
   </tbody>
   <tfoot class="gt_sourcenotes"></tfoot>
   
-</table></div>
+</table>
+</div>
 <p>This can be combined with <code>format_table()</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>df <span class="op">%&gt;%</span><span class="st"> </span></span>
-<span id="cb10-2"><a href="#cb10-2"></a><span class="st">  </span><span class="kw">format_table</span>(<span class="dt">ci_brackets =</span> <span class="kw">c</span>(<span class="st">&quot;(&quot;</span>, <span class="st">&quot;)&quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span></span>
-<span id="cb10-3"><a href="#cb10-3"></a><span class="st">  </span><span class="kw">export_table</span>(<span class="dt">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span> </span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">format_table</span>(<span class="at">ci_brackets =</span> <span class="fu">c</span>(<span class="st">&quot;(&quot;</span>, <span class="st">&quot;)&quot;</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">export_table</span>(<span class="at">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
+<div id="snodsbgrwb" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <style>html {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#fbdyhsbpsw .gt_table {
+#snodsbgrwb .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -1028,7 +815,7 @@ B
   border-left-color: #D3D3D3;
 }
 
-#fbdyhsbpsw .gt_heading {
+#snodsbgrwb .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1040,7 +827,7 @@ B
   border-right-color: #D3D3D3;
 }
 
-#fbdyhsbpsw .gt_title {
+#snodsbgrwb .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1050,7 +837,7 @@ B
   border-bottom-width: 0;
 }
 
-#fbdyhsbpsw .gt_subtitle {
+#snodsbgrwb .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1060,13 +847,13 @@ B
   border-top-width: 0;
 }
 
-#fbdyhsbpsw .gt_bottom_border {
+#snodsbgrwb .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#fbdyhsbpsw .gt_col_headings {
+#snodsbgrwb .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1081,7 +868,7 @@ B
   border-right-color: #D3D3D3;
 }
 
-#fbdyhsbpsw .gt_col_heading {
+#snodsbgrwb .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1101,7 +888,7 @@ B
   overflow-x: hidden;
 }
 
-#fbdyhsbpsw .gt_column_spanner_outer {
+#snodsbgrwb .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1113,15 +900,15 @@ B
   padding-right: 4px;
 }
 
-#fbdyhsbpsw .gt_column_spanner_outer:first-child {
+#snodsbgrwb .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#fbdyhsbpsw .gt_column_spanner_outer:last-child {
+#snodsbgrwb .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#fbdyhsbpsw .gt_column_spanner {
+#snodsbgrwb .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1133,7 +920,7 @@ B
   width: 100%;
 }
 
-#fbdyhsbpsw .gt_group_heading {
+#snodsbgrwb .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1155,7 +942,7 @@ B
   vertical-align: middle;
 }
 
-#fbdyhsbpsw .gt_empty_group_heading {
+#snodsbgrwb .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1170,15 +957,15 @@ B
   vertical-align: middle;
 }
 
-#fbdyhsbpsw .gt_from_md > :first-child {
+#snodsbgrwb .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#fbdyhsbpsw .gt_from_md > :last-child {
+#snodsbgrwb .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#fbdyhsbpsw .gt_row {
+#snodsbgrwb .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1197,7 +984,7 @@ B
   overflow-x: hidden;
 }
 
-#fbdyhsbpsw .gt_stub {
+#snodsbgrwb .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1209,7 +996,7 @@ B
   padding-left: 12px;
 }
 
-#fbdyhsbpsw .gt_summary_row {
+#snodsbgrwb .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1219,7 +1006,7 @@ B
   padding-right: 5px;
 }
 
-#fbdyhsbpsw .gt_first_summary_row {
+#snodsbgrwb .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1229,7 +1016,7 @@ B
   border-top-color: #D3D3D3;
 }
 
-#fbdyhsbpsw .gt_grand_summary_row {
+#snodsbgrwb .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1239,7 +1026,7 @@ B
   padding-right: 5px;
 }
 
-#fbdyhsbpsw .gt_first_grand_summary_row {
+#snodsbgrwb .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1249,11 +1036,11 @@ B
   border-top-color: #D3D3D3;
 }
 
-#fbdyhsbpsw .gt_striped {
+#snodsbgrwb .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#fbdyhsbpsw .gt_table_body {
+#snodsbgrwb .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1262,7 +1049,7 @@ B
   border-bottom-color: #D3D3D3;
 }
 
-#fbdyhsbpsw .gt_footnotes {
+#snodsbgrwb .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1276,13 +1063,13 @@ B
   border-right-color: #D3D3D3;
 }
 
-#fbdyhsbpsw .gt_footnote {
+#snodsbgrwb .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#fbdyhsbpsw .gt_sourcenotes {
+#snodsbgrwb .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1296,46 +1083,47 @@ B
   border-right-color: #D3D3D3;
 }
 
-#fbdyhsbpsw .gt_sourcenote {
+#snodsbgrwb .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#fbdyhsbpsw .gt_left {
+#snodsbgrwb .gt_left {
   text-align: left;
 }
 
-#fbdyhsbpsw .gt_center {
+#snodsbgrwb .gt_center {
   text-align: center;
 }
 
-#fbdyhsbpsw .gt_right {
+#snodsbgrwb .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#fbdyhsbpsw .gt_font_normal {
+#snodsbgrwb .gt_font_normal {
   font-weight: normal;
 }
 
-#fbdyhsbpsw .gt_font_bold {
+#snodsbgrwb .gt_font_bold {
   font-weight: bold;
 }
 
-#fbdyhsbpsw .gt_font_italic {
+#snodsbgrwb .gt_font_italic {
   font-style: italic;
 }
 
-#fbdyhsbpsw .gt_super {
+#snodsbgrwb .gt_super {
   font-size: 65%;
 }
 
-#fbdyhsbpsw .gt_footnote_marks {
+#snodsbgrwb .gt_footnote_marks {
   font-style: italic;
+  font-weight: normal;
   font-size: 65%;
 }
 </style>
-<div id="fbdyhsbpsw" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+<table class="gt_table">
   
   <thead class="gt_col_headings">
     <tr>
@@ -1348,38 +1136,29 @@ B
     <tr class="gt_group_heading_row">
       <td colspan="3" class="gt_group_heading">A</td>
     </tr>
-    <tr>
-      <td class="gt_row gt_left">1.00</td>
-      <td class="gt_row gt_center">( 3.35,  4.23)</td>
-      <td class="gt_row gt_center">0.001</td>
-    </tr>
-    <tr>
-      <td class="gt_row gt_left">3.00</td>
-      <td class="gt_row gt_center">( 2.42,  5.31)</td>
-      <td class="gt_row gt_center">0.046</td>
-    </tr>
-    <tr>
-      <td class="gt_row gt_left">5.00</td>
-      <td class="gt_row gt_center">( 6.21,  7.12)</td>
-      <td class="gt_row gt_center">0.450</td>
-    </tr>
+    <tr><td class="gt_row gt_left">1.00</td>
+<td class="gt_row gt_center">( 3.35,  4.23)</td>
+<td class="gt_row gt_center">0.001</td></tr>
+    <tr><td class="gt_row gt_left">3.00</td>
+<td class="gt_row gt_center">( 2.42,  5.31)</td>
+<td class="gt_row gt_center">0.046</td></tr>
+    <tr><td class="gt_row gt_left">5.00</td>
+<td class="gt_row gt_center">( 6.21,  7.12)</td>
+<td class="gt_row gt_center">0.450</td></tr>
     <tr class="gt_group_heading_row">
       <td colspan="3" class="gt_group_heading">B</td>
     </tr>
-    <tr>
-      <td class="gt_row gt_left">3.00</td>
-      <td class="gt_row gt_center">(12.10, 13.50)</td>
-      <td class="gt_row gt_center">0.004</td>
-    </tr>
-    <tr>
-      <td class="gt_row gt_left">1.00</td>
-      <td class="gt_row gt_center">( 1.23,  3.61)</td>
-      <td class="gt_row gt_center">0.340</td>
-    </tr>
+    <tr><td class="gt_row gt_left">3.00</td>
+<td class="gt_row gt_center">(12.10, 13.50)</td>
+<td class="gt_row gt_center">0.004</td></tr>
+    <tr><td class="gt_row gt_left">1.00</td>
+<td class="gt_row gt_center">( 1.23,  3.61)</td>
+<td class="gt_row gt_center">0.340</td></tr>
   </tbody>
   <tfoot class="gt_sourcenotes"></tfoot>
   
-</table></div>
+</table>
+</div>
 <p>TODO: What about display?</p>
 </div>
 </div>
