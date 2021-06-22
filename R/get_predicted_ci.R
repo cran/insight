@@ -122,15 +122,13 @@ get_predicted_ci <- function(x,
   }
 
   # 2. Run it once or multiple times if multiple CI levels are requested
-  if(is.null(ci)) {
+  if (is.null(ci)) {
     out <- data.frame(SE = se)
-
-  } else if(length(ci) == 1) {
+  } else if (length(ci) == 1) {
     out <- ci_function(x, predictions, ci = ci, se = se)
-
   } else {
     out <- data.frame(SE = se)
-    for(ci_val in ci) {
+    for (ci_val in ci) {
       temp <- ci_function(x, predictions, ci = ci_val, se = se)
       temp$SE <- NULL
       names(temp) <- paste0(names(temp), "_", ci_val)
@@ -146,7 +144,10 @@ get_predicted_ci <- function(x,
 # Get Variance-covariance Matrix ---------------------------------------------------
 
 
-.get_predicted_ci_vcov <- function(x, vcov_estimation = NULL, vcov_type = NULL, vcov_args = NULL) {
+.get_predicted_ci_vcov <- function(x,
+                                   vcov_estimation = NULL,
+                                   vcov_type = NULL,
+                                   vcov_args = NULL) {
 
   # (robust) variance-covariance matrix
   if (!is.null(vcov_estimation)) {
@@ -239,17 +240,16 @@ get_predicted_ci <- function(x,
 
 
 
-
-
-
-
-
 # Get SE ------------------------------------------------------------------
 
+get_predicted_se <- function(x,
+                             predictions = NULL,
+                             data = NULL,
+                             ci_type = "confidence",
+                             vcov_estimation = NULL,
+                             vcov_type = NULL,
+                             vcov_args = NULL) {
 
-
-
-get_predicted_se <- function(x, predictions = NULL, data = NULL, ci_type = "confidence", vcov_estimation = NULL, vcov_type = NULL, vcov_args = NULL) {
 
   # Matrix-multiply X by the parameter vector B to get the predictions, then
   # extract the variance-covariance matrix V of the parameters and compute XVX'
@@ -257,7 +257,12 @@ get_predicted_se <- function(x, predictions = NULL, data = NULL, ci_type = "conf
   # the diagonal of this matrix represent the standard errors of the predictions,
   # which are then multiplied by 1.96 for the confidence intervals.
 
-  vcovmat <- .get_predicted_ci_vcov(x, vcov_estimation = vcov_estimation, vcov_type = vcov_type, vcov_args = vcov_args)
+  vcovmat <- .get_predicted_ci_vcov(
+    x,
+    vcov_estimation = vcov_estimation,
+    vcov_type = vcov_type,
+    vcov_args = vcov_args
+  )
   mm <- .get_predicted_ci_modelmatrix(x, data = data, vcovmat = vcovmat)
 
   # compute vcov for predictions
@@ -282,9 +287,11 @@ get_predicted_se <- function(x, predictions = NULL, data = NULL, ci_type = "conf
 
 ## Convert to CI -----------
 
-
-
-.get_predicted_se_to_ci <- function(x, predictions = NULL, se = NULL, ci = 0.95, ...) {
+.get_predicted_se_to_ci <- function(x,
+                                    predictions = NULL,
+                                    se = NULL,
+                                    ci = 0.95,
+                                    ...) {
 
   # TODO: Prediction interval for binomial: https://fromthebottomoftheheap.net/2017/05/01/glm-prediction-intervals-i/
   # TODO: Prediction interval for poisson: https://fromthebottomoftheheap.net/2017/05/01/glm-prediction-intervals-ii/

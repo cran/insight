@@ -3,7 +3,6 @@
 #' @param CI_low Lower CI bound.
 #' @param CI_high Upper CI bound.
 #' @param ci CI level in percentage.
-#' @param digits Number of significant digits.
 #' @param brackets Either a logical, and if \code{TRUE} (default), values are
 #'   encompassed in square brackets. If \code{FALSE} or \code{NULL}, no brackets
 #'   are used. Else, a character vector of length two, indicating the opening
@@ -54,10 +53,32 @@ format_ci <- function(CI_low,
   }
 
   if (!is.null(width) && width == "auto") {
-    if (is.numeric(CI_low) && is.numeric(CI_high)) {
-      CI_low <- round(CI_low, digits)
-      CI_high <- round(CI_high, digits)
+    # set default numeric value for digits
+    sig_digits <- digits
+
+    # check if we have special handling, like "scientific" or "signif"
+    # and then convert to numeric
+    if (is.character(digits)) {
+      if (grepl("^scientific", digits)) {
+        if (digits == "scientific") digits <- "scientific3"
+        sig_digits <- as.numeric(gsub("scientific", "", digits, fixed = TRUE)) + 3
+      } else {
+        if (digits == "signif") digits <- "signif2"
+        sig_digits <- as.numeric(gsub("signif", "", digits, fixed = TRUE))
+      }
     }
+
+    # round CI-values for standard rounding, or scientific
+    if (is.numeric(CI_low) && is.numeric(CI_high)) {
+      if (is.numeric(digits) || (is.character(digits) && grepl("^scientific", digits))) {
+        CI_low <- round(CI_low, sig_digits)
+        CI_high <- round(CI_high, sig_digits)
+      } else {
+        CI_low <- signif(CI_low, digits = sig_digits)
+        CI_high <- signif(CI_high, digits = sig_digits)
+      }
+    }
+
     if (all(is.na(CI_low))) {
       width_low <- 1
     } else {
@@ -69,6 +90,7 @@ format_ci <- function(CI_low,
         }
       })))
     }
+
     if (all(is.na(CI_high))) {
       width_high <- 1
     } else {

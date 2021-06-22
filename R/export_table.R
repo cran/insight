@@ -266,8 +266,10 @@ export_table <- function(x,
   col_names <- names(df)
   df <- as.data.frame(sapply(df, function(i) {
     if (is.numeric(i)) {
-      format_value(i, digits = digits, protect_integers = protect_integers,
-                   missing = missing, width = width, zap_small = zap_small)
+      format_value(i,
+        digits = digits, protect_integers = protect_integers,
+        missing = missing, width = width, zap_small = zap_small
+      )
     } else {
       i
     }
@@ -426,6 +428,7 @@ export_table <- function(x,
     } else {
       subtitle <- ""
     }
+
     # paste everything together and remove unnecessary double spaces
     title_line <- .trim(paste0(caption[1], " ", subtitle[1]))
     title_line <- gsub("  ", " ", title_line, fixed = TRUE)
@@ -448,8 +451,6 @@ export_table <- function(x,
 
   rows
 }
-
-
 
 
 # helper ----------------
@@ -538,11 +539,6 @@ export_table <- function(x,
 
   final
 }
-
-
-
-
-
 
 
 # markdown formatting -------------------
@@ -658,8 +654,6 @@ export_table <- function(x,
 
   rows
 }
-
-
 
 
 

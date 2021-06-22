@@ -1,3 +1,29 @@
+# insight 0.14.2
+
+## Changes to functions
+
+* `check_if_installed()` gains a `minimum_version` argument, to check if an
+  installed package is not older than the specified version number.
+
+* The `package` argument in `check_if_installed()` is now vectorized, so you
+  can check for multiple packages in one function call.
+
+* Value formatting functions (like `format_value()` or `format_ci()`) can now
+  round to significant digits using `digits = "signif"`.
+
+## Bug fixes
+
+* Fixed issue in `model_info()` with `stan_polr()` models.
+
+* Fixed issue in `find_parameters()` for *brms* when model contained parameters
+  for the priors on sigma.
+
+* Fixed issue in `n_obs()` for `stats4::mle()` models.
+
+* Fixed failing tests due to latest *fixest* update.
+
+* Fixed issues due to latest *epiR* update.
+
 # insight 0.14.1
 
 ## New functions
