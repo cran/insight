@@ -13,11 +13,11 @@
 #'
 #' @return The data that was used to fit the model.
 #'
-#' @note Unlike \code{model.frame()}, which may contain transformed variables
-#'   (e.g. if \code{poly()} or \code{scale()} was used inside the formula to
-#'   specify the model), \code{get_data()} aims at returning the "original",
+#' @note Unlike `model.frame()`, which may contain transformed variables
+#'   (e.g. if `poly()` or `scale()` was used inside the formula to
+#'   specify the model), `get_data()` aims at returning the "original",
 #'   untransformed data (if possible). Consequently, column names are changed
-#'   accordingly, i.e. \code{"log(x)"} will become \code{"x"} etc. for all data
+#'   accordingly, i.e. `"log(x)"` will become `"x"` etc. for all data
 #'   columns with transformed values.
 #'
 #' @examples
@@ -59,7 +59,9 @@ get_data.default <- function(x, verbose = TRUE, ...) {
   if (is.null(mf)) {
     mf <- tryCatch(
       {
-        .get_data_from_env(x)[, find_variables(x, flatten = TRUE, verbose = FALSE), drop = FALSE]
+        dat <- .get_data_from_env(x)
+        vars <- find_variables(x, flatten = TRUE, verbose = FALSE)
+        dat[, intersect(vars, colnames(dat)), drop = FALSE]
       },
       error = function(x) {
         NULL
@@ -136,11 +138,12 @@ get_data.gee <- function(x,
   mf <- tryCatch(
     {
       dat <- .get_data_from_env(x)
-      switch(effects,
-        all = dat[, find_variables(x, flatten = TRUE, verbose = FALSE), drop = FALSE],
-        fixed = dat[, find_variables(x, effects = "fixed", flatten = TRUE, verbose = FALSE), drop = FALSE],
-        random = dat[, find_random(x, flatten = TRUE), drop = FALSE]
+      vars <- switch(effects,
+        all = find_variables(x, flatten = TRUE, verbose = FALSE),
+        fixed = find_variables(x, effects = "fixed", flatten = TRUE, verbose = FALSE),
+        random = find_random(x, flatten = TRUE)
       )
+      dat[, intersect(vars, colnames(dat)), drop = FALSE]
     },
     error = function(x) {
       NULL
@@ -163,13 +166,14 @@ get_data.rqss <- function(x,
   mf <- tryCatch(
     {
       dat <- .get_data_from_env(x)
-      dat[, find_variables(
+      vars <- find_variables(
         x,
         effects = "all",
         component = component,
         flatten = TRUE,
         verbose = FALSE
-      ), drop = FALSE]
+      )
+      dat[, intersect(vars, colnames(dat)), drop = FALSE]
     },
     error = function(x) {
       NULL
@@ -559,11 +563,12 @@ get_data.sem <- function(x, effects = c("all", "fixed", "random"), verbose = TRU
   mf <- tryCatch(
     {
       dat <- .get_data_from_env(x)
-      switch(effects,
-        all = dat[, find_variables(x, flatten = TRUE, verbose = FALSE), drop = FALSE],
-        fixed = dat[, find_variables(x, effects = "fixed", flatten = TRUE, verbose = FALSE), drop = FALSE],
-        random = dat[, find_random(x, flatten = TRUE), drop = FALSE]
+      vars <- switch(effects,
+        all = find_variables(x, flatten = TRUE, verbose = FALSE),
+        fixed = find_variables(x, effects = "fixed", flatten = TRUE, verbose = FALSE),
+        random = find_random(x, flatten = TRUE)
       )
+      dat[, intersect(vars, colnames(dat)), drop = FALSE]
     },
     error = function(x) {
       NULL

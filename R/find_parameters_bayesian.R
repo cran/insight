@@ -2,9 +2,9 @@
 #' @name find_parameters.BGGM
 #'
 #' @description Returns the names of model parameters, like they typically
-#'     appear in the \code{summary()} output. For Bayesian models, the parameter
+#'     appear in the `summary()` output. For Bayesian models, the parameter
 #'     names equal the column names of the posterior samples after coercion
-#'     from \code{as.data.frame()}.
+#'     from `as.data.frame()`.
 #'
 #' @param parameters Regular expression pattern that describes the parameters that
 #'   should be returned.
@@ -16,27 +16,27 @@
 #' @inheritParams find_predictors
 #'
 #' @return A list of parameter names. For simple models, only one list-element,
-#'    \code{conditional}, is returned. For more complex models, the returned
+#'    `conditional`, is returned. For more complex models, the returned
 #'    list may have following elements:
 #'    \itemize{
-#'      \item \code{conditional}, the "fixed effects" part from the model
-#'      \item \code{random}, the "random effects" part from the model
-#'      \item \code{zero_inflated}, the "fixed effects" part from the
+#'      \item `conditional`, the "fixed effects" part from the model
+#'      \item `random`, the "random effects" part from the model
+#'      \item `zero_inflated`, the "fixed effects" part from the
 #'      zero-inflation component of the model
-#'      \item \code{zero_inflated_random}, the "random effects" part from the
+#'      \item `zero_inflated_random`, the "random effects" part from the
 #'      zero-inflation component of the model
-#'      \item \code{smooth_terms}, the smooth parameters
+#'      \item `smooth_terms`, the smooth parameters
 #'    }
 #'
 #'    Furthermore, some models, especially from \pkg{brms}, can also return
 #'    auxiliary parameters. These may be one of the following:
 #'    \itemize{
-#'      \item \code{sigma}, the residual standard deviation (auxiliary parameter)
-#'      \item \code{dispersion}, the dispersion parameters (auxiliary parameter)
-#'      \item \code{beta}, the beta parameter (auxiliary parameter)
-#'      \item \code{simplex}, simplex parameters of monotonic effects (\pkg{brms} only)
-#'      \item \code{mix}, mixture parameters (\pkg{brms} only)
-#'      \item \code{shiftprop}, shifted proportion parameters (\pkg{brms} only)
+#'      \item `sigma`, the residual standard deviation (auxiliary parameter)
+#'      \item `dispersion`, the dispersion parameters (auxiliary parameter)
+#'      \item `beta`, the beta parameter (auxiliary parameter)
+#'      \item `simplex`, simplex parameters of monotonic effects (\pkg{brms} only)
+#'      \item `mix`, mixture parameters (\pkg{brms} only)
+#'      \item `shiftprop`, shifted proportion parameters (\pkg{brms} only)
 #'    }
 #'
 #' @examples
@@ -234,7 +234,7 @@ find_parameters.brmsfit <- function(x,
 
   cond <- fe[grepl("^(b_|bs_|bsp_|bcs_)(?!zi_)(.*)", fe, perl = TRUE)]
   zi <- fe[grepl("^(b_zi_|bs_zi_|bsp_zi_|bcs_zi_)", fe, perl = TRUE)]
-  rand <- fe[grepl("(?!.*__zi)(?=.*^r_)", fe, perl = TRUE) & !grepl("^prior_", fe, perl = TRUE)]
+  rand <- fe[grepl("(?!.*__(zi|sigma|beta))(?=.*^r_)", fe, perl = TRUE) & !grepl("^prior_", fe, perl = TRUE)]
   randzi <- fe[grepl("^r_(.*__zi)", fe, perl = TRUE)]
   rand_sd <- fe[grepl("(?!.*_zi)(?=.*^sd_)", fe, perl = TRUE)]
   randzi_sd <- fe[grepl("^sd_(.*_zi)", fe, perl = TRUE)]
@@ -244,7 +244,9 @@ find_parameters.brmsfit <- function(x,
   smooth_terms <- fe[grepl("^sds_", fe, perl = TRUE)]
   priors <- fe[grepl("^prior_", fe, perl = TRUE)]
   sigma <- fe[grepl("^sigma_", fe, perl = TRUE) | grepl("sigma", fe, fixed = TRUE)]
+  randsigma <- fe[grepl("^r_(.*__sigma)", fe, perl = TRUE)]
   beta <- fe[grepl("beta", fe, fixed = TRUE)]
+  randbeta <- fe[grepl("^r_(.*__beta)", fe, perl = TRUE)]
   mix <- fe[grepl("mix", fe, fixed = TRUE)]
   shiftprop <- fe[grepl("shiftprop", fe, fixed = TRUE)]
   dispersion <- fe[grepl("dispersion", fe, fixed = TRUE)]
@@ -253,8 +255,8 @@ find_parameters.brmsfit <- function(x,
   # if auxiliary is modelled directly, we need to remove duplicates here
   # e.g. "b_sigma..." is in "cond" and in "sigma" now, we just need it in "cond".
 
-  sigma <- setdiff(sigma, c(cond, rand, rand_sd, rand_cor, "prior_sigma"))
-  beta <- setdiff(beta, c(cond, rand, rand_sd, rand_cor))
+  sigma <- setdiff(sigma, c(cond, rand, rand_sd, rand_cor, randsigma, "prior_sigma"))
+  beta <- setdiff(beta, c(cond, rand, rand_sd, randbeta, rand_cor))
   auxiliary <- setdiff(auxiliary, c(cond, rand, rand_sd, rand_cor))
 
   l <- .compact_list(list(
@@ -265,7 +267,9 @@ find_parameters.brmsfit <- function(x,
     simplex = simo,
     smooth_terms = smooth_terms,
     sigma = sigma,
+    sigma_random = randsigma,
     beta = beta,
+    beta_random = randbeta,
     dispersion = dispersion,
     mix = mix,
     shiftprop = shiftprop,

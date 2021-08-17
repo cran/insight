@@ -7,12 +7,13 @@ if (.runThisTest) {
 
     # Model fitting -----------------------------------------------------------
 
-    m1 <- insight::download_model("brms_mixed_6")
+    m1 <- suppressWarnings(insight::download_model("brms_mixed_6"))
     m2 <- insight::download_model("brms_mv_4")
     m3 <- insight::download_model("brms_2")
     m4 <- insight::download_model("brms_zi_3")
     m5 <- insight::download_model("brms_mv_5")
     m6 <- insight::download_model("brms_corr_re1")
+    m7 <- suppressWarnings(insight::download_model("brms_mixed_8"))
 
     # Tests -------------------------------------------------------------------
 
@@ -181,7 +182,9 @@ if (.runThisTest) {
         list(
           response = "y",
           conditional = "x",
-          random = "id"
+          random = "id",
+          sigma = "x",
+          sigma_random = "id"
         )
       )
       expect_identical(
@@ -473,26 +476,28 @@ if (.runThisTest) {
 
     test_that("get_priors", {
       expect_equal(
-        get_priors(m1),
+        get_priors(m7),
         data.frame(
-          Parameter = c("(Intercept)", "Age", "Base", "Base:Trt1", "Trt1"),
-          Distribution = c("student_t", "student_t", "student_t", "student_t", "student_t"),
-          df = c(3, 5, 5, 5, 5),
-          Location = c(1, 0, 0, 0, 0),
-          Scale = c(10, 10, 10, 10, 10),
+          Parameter = c("b_Intercept", "b_Age", "b_Base", "b_Trt1", "b_Base.Trt1",
+                        "b_Base.Trt1", "sd_patient__Intercept", "sd_patient__Age",
+                        "cor_patient__Intercept__Age"),
+          Distribution = c("student_t", "student_t", "student_t", "student_t",
+                           "student_t", "student_t", "cauchy", "cauchy", "lkj"),
+          Location = c(1.4, 0, 0, 0, 0, 0, NA, NA, 1),
+          Scale = c(2.5, 10, 10, 10, 10, 10, NA, NA, NA),
+          df = c(3, 5, 5, 5, 5, 5, NA, NA, NA),
           stringsAsFactors = FALSE
         ),
         ignore_attr = TRUE
       )
-
       expect_equal(
         get_priors(m3),
         data.frame(
-          Parameter = c("(Intercept)", "c2", "treat1", "treat1:c2"),
-          Distribution = c("student_t", "uniform", "uniform", "uniform"),
-          df = c(3, NA, NA, NA),
-          Location = c(0, NA, NA, NA),
-          Scale = c(2.5, NA, NA, NA),
+          Parameter = c("b_Intercept", "b_treat1", "b_c2", "b_treat1.c2", "b_treat1.c2"),
+          Distribution = c("student_t", "uniform", "uniform", "uniform", "uniform"),
+          Location = c(0, NA, NA, NA, NA),
+          Scale = c(2.5, NA, NA, NA, NA),
+          df = c(3, NA, NA, NA, NA),
           stringsAsFactors = FALSE
         ),
         ignore_attr = TRUE

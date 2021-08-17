@@ -116,7 +116,7 @@
     cor.slope_intercept <- .random_slope_intercept_corr(vals, x)
   }
 
-  if (component %in% c("all")) {
+  if (component %in% c("rho00", "all")) {
     cor.slopes <- .random_slopes_corr(vals, x)
   }
 
@@ -890,21 +890,41 @@
 
   rho01 <- tryCatch(
     {
-      sapply(corrs, function(i) {
-        if (!is.null(i)) {
-          slope_pairs <- utils::combn(x = rnd_slopes, m = 2, simplify = FALSE)
-          lapply(slope_pairs, function(j) {
-            stats::setNames(i[j[1], j[2]], paste0("..", paste0(j, collapse = "-")))
-          })
-        } else {
-          NULL
-        }
+      lapply(corrs, function(d) {
+        d[upper.tri(d, diag = TRUE)] <- NA
+        d <- as.data.frame(d)
+
+        d <- reshape_longer(d, colnames_to = "Parameter1", rows_to = "Parameter2")
+        d <- d[stats::complete.cases(d), ]
+        d <- d[!d$Parameter1 %in% c("Intercept", "(Intercept)"), ]
+
+        d$Parameter <- paste0(d$Parameter1, "-", d$Parameter2)
+        d$Parameter1 <- d$Parameter2 <- NULL
+        stats::setNames(d$Value, d$Parameter)
       })
     },
     error = function(e) {
       NULL
     }
   )
+
+  # rho01 <- tryCatch(
+  #   {
+  #     sapply(corrs, function(i) {
+  #       if (!is.null(i)) {
+  #         slope_pairs <- utils::combn(x = rnd_slopes, m = 2, simplify = FALSE)
+  #         lapply(slope_pairs, function(j) {
+  #           stats::setNames(i[j[1], j[2]], paste0("..", paste0(j, collapse = "-")))
+  #         })
+  #       } else {
+  #         NULL
+  #       }
+  #     })
+  #   },
+  #   error = function(e) {
+  #     NULL
+  #   }
+  # )
 
   unlist(rho01)
 }

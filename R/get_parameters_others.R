@@ -250,3 +250,27 @@ get_parameters.mjoint <- function(x,
 
   .remove_backticks_from_parameter_names(params)
 }
+
+
+
+#' @export
+get_parameters.systemfit <- function(x, ...) {
+  cf <- stats::coef(summary(x))
+  f <- find_formula(x)
+
+  system_names <- names(f)
+  parameter_names <- row.names(cf)
+
+  out <- lapply(system_names, function(i) {
+    pattern <- paste0("^", i, "_(.*)")
+    params <- grepl(pattern, parameter_names)
+    data.frame(
+      Parameter = gsub(pattern, "\\1", parameter_names[params]),
+      Estimate = as.vector(cf[params, "Estimate"]),
+      Component = i,
+      stringsAsFactors = FALSE
+    )
+  })
+
+  do.call(rbind, out)
+}

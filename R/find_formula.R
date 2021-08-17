@@ -3,55 +3,55 @@
 #'
 #' @description Returns the formula(s) for the different parts of a model
 #'    (like fixed or random effects, zero-inflated component, ...).
-#'    \code{formula_ok()} checks if a model formula has valid syntax
-#'    regarding writing \code{TRUE} instead of \code{T} inside \code{poly()}
-#'    and that no data names are used (i.e. no \code{data$variable}, but rather
-#'    \code{variable}).
+#'    `formula_ok()` checks if a model formula has valid syntax
+#'    regarding writing `TRUE` instead of `T` inside `poly()`
+#'    and that no data names are used (i.e. no `data$variable`, but rather
+#'    `variable`).
 #'
 #' @param verbose Toggle warnings.
 #' @param ... Currently not used.
 #' @inheritParams find_predictors
 #'
 #' @return A list of formulas that describe the model. For simple models,
-#'    only one list-element, \code{conditional}, is returned. For more complex
+#'    only one list-element, `conditional`, is returned. For more complex
 #'    models, the returned list may have following elements:
 #'    \itemize{
-#'      \item \code{conditional}, the "fixed effects" part from the model. One
-#'      exception are \code{DirichletRegModel} models from \pkg{DirichletReg},
-#'      which has two or three components, depending on \code{model}.
+#'      \item `conditional`, the "fixed effects" part from the model. One
+#'      exception are `DirichletRegModel` models from \pkg{DirichletReg},
+#'      which has two or three components, depending on `model`.
 #'
-#'      \item \code{random}, the "random effects" part from the model (or the
-#'      \code{id} for gee-models and similar)
+#'      \item `random`, the "random effects" part from the model (or the
+#'      `id` for gee-models and similar)
 #'
-#'      \item \code{zero_inflated}, the "fixed effects" part from the
+#'      \item `zero_inflated`, the "fixed effects" part from the
 #'      zero-inflation component of the model
 #'
-#'      \item \code{zero_inflated_random}, the "random effects" part from the
+#'      \item `zero_inflated_random`, the "random effects" part from the
 #'      zero-inflation component of the model
 #'
-#'      \item \code{dispersion}, the dispersion formula
+#'      \item `dispersion`, the dispersion formula
 #'
-#'      \item \code{instruments}, for fixed-effects regressions like
-#'      \code{ivreg::ivreg()}, \code{lfe::felm()} or \code{plm::plm()}, the
+#'      \item `instruments`, for fixed-effects regressions like
+#'      `ivreg::ivreg()`, `lfe::felm()` or `plm::plm()`, the
 #'      instrumental variables
 #'
-#'      \item \code{cluster}, for fixed-effects regressions like
-#'      \code{lfe::felm()}, the cluster specification
+#'      \item `cluster`, for fixed-effects regressions like
+#'      `lfe::felm()`, the cluster specification
 #'
-#'      \item \code{correlation}, for models with correlation-component like
-#'      \code{nlme::gls()}, the formula that describes the correlation structure
+#'      \item `correlation`, for models with correlation-component like
+#'      `nlme::gls()`, the formula that describes the correlation structure
 #'
-#'      \item \code{slopes}, for fixed-effects individual-slope models like
-#'      \code{feisr::feis()}, the formula for the slope parameters
+#'      \item `slopes`, for fixed-effects individual-slope models like
+#'      `feisr::feis()`, the formula for the slope parameters
 #'
-#'      \item \code{precision}, for \code{DirichletRegModel} models from
-#'      \pkg{DirichletReg}, when parametrization (i.e. \code{model}) is
-#'      \code{"alternative"}.
+#'      \item `precision`, for `DirichletRegModel` models from
+#'      \pkg{DirichletReg}, when parametrization (i.e. `model`) is
+#'      `"alternative"`.
 #'    }
 #'
-#' @note For models of class \code{lme} or \code{gls} the correlation-component
+#' @note For models of class `lme` or `gls` the correlation-component
 #'   is only returned, when it is explicitly defined as named argument
-#'   (\code{form}), e.g. \code{corAR1(form = ~1 | Mare)}
+#'   (`form`), e.g. `corAR1(form = ~1 | Mare)`
 #'
 #' @examples
 #' data(mtcars)
@@ -306,6 +306,21 @@ find_formula.maxim <- find_formula.default
 
 
 #' @export
+find_formula.systemfit <- function(x, verbose = TRUE, ...) {
+  f <- stats::formula(x)
+  l <- lapply(f, function(i) {
+    list(conditional = i)
+  })
+  f <- .compact_list(l)
+
+  if (length(f) > 1) {
+    attr(f, "is_mv") <- "1"
+  }
+  .find_formula_return(f)
+}
+
+
+#' @export
 find_formula.selection <- function(x, verbose = TRUE, ...) {
   model_call <- parse(text = deparse(get_call(x)))[[1]]
   f <- list(conditional = list(
@@ -424,10 +439,33 @@ find_formula.betareg <- function(x, verbose = TRUE, ...) {
 
 #' @export
 find_formula.afex_aov <- function(x, verbose = TRUE, ...) {
-  if (!is.null(x$aov)) {
-    find_formula(x$aov, verbose = verbose, ...)
+  if (length(attr(x, "within")) == 0L) {
+    fff <- find_formula(x$lm, verbose = verbose, ...)
+    fff$conditional[2] <- call(attr(x, "dv")) # need to fix LHS
+    fff
   } else {
-    find_formula(x$lm, verbose = verbose, ...)
+    d <- insight::get_data(x, shape = "long")
+
+    dv <- attr(x, "dv")
+    id <- attr(x, "id")
+
+    within <- names(attr(x, "within"))
+    within <- paste0(within, collapse = "*")
+    within <- paste0("(", within, ")")
+    e <- paste0("Error(", id, "/", within, ")")
+
+    between <- names(attr(x, "between"))
+    if (length(between) > 0L) {
+      tempf <- find_formula(x$lm)[[1]]
+      between <- as.character(tempf)[3]
+      between <- paste0("(", between, ")")
+
+      within <- paste0(c(within, between), collapse = "*")
+    }
+
+    out <- list(conditional = stats::formula(paste0(dv, "~", within, "+", e)))
+    class(out) <- c("insight_formula", "list")
+    out
   }
 }
 
@@ -1415,60 +1453,131 @@ find_formula.model_fit <- function(x, verbose = TRUE, ...) {
 # helper ---------------------------
 
 .get_brms_formula <- function(f) {
-  f.cond <- f$formula
-  f.random <- lapply(.findbars(f.cond), function(.x) {
+  f_cond <- f$formula
+  f_random <- lapply(.findbars(f_cond), function(.x) {
     fm <- .safe_deparse(.x)
     stats::as.formula(paste0("~", fm))
   })
 
-  if (length(f.random) == 1) {
-    f.random <- f.random[[1]]
+  if (length(f_random) == 1) {
+    f_random <- f_random[[1]]
   }
 
-  f.cond <- stats::as.formula(.get_fixed_effects(f.cond))
+  f_cond <- stats::as.formula(.get_fixed_effects(f_cond))
 
-  f.zi <- f$pforms$zi
-  f.zirandom <- NULL
+  f_zi <- f$pforms$zi
+  f_zirandom <- NULL
 
-  if (!.is_empty_object(f.zi)) {
-    f.zirandom <- lapply(.findbars(f.zi), function(.x) {
+  # auxiliary
+  f_sigma <- f$pforms$sigma
+  f_mu <- f$pforms$mu
+  f_nu <- f$pforms$nu
+  f_shape <- f$pforms$shape
+  f_beta <- f$pforms$beta
+  f_phi <- f$pforms$phi
+  f_hu <- f$pforms$hu
+  f_ndt <- f$pforms$ndt
+  f_zoi <- f$pforms$zoi
+  f_coi <- f$pforms$coi
+  f_kappa <- f$pforms$kappa
+  f_bias <- f$pforms$bias
+  f_bs <- f$pforms$bs
+
+  f_sigmarandom <- NULL
+  f_betarandom <- NULL
+
+
+  # split zero-inflated fixed from zero-inflated random
+
+  if (!.is_empty_object(f_zi)) {
+    f_zirandom <- lapply(.findbars(f_zi), function(.x) {
       f <- .safe_deparse(.x)
       stats::as.formula(paste0("~", f))
     })
 
-    if (length(f.zirandom) == 1) {
-      f.zirandom <- f.zirandom[[1]]
+    if (length(f_zirandom) == 1) {
+      f_zirandom <- f_zirandom[[1]]
     }
 
-    f.zi <- stats::as.formula(paste0("~", .safe_deparse(f.zi[[3L]])))
-    f.zi <- stats::as.formula(.get_fixed_effects(f.zi))
+    f_zi <- stats::as.formula(paste0("~", .safe_deparse(f_zi[[3L]])))
+    f_zi <- stats::as.formula(.get_fixed_effects(f_zi))
   }
 
+
+  # split sigma fixed from sigma random
+
+  if (!.is_empty_object(f_sigma)) {
+    f_sigmarandom <- lapply(.findbars(f_sigma), function(.x) {
+      f <- .safe_deparse(.x)
+      stats::as.formula(paste0("~", f))
+    })
+
+    if (length(f_sigmarandom) == 1) {
+      f_sigmarandom <- f_sigmarandom[[1]]
+    }
+
+    f_sigma <- stats::as.formula(paste0("~", .safe_deparse(f_sigma[[3L]])))
+    f_sigma <- stats::as.formula(.get_fixed_effects(f_sigma))
+  }
+
+
+  # split beta fixed from beta random
+
+  if (!.is_empty_object(f_beta)) {
+    f_betarandom <- lapply(.findbars(f_beta), function(.x) {
+      f <- .safe_deparse(.x)
+      stats::as.formula(paste0("~", f))
+    })
+
+    if (length(f_betarandom) == 1) {
+      f_betarandom <- f_betarandom[[1]]
+    }
+
+    f_beta <- stats::as.formula(paste0("~", .safe_deparse(f_beta[[3L]])))
+    f_beta <- stats::as.formula(.get_fixed_effects(f_beta))
+  }
+
+
   .compact_list(list(
-    conditional = f.cond,
-    random = f.random,
-    zero_inflated = f.zi,
-    zero_inflated_random = f.zirandom
+    conditional = f_cond,
+    random = f_random,
+    zero_inflated = f_zi,
+    zero_inflated_random = f_zirandom,
+    sigma = f_sigma,
+    sigma_random = f_sigmarandom,
+    beta = f_beta,
+    beta_random = f_betarandom,
+    shape = f_shape,
+    phi = f_phi,
+    hurdle = f_hu,
+    mu = f_mu,
+    nu = f_nu,
+    ndt = f_ndt,
+    bs = f_bs,
+    bias = f_bias,
+    zero_one_inflated = f_zoi,
+    conditional_one_inflated = f_coi,
+    kappa = f_kappa
   ))
 }
 
 
 .get_stanmv_formula <- function(f) {
-  f.cond <- f
-  f.random <- lapply(.findbars(f.cond), function(.x) {
+  f_cond <- f
+  f_random <- lapply(.findbars(f_cond), function(.x) {
     fm <- .safe_deparse(.x)
     stats::as.formula(paste0("~", fm))
   })
 
-  if (length(f.random) == 1) {
-    f.random <- f.random[[1]]
+  if (length(f_random) == 1) {
+    f_random <- f_random[[1]]
   }
 
-  f.cond <- stats::as.formula(.get_fixed_effects(f.cond))
+  f_cond <- stats::as.formula(.get_fixed_effects(f_cond))
 
   .compact_list(list(
-    conditional = f.cond,
-    random = f.random
+    conditional = f_cond,
+    random = f_random
   ))
 }
 

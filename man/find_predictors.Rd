@@ -2,9 +2,12 @@
 % Please edit documentation in R/find_predictors.R
 \name{find_predictors}
 \alias{find_predictors}
+\alias{find_predictors.default}
 \title{Find names of model predictors}
 \usage{
-find_predictors(
+find_predictors(x, ...)
+
+\method{find_predictors}{default}(
   x,
   effects = c("fixed", "random", "all"),
   component = c("all", "conditional", "zi", "zero_inflated", "dispersion",
@@ -16,6 +19,8 @@ find_predictors(
 }
 \arguments{
 \item{x}{A fitted model.}
+
+\item{...}{Currently not used.}
 
 \item{effects}{Should variables for fixed effects, random effects
 or both be returned? Only applies to mixed models. May be abbreviated.}
@@ -32,30 +37,28 @@ component, depending on the model.}
 as character vector, not as list. Duplicated values are removed.}
 
 \item{verbose}{Toggle warnings.}
-
-\item{...}{Currently not used.}
 }
 \value{
 A list of character vectors that represent the name(s) of the
-   predictor variables. Depending on the combination of the arguments
-   \code{effects} and \code{component}, the returned list has following
-   elements:
-   \itemize{
-     \item \code{conditional}, the "fixed effects" terms from the model
-     \item \code{random}, the "random effects" terms from the model
-     \item \code{zero_inflated}, the "fixed effects" terms from the zero-inflation component of the model
-     \item \code{zero_inflated_random}, the "random effects" terms from the zero-inflation component of the model
-     \item \code{dispersion}, the dispersion terms
-     \item \code{instruments}, for fixed-effects regressions like \code{ivreg}, \code{felm} or \code{plm}, the instrumental variables
-     \item \code{correlation}, for models with correlation-component like \code{gls}, the variables used to describe the correlation structure
-   }
+predictor variables. Depending on the combination of the arguments
+\code{effects} and \code{component}, the returned list has following
+elements:
+\itemize{
+\item \code{conditional}, the "fixed effects" terms from the model
+\item \code{random}, the "random effects" terms from the model
+\item \code{zero_inflated}, the "fixed effects" terms from the zero-inflation component of the model
+\item \code{zero_inflated_random}, the "random effects" terms from the zero-inflation component of the model
+\item \code{dispersion}, the dispersion terms
+\item \code{instruments}, for fixed-effects regressions like \code{ivreg}, \code{felm} or \code{plm}, the instrumental variables
+\item \code{correlation}, for models with correlation-component like \code{gls}, the variables used to describe the correlation structure
+}
 }
 \description{
 Returns the names of the predictor variables for the
-   different parts of a model (like fixed or random effects, zero-inflated
-   component, ...). Unlike \code{\link{find_parameters}}, the names from
-   \code{find_predictors()} match the original variable names from the data
-   that was used to fit the model.
+different parts of a model (like fixed or random effects, zero-inflated
+component, ...). Unlike \code{\link[=find_parameters]{find_parameters()}}, the names from
+\code{find_predictors()} match the original variable names from the data
+that was used to fit the model.
 }
 \examples{
 data(mtcars)

@@ -1,59 +1,48 @@
 #' Model Predictions (robust)
 #'
-#' The \code{get_predicted()} function is a robust, flexible and user-friendly alternative to base R \code{\link{predict}} function. Additional features and advantages include availability of uncertainty intervals (CI), bootstrapping, a more intuitive API and the support of more models than base R's \code{predict}. However, although the interface are simplified, it is still very important to read the documentation of the arguments. This is because making "predictions" (a lose term for a variety of things) is a non-trivial process, with lots of caveats and complications. Read the \code{Details} section for more information.
+#' The `get_predicted()` function is a robust, flexible and user-friendly alternative to base R [predict()] function. Additional features and advantages include availability of uncertainty intervals (CI), bootstrapping, a more intuitive API and the support of more models than base R's `predict` function. However, although the interface are simplified, it is still very important to read the documentation of the arguments. This is because making "predictions" (a lose term for a variety of things) is a non-trivial process, with lots of caveats and complications. Read the `Details` section for more information.
 #'
 #' @param x A statistical model (can also be a data.frame, in which case the
 #'   second argument has to be a model).
 #' @param data An optional data frame in which to look for variables with which
 #'   to predict. If omitted, the data used to fit the model is used.
-#' @param predict Can be \code{"link"}, \code{"expectation"} (default), or
-#'   \code{"prediction"}. This modulates the scale of the output as well as the
-#'   type of certainty interval. More specifically, \code{"link"} gives an
-#'   output on the link-scale (for logistic models, that means the log-odds
-#'   scale) with a confidence interval (CI). \code{"expectation"} (default) also
-#'   returns confidence intervals, but this time the output is on the response
-#'   scale (for logistic models, that means probabilities). Finally,
-#'   \code{"predict"} also gives an output on the response scale, but this time
-#'   associated with a prediction interval (PI), which is larger than a
-#'   confidence interval (though it mostly make sense for linear models). Read
-#'   more about in the \strong{Details} section below. \code{"relation"} is
-#'   also accepted as a (deprecated) alias for \code{"expectation"}.
+#' @param predict Can be `"link"`, `"expectation"` (default), `"prediction"`, or `"response"`. You can see these 4 options for predictions as on a gradient from "close to the model" to "close to the response data". More specifically, the `predict` argument modulates two things; the scale of the output as well as the type of certainty interval (see the details and examples). More specifically, `"link"` returns predictions on the model's link-scale (for logistic models, that means the log-odds scale) with a confidence interval (CI). `"expectation"` (default) also returns confidence intervals, but this time the output is on the response scale (for logistic models, that means probabilities). `"predict"` also gives an output on the response scale, but this time associated with a prediction interval (PI), which is larger than a confidence interval (though it mostly make sense for linear models). Finally, `"response"` only differs from the previous option for binomial models where it additionally transforms the predictions into the original response's type (for instance, to a factor). Read more about in the **Details** section below.
 #' @param iterations For Bayesian models, this corresponds to the number of
-#'   posterior draws. If \code{NULL}, will return all the draws (one for each
-#'   iteration of the model). For frequentist models, if not \code{NULL}, will
+#'   posterior draws. If `NULL`, will return all the draws (one for each
+#'   iteration of the model). For frequentist models, if not `NULL`, will
 #'   generate bootstrapped draws, from which bootstrapped CIs will be computed.
-#'   Iterations can be accessed via \code{as.data.frame}.
-#' @param include_random If \code{TRUE} (default), include all random effects in
-#'   the prediction. If \code{FALSE}, don't take them into account. Can also be
+#'   Iterations can be accessed via `as.data.frame`.
+#' @param include_random If `TRUE` (default), include all random effects in
+#'   the prediction. If `FALSE`, don't take them into account. Can also be
 #'   a formula to specify which random effects to condition on when predicting
-#'   (passed to the \code{re.form} argument). If \code{include_random = TRUE}
-#'   and \code{newdata} is provided, make sure to include the random effect
-#'   variables in \code{newdata} as well.
-#' @param include_smooth For General Additive Models (GAMs). If \code{FALSE},
+#'   (passed to the `re.form` argument). If `include_random = TRUE`
+#'   and `newdata` is provided, make sure to include the random effect
+#'   variables in `newdata` as well.
+#' @param include_smooth For General Additive Models (GAMs). If `FALSE`,
 #'   will fix the value of the smooth to its average, so that the predictions
-#'   are not depending on it. (default), \code{mean()}, or
-#'   \code{bayestestR::map_estimate()}.
+#'   are not depending on it. (default), `mean()`, or
+#'   `bayestestR::map_estimate()`.
 #' @param ... Other argument to be passed for instance to
-#'   \code{\link{get_predicted_ci}}.
+#'   [get_predicted_ci()].
 #' @inheritParams get_df
 #'
-#' @seealso \code{\link{get_predicted_ci}}
+#' @seealso [get_predicted_ci()]
 #'
 #' @return The fitted values (i.e. predictions for the response). For Bayesian
-#'   or bootstrapped models (when \code{iterations != NULL}), iterations (as
-#'   columns and observations are rows) can be accessed via \code{as.data.frame}.
+#'   or bootstrapped models (when `iterations != NULL`), iterations (as
+#'   columns and observations are rows) can be accessed via `as.data.frame`.
 #'
 #' @details
-#' The \code{predict} argument jointly modulates two separate concepts, the
-#' \strong{scale} and the \strong{uncertainty interval}.
+#' In `insight::get_predicted()`, the `predict` argument jointly
+#' modulates two separate concepts, the **scale** and the **uncertainty interval**.
 #'
-#' \subsection{Confidence Interval vs. Prediction Interval)}{
+#' \subsection{Confidence Interval (CI) vs. Prediction Interval (PI))}{
 #' \itemize{
-#'   \item \strong{Linear models} - \code{lm()}: For linear models, Prediction
-#'   intervals (\code{predict = "prediction"}) show the range that likely
+#'   \item **Linear models** - `lm()`: For linear models, Prediction
+#'   intervals (`predict = "prediction"`) show the range that likely
 #'   contains the value of a new observation (in what range it is likely to
-#'   fall), whereas confidence intervals (\code{predict = "expectation"} or
-#'   \code{predict = "link"}) reflect the uncertainty around the estimated
+#'   fall), whereas confidence intervals (`predict = "expectation"` or
+#'   `predict = "link"`) reflect the uncertainty around the estimated
 #'   parameters (and gives the range of uncertainty of the regression line). In
 #'   general, Prediction Intervals (PIs) account for both the uncertainty in the
 #'   model's parameters, plus the random variation of the individual values.
@@ -61,10 +50,10 @@
 #'   Moreover, prediction intervals will not necessarily become narrower as the
 #'   sample size increases (as they do not reflect only the quality of the fit,
 #'   but also the variability within the data).
-#'   \item \strong{General Linear models} - \code{glm()}: For binomial models,
+#'   \item **General Linear models** - `glm()`: For binomial models,
 #'   prediction intervals are somewhat useless (for instance, for a binomial
 #'   (bernoulli) model for which the dependent variable is a vector of 1s and
-#'   0s, the prediction interval is... \code{[0, 1]}).
+#'   0s, the prediction interval is... `[0, 1]`).
 #' }}
 #'
 #'
@@ -72,17 +61,21 @@
 #' Having the output is on the scale of the response variable is arguably the
 #' most convenient to understand and visualize the relationships. If on the
 #' link-scale, no transformation is applied and the values are on the scale of
-#' the model's predictors. For instance, for a logistic model, the response
+#' the model. For instance, for a logistic model, the response
 #' scale corresponds to the predicted probabilities, whereas the link-scale
-#' makes predictions of log-odds (probabilities on the logit scale).
+#' makes predictions of log-odds (probabilities on the logit scale). Note that,
+#' when `predict = "response"`, the probabilities are rounded (so that the
+#' prediction corresponds to the most likely outcome).
 #' }
 #'
 #' @examples
 #' data(mtcars)
 #' x <- lm(mpg ~ cyl + hp, data = mtcars)
+#'
 #' predictions <- get_predicted(x)
 #' predictions
 #'
+#' # Options and methods ---------------------
 #' get_predicted(x, predict = "prediction")
 #'
 #' # Get CI
@@ -91,6 +84,29 @@
 #' # Bootstrapped
 #' as.data.frame(get_predicted(x, iterations = 4))
 #' summary(get_predicted(x, iterations = 4)) # Same as as.data.frame(..., keep_iterations = F)
+#'
+#' # Different predicttion types ------------------------
+#' data(iris)
+#' data <- droplevels(iris[1:100, ])
+#'
+#' # Fit a logistic model
+#' x <- glm(Species ~ Sepal.Length, data = data, family = "binomial")
+#'
+#' # Expectation (default): response scale + CI
+#' pred <- get_predicted(x, predict = "expectation")
+#' head(as.data.frame(pred))
+#'
+#' # Prediction: response scale + PI
+#' pred <- get_predicted(x, predict = "prediction")
+#' head(as.data.frame(pred))
+#'
+#' # Link: link scale + CI
+#' pred <- get_predicted(x, predict = "link")
+#' head(as.data.frame(pred))
+#'
+#' # Response: response "type" + PI
+#' pred <- get_predicted(x, predict = "response")
+#' head(as.data.frame(pred))
 #' @export
 get_predicted <- function(x, ...) {
   UseMethod("get_predicted")
@@ -147,7 +163,7 @@ get_predicted.data.frame <- function(x, data = NULL, verbose = TRUE, ...) {
 #' @export
 get_predicted.lm <- function(x,
                              data = NULL,
-                             predict = c("expectation", "link", "prediction", "relation"),
+                             predict = "expectation",
                              iterations = NULL,
                              verbose = TRUE,
                              ...) {
@@ -193,7 +209,7 @@ get_predicted.glm <- get_predicted.lm
 #' @export
 get_predicted.lmerMod <- function(x,
                                   data = NULL,
-                                  predict = c("expectation", "link", "prediction", "relation"),
+                                  predict = "expectation",
                                   ci = 0.95,
                                   include_random = TRUE,
                                   iterations = NULL,
@@ -256,7 +272,7 @@ get_predicted.merMod <- get_predicted.lmerMod
 #' @export
 get_predicted.glmmTMB <- function(x,
                                   data = NULL,
-                                  predict = c("expectation", "link", "prediction", "relation"),
+                                  predict = c("expectation", "link", "prediction", "response", "relation"),
                                   ci = 0.95,
                                   include_random = TRUE,
                                   iterations = NULL,
@@ -332,7 +348,7 @@ get_predicted.glmmTMB <- function(x,
 #' @export
 get_predicted.gam <- function(x,
                               data = NULL,
-                              predict = c("expectation", "link", "prediction", "relation"),
+                              predict = c("expectation", "link", "prediction", "response", "relation"),
                               ci = 0.95,
                               include_random = TRUE,
                               include_smooth = TRUE,
@@ -422,7 +438,7 @@ get_predicted.list <- get_predicted.gam # gamm4
 #' @export
 get_predicted.stanreg <- function(x,
                                   data = NULL,
-                                  predict = c("expectation", "link", "prediction", "relation"),
+                                  predict = "expectation",
                                   iterations = NULL,
                                   include_random = TRUE,
                                   include_smooth = TRUE,
@@ -579,10 +595,13 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
 }
 
 
+# -------------------------------------------------------------------------
+
 
 .get_predicted_args <- function(x,
                                 data = NULL,
-                                predict = c("expectation", "link", "prediction", "relation"),
+                                predict = c("expectation", "link", "prediction", "response", "response", "relation"),
+                                type = "auto",
                                 include_random = TRUE,
                                 include_smooth = TRUE,
                                 ci = 0.95,
@@ -591,7 +610,7 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
                                 ...) {
 
   # Sanitize input
-  predict <- match.arg(predict, choices = c("expectation", "link", "prediction", "relation"))
+  predict <- match.arg(predict, choices = c("expectation", "link", "prediction", "response", "relation"))
   # Other names: "response", "expected", "distribution", "observations"
   if (predict == "relation") {
     message(format_message(
@@ -618,16 +637,18 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
   } else if (predict == "expectation") {
     ci_type <- "confidence"
     scale <- "response"
-  } else if (predict == "prediction") {
+  } else if (predict %in% c("prediction", "response")) {
     ci_type <- "prediction"
     scale <- "response"
   }
 
   # Type (that's for the initial call to stats::predict)
-  if (info$is_linear) {
-    type <- "response"
-  } else {
-    type <- "link"
+  if (!is.null(type) && all(type == "auto")) {
+    if (info$is_linear) {
+      type <- "response"
+    } else {
+      type <- "link"
+    }
   }
 
   # Transform
@@ -684,6 +705,21 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
 }
 
 
+# -------------------------------------------------------------------------
+.get_predict_transform_response <- function(predictions, response) {
+  predictions <- round(predictions)
+  if (is.factor(response)) {
+    predictions[predictions == 0] <- levels(response)[1]
+    predictions[predictions == 1] <- levels(response)[2]
+    predictions <- as.factor(predictions)
+    levels(predictions) <- levels(response)
+  } else {
+    predictions[predictions == 0] <- unique(response)[1]
+    predictions[predictions == 1] <- unique(response)[2]
+  }
+  predictions
+}
+
 .get_predicted_transform <- function(x,
                                      predictions,
                                      args = NULL,
@@ -695,7 +731,11 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
     if (!is.null(ci_data)) {
       # Transform CI
       se_col <- names(ci_data) == "SE"
-      ci_data[!se_col] <- as.data.frame(sapply(ci_data[!se_col], link_inverse(x)))
+
+      # fix for R 3.4
+      row.names(ci_data) <- NULL
+
+      ci_data[!se_col] <- lapply(ci_data[!se_col], link_inverse(x))
 
       # Transform SE (https://github.com/SurajGupta/r-source/blob/master/src/library/stats/R/predict.glm.R#L60)
       # Delta method; SE * deriv( inverse_link(x) wrt lin_pred(x) )
@@ -712,8 +752,22 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
     }
   }
 
+  # Transform to response "type"
+  if (args$predict == "response" && model_info(x)$is_binomial) {
+    response <- get_response(x)
+    ci_data[!se_col] <- lapply(ci_data[!se_col], .get_predict_transform_response, response = response)
+    predictions <- .get_predict_transform_response(predictions, response = response)
+    if ("iterations" %in% names(attributes(predictions))) {
+      attr(predictions, "iterations") <- as.data.frame(sapply(attributes(predictions)$iterations, .get_predict_transform_response, response = response))
+    }
+  }
+
   list(predictions = predictions, ci_data = ci_data)
 }
+
+
+
+# -------------------------------------------------------------------------
 
 
 .get_predicted_out <- function(predictions, args = NULL, ci_data = NULL, ...) {
@@ -730,7 +784,7 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
   predictions
 }
 
-# Bootstrap ---------------------------------------------------------------
+# Bootstrap ==============================================================
 
 .get_predicted_boot <- function(x,
                                 data = NULL,
@@ -771,6 +825,8 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
   .get_predicted_centrality_from_draws(x, draws, ...)
 }
 
+
+# -------------------------------------------------------------------------
 
 
 .get_predicted_centrality_from_draws <- function(x,

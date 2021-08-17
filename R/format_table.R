@@ -4,35 +4,35 @@
 #' @description This functions takes a data frame with model parameters as input
 #'   and formats certain columns into a more readable layout (like collapsing
 #'   separate columns for lower and upper confidence interval values). Furthermore,
-#'   column names are formatted as well. Note that \code{format_table()}
+#'   column names are formatted as well. Note that `format_table()`
 #'   converts all columns into character vectors!
 #'
 #' @param x A data frame of model's parameters, as returned by various functions
-#'   of the \strong{easystats}-packages. May also be a result from
-#'   \code{broom::tidy()}.
+#'   of the **easystats**-packages. May also be a result from
+#'   `broom::tidy()`.
 #' @param pretty_names Return "pretty" (i.e. more human readable) parameter
 #'   names.
 #' @param digits,ci_digits,p_digits,rope_digits Number of digits for rounding or
-#'   significant figures. May also be \code{"signif"} to return significant
-#'   figures or \code{"scientific"} to return scientific notation. Control the
-#'   number of digits by adding the value as suffix, e.g. \code{digits = "scientific4"}
-#'   to have scientific notation with 4 decimal places, or \code{digits = "signif5"}
-#'   for 5 significant figures (see also \code{\link{signif}}).
+#'   significant figures. May also be `"signif"` to return significant
+#'   figures or `"scientific"` to return scientific notation. Control the
+#'   number of digits by adding the value as suffix, e.g. `digits = "scientific4"`
+#'   to have scientific notation with 4 decimal places, or `digits = "signif5"`
+#'   for 5 significant figures (see also [signif()]).
 #' @param ci_width Minimum width of the returned string for confidence
-#'   intervals. If not \code{NULL} and width is larger than the string's length,
-#'   leading whitespaces are added to the string. If \code{width="auto"}, width
+#'   intervals. If not `NULL` and width is larger than the string's length,
+#'   leading whitespaces are added to the string. If `width="auto"`, width
 #'   will be set to the length of the longest string.
-#' @param ci_brackets Logical, if \code{TRUE} (default), CI-values are
+#' @param ci_brackets Logical, if `TRUE` (default), CI-values are
 #'   encompassed in square brackets (else in parentheses).
-#' @param preserve_attributes Logical, if \code{TRUE}, preserves all attributes
+#' @param preserve_attributes Logical, if `TRUE`, preserves all attributes
 #'   from the input data frame.
 #' @param ... Arguments passed to or from other methods.
 #' @inheritParams format_p
 #' @inheritParams format_value
 #' @inheritParams get_data
 #'
-#' @seealso Vignettes \href{https://easystats.github.io/insight/articles/display.html}{Formatting, printing and exporting tables}
-#' and \href{https://easystats.github.io/parameters/articles/model_parameters_formatting.html}{Formatting model parameters}.
+#' @seealso Vignettes [Formatting, printing and exporting tables](https://easystats.github.io/insight/articles/display.html)
+#' and [Formatting model parameters](https://easystats.github.io/parameters/articles/model_parameters_formatting.html).
 #'
 #' @examples
 #' format_table(head(iris), digits = 1)
@@ -49,7 +49,7 @@
 #'   as.data.frame(format_table(x))
 #' }
 #' }
-#' @return A data frame. Note that \code{format_table()} converts all columns
+#' @return A data frame. Note that `format_table()` converts all columns
 #' into character vectors!
 #' @export
 format_table <- function(x,
@@ -355,21 +355,20 @@ parameters_table <- format_table
     ci_position <- which(names(x) == ci_high[1])
     x[[ci_position]] <- NULL
     x$CI <- NULL
-  }
-  else {
+  } else {
 
     # regular CIs
 
     if (length(ci_low) >= 1 && length(ci_low) == length(ci_high)) {
       if (!is.null(ci_value)) {
         if (length(unique(stats::na.omit(ci_value))) > 1) {
-          ci_colname <- sprintf("%i%% %s", unique(stats::na.omit(ci_value)) * 100, ci_name)
+          ci_colname <- sprintf("%g%% %s", unique(stats::na.omit(ci_value)) * 100, ci_name)
         } else {
-          ci_colname <- sprintf("%i%% %s", unique(stats::na.omit(ci_value))[1] * 100, ci_name)
+          ci_colname <- sprintf("%g%% %s", unique(stats::na.omit(ci_value))[1] * 100, ci_name)
         }
         x$CI <- NULL
       } else if (!is.null(x$CI)) {
-        ci_colname <- sprintf("%i%% %s", unique(stats::na.omit(x$CI))[1] * 100, ci_name)
+        ci_colname <- sprintf("%g%% %s", unique(stats::na.omit(x$CI))[1] * 100, ci_name)
         x$CI <- NULL
       } else {
         # all these edge cases... for some objects in "parameters::model_parameters()",
@@ -377,7 +376,7 @@ parameters_table <- format_table
         # "CI_low_0.95" etc. - this is handled here, if we have no ci-attribute
         if (grepl(paste0(ci_name, "_low_(\\d)\\.(\\d)"), ci_low) && grepl(paste0(ci_name, "_high_(\\d)\\.(\\d)"), ci_high)) {
           ci_levels <- as.numeric(gsub(paste0(ci_name, "_low_(\\d)\\.(\\d)"), "\\1.\\2", ci_low))
-          ci_colname <- sprintf("%i%% %s", unique(stats::na.omit(ci_levels)) * 100, ci_name)
+          ci_colname <- sprintf("%g%% %s", unique(stats::na.omit(ci_levels)) * 100, ci_name)
           x$CI <- NULL
         } else {
           ci_colname <- ci_name
@@ -411,11 +410,11 @@ parameters_table <- format_table
 
     # CI percentage
     if (length(other) == 1 && !is.null(att[[paste0("ci_", other)]])) {
-      other_ci_colname <- sprintf("%s %i%% CI", other, unique(stats::na.omit(att[[paste0("ci_", other)]])) * 100)
+      other_ci_colname <- sprintf("%s %g%% CI", other, unique(stats::na.omit(att[[paste0("ci_", other)]])) * 100)
     } else if (!is.null(att[["ci"]])) {
-      other_ci_colname <- sprintf("%s %i%% CI", other, unique(stats::na.omit(att[["ci"]])) * 100)
+      other_ci_colname <- sprintf("%s %g%% CI", other, unique(stats::na.omit(att[["ci"]])) * 100)
     } else if (length(other == 1) && paste0(other, "_CI") %in% colnames(x)) {
-      other_ci_colname <- sprintf("%s %i%% CI", other, unique(stats::na.omit(x[[paste0(other, "_CI")]])) * 100)
+      other_ci_colname <- sprintf("%s %g%% CI", other, unique(stats::na.omit(x[[paste0(other, "_CI")]])) * 100)
     } else {
       other_ci_colname <- paste(other, " CI")
     }

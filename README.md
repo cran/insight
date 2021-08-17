@@ -5,7 +5,7 @@
 [![downloads](https://cranlogs.r-pkg.org/badges/insight)](https://cranlogs.r-pkg.org/)
 [![total](https://cranlogs.r-pkg.org/badges/grand-total/insight)](https://cranlogs.r-pkg.org/)
 
-**Gain insight into your models\!**
+**Gain insight into your models!**
 
 When fitting any statistical model, there are many useful pieces of
 information that are simultaneously calculated and stored beyond
@@ -25,22 +25,22 @@ to every aspect of many model objects via consistent syntax and output.
 
 ## Installation
 
-[![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/insight)](https://cran.r-project.org/package=insight)
+[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/insight)](https://cran.r-project.org/package=insight)
 [![R
 check](https://github.com/easystats/insight/workflows/R-check/badge.svg?branch=master)](https://github.com/easystats/insight/actions)
 
-Run the following to install the stable release of **insight** from
-CRAN:
+The *insight* package is available on CRAN, while its latest development
+version is available on R-universe (from *rOpenSci*).
+
+| Type        | Source     | Command                                                                   |
+|-------------|------------|---------------------------------------------------------------------------|
+| Release     | CRAN       | `install.packages("insight")`                                             |
+| Development | R-universe | `install.packages("insight", repos = "https://easystats.r-universe.dev")` |
+
+Once you have downloaded the package, you can then load it using:
 
 ``` r
-install.packages("insight")
-```
-
-Or this one to install the latest development version:
-
-``` r
-install.packages("remotes")
-remotes::install_github("easystats/insight")
+library("insight")
 ```
 
 ## Documentation
@@ -80,9 +80,9 @@ as *coefficients*.
 
 #### Response and Predictors
 
-  - **response**: the outcome or response variable (dependent variable)
+-   **response**: the outcome or response variable (dependent variable)
     of a regression model.
-  - **predictor**: independent variables of (the *fixed* part of) a
+-   **predictor**: independent variables of (the *fixed* part of) a
     regression model. For mixed models, variables that are only in the
     *random effects* part (i.e. grouping factors) of the model are not
     returned as predictors by default. However, these can be included
@@ -106,9 +106,9 @@ and `poly(x, 2)`.
 
 #### Random Effects
 
-  - **random slopes**: variables that are specified as random slopes in
+-   **random slopes**: variables that are specified as random slopes in
     a mixed effects model.
-  - **random or grouping factors**: variables that are specified as
+-   **random or grouping factors**: variables that are specified as
     grouping variables in a mixed effects model.
 
 *Aren’t the predictors, terms and parameters the same thing?*
@@ -130,23 +130,23 @@ narrower level of statistical inspection and reporting (`get_*`).
 ![](https://raw.githubusercontent.com/easystats/insight/master/paper/figure1_small.png)
 
 In total, the **insight** package includes 16 core functions:
-[get\_data()](https://easystats.github.io/insight/reference/get_data.html),
-[get\_priors()](https://easystats.github.io/insight/reference/get_priors.html),
-[get\_variance()](https://easystats.github.io/insight/reference/get_variance.html),
-[get\_parameters()](https://easystats.github.io/insight/reference/get_parameters.html),
-[get\_predictors()](https://easystats.github.io/insight/reference/get_predictors.html),
-[get\_random()](https://easystats.github.io/insight/reference/get_random.html),
-[get\_response()](https://easystats.github.io/insight/reference/get_response.html),
-[find\_algorithm()](https://easystats.github.io/insight/reference/find_algorithm.html),
-[find\_formula()](https://easystats.github.io/insight/reference/find_formula.html),
-[find\_variables()](https://easystats.github.io/insight/reference/find_variables.html),
-[find\_terms()](https://easystats.github.io/insight/reference/find_terms.html),
-[find\_parameters()](https://easystats.github.io/insight/reference/find_parameters.html),
-[find\_predictors()](https://easystats.github.io/insight/reference/find_predictors.html),
-[find\_random()](https://easystats.github.io/insight/reference/find_random.html),
-[find\_response()](https://easystats.github.io/insight/reference/find_response.html),
+[get_data()](https://easystats.github.io/insight/reference/get_data.html),
+[get_priors()](https://easystats.github.io/insight/reference/get_priors.html),
+[get_variance()](https://easystats.github.io/insight/reference/get_variance.html),
+[get_parameters()](https://easystats.github.io/insight/reference/get_parameters.html),
+[get_predictors()](https://easystats.github.io/insight/reference/get_predictors.html),
+[get_random()](https://easystats.github.io/insight/reference/get_random.html),
+[get_response()](https://easystats.github.io/insight/reference/get_response.html),
+[find_algorithm()](https://easystats.github.io/insight/reference/find_algorithm.html),
+[find_formula()](https://easystats.github.io/insight/reference/find_formula.html),
+[find_variables()](https://easystats.github.io/insight/reference/find_variables.html),
+[find_terms()](https://easystats.github.io/insight/reference/find_terms.html),
+[find_parameters()](https://easystats.github.io/insight/reference/find_parameters.html),
+[find_predictors()](https://easystats.github.io/insight/reference/find_predictors.html),
+[find_random()](https://easystats.github.io/insight/reference/find_random.html),
+[find_response()](https://easystats.github.io/insight/reference/find_response.html),
 and
-[model\_info()](https://easystats.github.io/insight/reference/model_info.html).
+[model_info()](https://easystats.github.io/insight/reference/model_info.html).
 In all cases, users must supply at a minimum, the name of the model fit
 object. In several functions, there are additional arguments that allow
 for more targeted returns of model information. For example, the
@@ -189,7 +189,7 @@ dat <- get_data(m)
 pred <- find_predictors(m, flatten = TRUE)
 
 l <- lapply(pred, function(x) {
-    if (is.numeric(dat[[x]])) 
+    if (is.numeric(dat[[x]]))
         mean(dat[[x]]) else unique(dat[[x]])
 })
 
@@ -215,7 +215,7 @@ coefficients.
 
 ``` r
 print_params <- function(model) {
-    paste0("My parameters are ", paste0(row.names(summary(model)$coefficients), collapse = ", "), 
+    paste0("My parameters are ", paste0(row.names(summary(model)$coefficients), collapse = ", "),
         ", thank you for your attention!")
 }
 
@@ -237,7 +237,7 @@ the model type.
 
 ``` r
 print_params <- function(model) {
-    paste0("My parameters are ", paste0(insight::find_parameters(model, flatten = TRUE), 
+    paste0("My parameters are ", paste0(insight::find_parameters(model, flatten = TRUE),
         collapse = ", "), ", thank you for your attention!")
 }
 
@@ -260,76 +260,84 @@ email or also file an issue.
 
 ## List of Supported Models by Class
 
-Currently, 182 model classes are supported.
+Currently, 206 model classes are supported.
 
 ``` r
 supported_models()
-#>   [1] "aareg"             "afex_aov"          "Anova.mlm"        
-#>   [4] "aov"               "aovlist"           "Arima"            
-#>   [7] "averaging"         "bamlss"            "bamlss.frame"     
-#>  [10] "bayesQR"           "bayesx"            "BBmm"             
-#>  [13] "BBreg"             "bcplm"             "betamfx"          
-#>  [16] "betaor"            "betareg"           "BFBayesFactor"    
-#>  [19] "BGGM"              "bife"              "bigglm"           
-#>  [22] "biglm"             "blavaan"           "blrm"             
-#>  [25] "bracl"             "brglm"             "brmsfit"          
-#>  [28] "brmultinom"        "btergm"            "censReg"          
-#>  [31] "cgam"              "cgamm"             "cglm"             
-#>  [34] "clm"               "clm2"              "clmm"             
-#>  [37] "clmm2"             "clogit"            "coeftest"         
-#>  [40] "complmrob"         "coxme"             "coxph"            
-#>  [43] "coxph.penal"       "coxr"              "cpglm"            
-#>  [46] "cpglmm"            "crch"              "crq"              
-#>  [49] "crqs"              "crr"               "DirichletRegModel"
-#>  [52] "eglm"              "elm"               "ergm"             
-#>  [55] "feglm"             "feis"              "felm"             
-#>  [58] "fitdistr"          "fixest"            "flexsurvreg"      
-#>  [61] "gam"               "Gam"               "gamlss"           
-#>  [64] "gamm"              "gamm4"             "garch"            
-#>  [67] "gbm"               "gee"               "geeglm"           
-#>  [70] "glht"              "glimML"            "glm"              
-#>  [73] "Glm"               "glmm"              "glmmadmb"         
-#>  [76] "glmmPQL"           "glmmTMB"           "glmrob"           
-#>  [79] "glmRob"            "glmx"              "gls"              
-#>  [82] "gmnl"              "HLfit"             "htest"            
-#>  [85] "hurdle"            "iv_robust"         "ivFixed"          
-#>  [88] "ivprobit"          "ivreg"             "lavaan"           
-#>  [91] "lm"                "lm_robust"         "lme"              
-#>  [94] "lmerMod"           "lmerModLmerTest"   "lmodel2"          
-#>  [97] "lmrob"             "lmRob"             "logistf"          
-#> [100] "logitmfx"          "logitor"           "LORgee"           
-#> [103] "lqm"               "lqmm"              "lrm"              
-#> [106] "manova"            "MANOVA"            "margins"          
-#> [109] "maxLik"            "mclogit"           "mcmc"             
-#> [112] "mcmc.list"         "MCMCglmm"          "mediate"          
-#> [115] "merMod"            "merModList"        "meta_bma"         
-#> [118] "meta_fixed"        "meta_random"       "metaplus"         
-#> [121] "mhurdle"           "mipo"              "mira"             
-#> [124] "mixed"             "MixMod"            "mixor"            
-#> [127] "mjoint"            "mle"               "mle2"             
-#> [130] "mlm"               "mlogit"            "mmlogit"          
-#> [133] "model_fit"         "multinom"          "mvord"            
-#> [136] "negbinirr"         "negbinmfx"         "ols"              
-#> [139] "orm"               "plm"               "poissonirr"       
-#> [142] "poissonmfx"        "polr"              "probitmfx"        
-#> [145] "psm"               "Rchoice"           "ridgelm"          
-#> [148] "riskRegression"    "rlm"               "rlmerMod"         
-#> [151] "RM"                "rma"               "rma.uni"          
-#> [154] "robmixglm"         "rq"                "rqs"              
-#> [157] "rqss"              "sarlm"             "scam"             
-#> [160] "selection"         "sem"               "SemiParBIV"       
-#> [163] "speedglm"          "speedlm"           "stanmvreg"        
-#> [166] "stanreg"           "summary.lm"        "survfit"          
-#> [169] "survreg"           "svy_vglm"          "svyglm"           
-#> [172] "svyolr"            "tobit"             "truncreg"         
-#> [175] "vgam"              "vglm"              "wbgee"            
-#> [178] "wblm"              "wbm"               "zcpglm"           
-#> [181] "zeroinfl"          "zerotrunc"
+#>   [1] "aareg"             "afex_aov"          "AKP"              
+#>   [4] "Anova.mlm"         "aov"               "aovlist"          
+#>   [7] "Arima"             "averaging"         "bamlss"           
+#>  [10] "bamlss.frame"      "bayesQR"           "bayesx"           
+#>  [13] "BBmm"              "BBreg"             "bcplm"            
+#>  [16] "betamfx"           "betaor"            "betareg"          
+#>  [19] "BFBayesFactor"     "BGGM"              "bife"             
+#>  [22] "bifeAPEs"          "bigglm"            "biglm"            
+#>  [25] "blavaan"           "blrm"              "bracl"            
+#>  [28] "brglm"             "brmsfit"           "brmultinom"       
+#>  [31] "btergm"            "censReg"           "cgam"             
+#>  [34] "cgamm"             "cglm"              "clm"              
+#>  [37] "clm2"              "clmm"              "clmm2"            
+#>  [40] "clogit"            "coeftest"          "complmrob"        
+#>  [43] "confusionMatrix"   "coxme"             "coxph"            
+#>  [46] "coxph.penal"       "coxr"              "cpglm"            
+#>  [49] "cpglmm"            "crch"              "crq"              
+#>  [52] "crqs"              "crr"               "dep.effect"       
+#>  [55] "DirichletRegModel" "drc"               "eglm"             
+#>  [58] "elm"               "epi.2by2"          "ergm"             
+#>  [61] "feglm"             "feis"              "felm"             
+#>  [64] "fitdistr"          "fixest"            "flexsurvreg"      
+#>  [67] "gam"               "Gam"               "gamlss"           
+#>  [70] "gamm"              "gamm4"             "garch"            
+#>  [73] "gbm"               "gee"               "geeglm"           
+#>  [76] "glht"              "glimML"            "glm"              
+#>  [79] "Glm"               "glmm"              "glmmadmb"         
+#>  [82] "glmmPQL"           "glmmTMB"           "glmrob"           
+#>  [85] "glmRob"            "glmx"              "gls"              
+#>  [88] "gmnl"              "HLfit"             "htest"            
+#>  [91] "hurdle"            "iv_robust"         "ivFixed"          
+#>  [94] "ivprobit"          "ivreg"             "lavaan"           
+#>  [97] "lm"                "lm_robust"         "lme"              
+#> [100] "lmerMod"           "lmerModLmerTest"   "lmodel2"          
+#> [103] "lmrob"             "lmRob"             "logistf"          
+#> [106] "logitmfx"          "logitor"           "LORgee"           
+#> [109] "lqm"               "lqmm"              "lrm"              
+#> [112] "manova"            "MANOVA"            "margins"          
+#> [115] "maxLik"            "mclogit"           "mcmc"             
+#> [118] "mcmc.list"         "MCMCglmm"          "mcp1"             
+#> [121] "mcp12"             "mcp2"              "med1way"          
+#> [124] "mediate"           "merMod"            "merModList"       
+#> [127] "meta_bma"          "meta_fixed"        "meta_random"      
+#> [130] "metaplus"          "mhurdle"           "mipo"             
+#> [133] "mira"              "mixed"             "MixMod"           
+#> [136] "mixor"             "mjoint"            "mle"              
+#> [139] "mle2"              "mlm"               "mlogit"           
+#> [142] "mmlogit"           "model_fit"         "multinom"         
+#> [145] "mvord"             "negbinirr"         "negbinmfx"        
+#> [148] "ols"               "onesampb"          "orm"              
+#> [151] "pgmm"              "plm"               "PMCMR"            
+#> [154] "poissonirr"        "poissonmfx"        "polr"             
+#> [157] "probitmfx"         "psm"               "Rchoice"          
+#> [160] "ridgelm"           "riskRegression"    "rjags"            
+#> [163] "rlm"               "rlmerMod"          "RM"               
+#> [166] "rma"               "rma.uni"           "robmixglm"        
+#> [169] "robtab"            "rq"                "rqs"              
+#> [172] "rqss"              "sarlm"             "scam"             
+#> [175] "selection"         "sem"               "SemiParBIV"       
+#> [178] "semLm"             "semLme"            "slm"              
+#> [181] "speedglm"          "speedlm"           "stanfit"          
+#> [184] "stanmvreg"         "stanreg"           "summary.lm"       
+#> [187] "survfit"           "survreg"           "svy_vglm"         
+#> [190] "svyglm"            "svyolr"            "t1way"            
+#> [193] "tobit"             "trimcibt"          "truncreg"         
+#> [196] "vgam"              "vglm"              "wbgee"            
+#> [199] "wblm"              "wbm"               "wmcpAKP"          
+#> [202] "yuen"              "yuend"             "zcpglm"           
+#> [205] "zeroinfl"          "zerotrunc"
 ```
 
-  - **Didn’t find a model?** [File an
+-   **Didn’t find a model?** [File an
     issue](https://github.com/easystats/insight/issues) and request
-    additional model-support in *insight*\!
+    additional model-support in *insight*!
 
 ## Credits
 

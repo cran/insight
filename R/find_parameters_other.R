@@ -2,7 +2,7 @@
 #' @name find_parameters.averaging
 #'
 #' @description Returns the names of model parameters, like they typically
-#'     appear in the \code{summary()} output.
+#'     appear in the `summary()` output.
 #'
 #' @param ... Currently not used.
 #' @inheritParams find_parameters
@@ -12,8 +12,8 @@
 #' @return A list of parameter names. The returned list may have following
 #'   elements:
 #'    \itemize{
-#'      \item \code{conditional}, the "fixed effects" part from the model.
-#'      \item \code{full}, parameters from the full model.
+#'      \item `conditional`, the "fixed effects" part from the model.
+#'      \item `full`, parameters from the full model.
 #'    }
 #'
 #' @examples
@@ -140,7 +140,32 @@ find_parameters.glmx <- function(x,
 }
 
 
+
 #' @export
 find_parameters.model_fit <- function(x, flatten = FALSE, ...) {
   find_parameters(x$fit, flatten = flatten, ...)
+}
+
+
+
+#' @export
+find_parameters.systemfit <- function(x, flatten = FALSE, ...) {
+  cf <- stats::coef(x)
+  f <- find_formula(x)
+
+  system_names <- names(f)
+
+  out <- lapply(system_names, function(i) {
+    pattern <- paste0("^", i, "_(.*)")
+    params <- grepl(pattern, names(cf))
+    gsub(pattern, "\\1", names(cf)[params])
+  })
+
+  names(out) <- system_names
+
+  if (flatten) {
+    unique(unlist(out))
+  } else {
+    out
+  }
 }

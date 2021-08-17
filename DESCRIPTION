@@ -1,7 +1,7 @@
 Type: Package
 Package: insight
 Title: Easy Access to Model Information for Various Model Objects
-Version: 0.14.2
+Version: 0.14.3
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -54,7 +54,7 @@ BugReports: https://github.com/easystats/insight/issues
 Depends: R (>= 3.4)
 Imports: methods, stats, utils
 Suggests: AER, afex, aod, BayesFactor, bayestestR, bbmle, bdsmatrix,
-        betareg, BGGM, biglm, blavaan, blme, boot, brms, censReg, cgam,
+        betareg, biglm, blavaan, blme, boot, brms, censReg, cgam,
         clubSandwich, coxme, cplm, crch, dplyr, effectsize, emmeans,
         epiR, estimatr, feisr, fixest, fungible, gam, gamlss, gamm4,
         gbm, gee, geepack, GLMMadaptive, glmmTMB, gmnl, gt, httr,
@@ -68,10 +68,10 @@ Suggests: AER, afex, aod, BayesFactor, bayestestR, bbmle, bdsmatrix,
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.1.9001
 Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2021-06-22 08:59:51 UTC; Daniel
+Packaged: 2021-08-17 07:11:00 UTC; Daniel
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @strengejacke),
   Dominique Makowski [aut, ctb] (<https://orcid.org/0000-0001-5375-9967>,
@@ -85,4 +85,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @bmwiernik),
   Alex Hayes [rev] (<https://orcid.org/0000-0002-4985-5160>)
 Repository: CRAN
-Date/Publication: 2021-06-22 09:50:02 UTC
+Date/Publication: 2021-08-17 08:00:05 UTC

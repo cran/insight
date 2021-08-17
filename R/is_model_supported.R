@@ -2,17 +2,17 @@
 #'   \pkg{insight} package.
 #' @name is_model_supported
 #'
-#' @description Small helper that checks if a model is a \emph{supported}
-#'  (regression) model object. \code{supported_models()} prints a list
+#' @description Small helper that checks if a model is a *supported*
+#'  (regression) model object. `supported_models()` prints a list
 #'  of currently supported model classes.
 #'
 #' @inheritParams is_model
 #'
-#' @return A logical, \code{TRUE} if \code{x} is a (supported) model object.
+#' @return A logical, `TRUE` if `x` is a (supported) model object.
 #'
-#' @details This function returns \code{TRUE} if \code{x} is a model object
+#' @details This function returns `TRUE` if `x` is a model object
 #'   that works with the package's functions. A list of supported models can
-#'   also be found here: \url{https://github.com/easystats/insight}.
+#'   also be found here: <https://github.com/easystats/insight>.
 #'
 #' @examples
 #' data(mtcars)
@@ -43,9 +43,9 @@ supported_models <- function() {
 
     # b ----------------------------
     "bamlss", "bamlss.frame", "bayesx", "bayesQR", "BBmm", "BBreg", "bcplm",
-    "betamfx", "betaor", "betareg", "BFBayesFactor", "BGGM", "bife", "biglm",
-    "bigglm", "blavaan", "blrm", "bracl", "brglm", "brmsfit", "brmultinom",
-    "btergm",
+    "betamfx", "betaor", "betareg", "BFBayesFactor", "BGGM", "bife", "bifeAPEs",
+    "biglm", "bigglm", "blavaan", "blrm", "bracl", "brglm", "brmsfit",
+    "brmultinom", "btergm",
 
     # c ----------------------------
     "censReg", "cgam", "cgamm", "cglm", "clm", "clm2", "clmm", "clmm2",
@@ -53,7 +53,7 @@ supported_models <- function() {
     "coxph.penal", "coxr", "cpglm", "cpglmm", "crch", "crq", "crqs", "crr",
 
     # d ----------------------------
-    "DirichletRegModel",
+    "dep.effect", "DirichletRegModel", "drc",
 
     # e ----------------------------
     "eglm", "elm", "epi.2by2", "ergm",
@@ -99,18 +99,18 @@ supported_models <- function() {
     "robtab", "RM", "rma", "rma.uni", "robmixglm", "rq", "rqs", "rqss",
 
     # s ----------------------------
-    "sarlm", "scam", "selection", "sem", "semLm", "semLme", "SemiParBIV", "slm",
+    "Sarlm", "scam", "selection", "sem", "semLm", "semLme", "SemiParBIV", "slm",
     "speedlm", "speedglm", "stanfit", "stanmvreg", "stanreg", "summary.lm",
     "survfit", "survreg", "svy_vglm", "svyglm", "svyolr",
 
     # t ----------------------------
-    "t1way", "tobit", "truncreg",
+    "t1way", "tobit", "trimcibt", "truncreg",
 
     # v ----------------------------
     "vgam", "vglm",
 
     # w ----------------------------
-    "wbm", "wblm", "wbgee",
+    "wbm", "wblm", "wbgee", "wmcpAKP",
 
     # y ----------------------------
     "yuen", "yuend",

@@ -1,6 +1,6 @@
 #' @title Find statistic for model
-#' @description Returns the statistic for a regression model (\emph{t}-statistic,
-#'   \emph{z}-statistic, etc.).
+#' @description Returns the statistic for a regression model (*t*-statistic,
+#'   *z*-statistic, etc.).
 #' @name find_statistic
 #'
 #' @description Small helper that checks if a model is a regression model
@@ -10,7 +10,7 @@
 #' @param ... Currently not used.
 #'
 #' @return A character describing the type of statistic. If there is no
-#'   statistic available with a distribution, \code{NULL} will be returned.
+#'   statistic available with a distribution, `NULL` will be returned.
 #'
 #' @examples
 #' # regression model object
@@ -75,7 +75,7 @@ find_statistic <- function(x, ...) {
     "ols", "orcutt",
     "pb1", "pb2", "polr",
     "rlm", "rms", "rlmerMod", "rq", "rqs", "rqss",
-    "selection", "speedlm", "spml", "summary.lm", "svyglm", "svyolr",
+    "selection", "speedlm", "spml", "summary.lm", "svyglm", "svyolr", "systemfit",
     "truncreg",
     "varest",
     "wbm", "wblm",
@@ -86,14 +86,15 @@ find_statistic <- function(x, ...) {
 
   z.mods <- c(
     "aareg", "Arima", "averaging",
-    "betamfx", "betaor", "betareg", "bife", "bglmerMod", "boot_test_mediation",
-    "bracl", "brglm", "brglmFit", "brmultinom", "btergm",
+    "betamfx", "betaor", "betareg", "bife", "bifeAPEs", "bglmerMod",
+    "boot_test_mediation", "bracl", "brglm", "brglmFit", "brmultinom", "btergm",
     "cglm", "cph", "clm", "clm2", "clmm", "clmm2", "clogit", "coxme", "coxph",
     "coxr", "crch", "crr",
     "DirichletRegModel",
     "ergm",
     "feglm", "flexsurvreg",
-    "gee", "glimML", "glmm", "glmmadmb", "glmmLasso", "glmmTMB", "glmx", "gmnl",
+    "gee", "glimML", "glmm", "glmmadmb", "glmmFit", "glmmLasso", "glmmTMB",
+    "glmx", "gmnl",
     "hurdle",
     "lavaan", "loggammacenslmrob", "logitmfx", "logitor", "LORgee", "lrm",
     "margins", "metaplus", "mixor", "MixMod", "mjoint", "mle", "mle2", "mlogit",
@@ -103,7 +104,7 @@ find_statistic <- function(x, ...) {
     "poissonmfx", "poissonirr", "psm", "probitmfx", "pgmm",
     "qr", "QRNLMM", "QRLMM",
     "Rchoice", "riskRegression", "robmixglm", "rma", "rma.mv", "rma.uni", "rrvglm",
-    "sarlm", "sem", "SemiParBIV", "slm", "survreg", "svy_vglm",
+    "Sarlm", "sem", "SemiParBIV", "slm", "survreg", "svy_vglm",
     "test_mediation", "tobit",
     "vglm",
     "wbgee",
@@ -180,7 +181,7 @@ find_statistic <- function(x, ...) {
 
   unsupported.mods <- c(
     "bcplm", "BFBayesFactor", "brmsfit",
-    "gbm",
+    "gbm", "glmmEP",
     "joint",
     "list",
     "MCMCglmm", "mediate", "mlergm",

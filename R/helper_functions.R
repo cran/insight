@@ -254,7 +254,7 @@
     "sigma", "nu", "tau", "correlation", "slopes", "cluster", "extra", "scale",
     "marginal", "alpha", "beta", "survival", "infrequent_purchase", "auxiliary",
     "mix", "shiftprop", "phi", "ndt", "hu", "xi", "coi", "zoi", "aux", "dist",
-    "selection", "outcome", "time_dummies"
+    "selection", "outcome", "time_dummies", "sigma_random", "beta_random"
   )
 }
 
@@ -262,7 +262,10 @@
   c(
     "sigma", "alpha", "beta", "dispersion", "precision", "nu", "tau", "shape",
     "phi", "(phi)", "ndt", "hu", "xi", "coi", "zoi", "mix", "shiftprop", "auxiliary",
-    "aux", "dist"
+    "aux", "dist",
+
+    # random parameters
+    "sigma_random", "beta_random"
   )
 }
 
@@ -278,7 +281,7 @@
   auxiliary_parameters <- .aux_elements()
 
   # random parameters
-  random_parameters <- c("random", "zero_inflated_random")
+  random_parameters <- c("random", "zero_inflated_random", "sigma_random", "beta_random")
 
   # conditional component
   conditional_component <- setdiff(elements, c(auxiliary_parameters, zero_inflated_component, "smooth_terms"))
@@ -566,8 +569,12 @@
 
 
 #' @keywords internal
-.gather <- function(x, names_to = "key", values_to = "value", columns = colnames(x)) {
+.gather <- function(x,
+                    names_to = "key",
+                    values_to = "value",
+                    columns = colnames(x)) {
   if (is.numeric(columns)) columns <- colnames(x)[columns]
+
   dat <- stats::reshape(
     x,
     idvar = "id",
@@ -775,12 +782,15 @@
   if (!(any(c("|", "||") %in% all.names(term)))) {
     return(term)
   }
+
   if (.isBar(term)) {
     return(NULL)
   }
+
   if (.isAnyArgBar(term)) {
     return(NULL)
   }
+
   if (length(term) == 2) {
     nb <- .nobars_(term[[2]])
     if (is.null(nb)) {
@@ -789,14 +799,18 @@
     term[[2]] <- nb
     return(term)
   }
+
   nb2 <- .nobars_(term[[2]])
   nb3 <- .nobars_(term[[3]])
+
   if (is.null(nb2)) {
     return(nb3)
   }
+
   if (is.null(nb3)) {
     return(nb2)
   }
+
   term[[2]] <- nb2
   term[[3]] <- nb3
   term

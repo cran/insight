@@ -1,3 +1,33 @@
+# insight 0.14.3
+
+## New supported model classes
+
+* `systemfit` (*systemfit*)
+
+## General
+
+* Minor improvements for functions that support printing outputs.
+
+## Changes to functions
+
+* `get_predicted()` gains a new option, `predict = "response"` for binomial models.
+
+* Improved stability of `get_variance()` when computing random-slope-intercept
+  correlation with categorical random slopes.
+
+* Improved `get_priors()` for *brms* models.
+
+## Bug fixes
+
+* Fixed issue in `get_data()` for *brms* models with auxiliary parameters.
+
+* Fixed issue in `find_formula()` for *brms* models with auxiliary parameters.
+
+* Fixed issue where `get_data()` for *htest* objects did not always preserve
+  factors.
+
+* Fixed issue in `format_table()` for ci-levels with longer fractional part.
+
 # insight 0.14.2
 
 ## Changes to functions
