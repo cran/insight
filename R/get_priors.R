@@ -223,7 +223,8 @@ get_priors.brmsfit <- function(x, verbose = TRUE, ...) {
   params <- find_parameters(x, ..., flatten = TRUE)
 
   # remove random
-  params <- params[!grepl("^r_(.*)\\.$", params)]
+  params <- params[!grepl("^r_(.*)\\]$", params)]
+  params <- params[!grepl("^r_(.*)\\.\\d$", params)]
 
   # Loop through all parameters and try to retrieve its correct prior
   out <- data.frame()

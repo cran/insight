@@ -225,8 +225,12 @@ find_parameters.brmsfit <- function(x,
   effects <- match.arg(effects, choices = c("all", "fixed", "random"))
   component <- match.arg(component, choices = c("all", .all_elements()))
 
-  ## TODO remove "optional = FALSE" in a future update?
-  fe <- colnames(as.data.frame(x, optional = FALSE))
+  fe <- colnames(as.data.frame(x))
+
+  # remove redundant columns. These seem to be new since brms 2.16?
+  pattern <- c("^[A-z]_\\d\\.\\d\\.(.*)")
+  fe <- fe[!grepl(pattern, fe, perl = TRUE)]
+
   is_mv <- NULL
 
   # remove "Intercept"
@@ -290,7 +294,7 @@ find_parameters.brmsfit <- function(x,
       }
 
       if (.obj_has_name(l, "random")) {
-        random <- l$random[grepl(sprintf("__\\Q%s\\E\\.", i), l$random) |
+        random <- l$random[grepl(sprintf("__\\Q%s\\E\\[", i), l$random) |
           grepl(sprintf("^sd_(.*)\\Q%s\\E\\_", i), l$random) |
           grepl("^cor_", l$random)]
       } else {
@@ -304,7 +308,7 @@ find_parameters.brmsfit <- function(x,
       }
 
       if (.obj_has_name(l, "zero_inflated_random")) {
-        zero_inflated_random <- l$zero_inflated_random[grepl(sprintf("__zi_\\Q%s\\E\\.", i), l$zero_inflated_random) |
+        zero_inflated_random <- l$zero_inflated_random[grepl(sprintf("__zi_\\Q%s\\E\\[", i), l$zero_inflated_random) |
           grepl(sprintf("^sd_(.*)\\Q%s\\E\\_", i), l$zero_inflated_random) |
           grepl("^cor_", l$zero_inflated_random)]
       } else {

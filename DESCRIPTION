@@ -1,7 +1,7 @@
 Type: Package
 Package: insight
 Title: Easy Access to Model Information for Various Model Objects
-Version: 0.14.3
+Version: 0.14.4
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -71,7 +71,7 @@ Language: en-US
 RoxygenNote: 7.1.1.9001
 Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2021-08-17 07:11:00 UTC; Daniel
+Packaged: 2021-09-01 09:18:15 UTC; Daniel
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @strengejacke),
   Dominique Makowski [aut, ctb] (<https://orcid.org/0000-0001-5375-9967>,
@@ -85,4 +85,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @bmwiernik),
   Alex Hayes [rev] (<https://orcid.org/0000-0002-4985-5160>)
 Repository: CRAN
-Date/Publication: 2021-08-17 08:00:05 UTC
+Date/Publication: 2021-09-02 04:10:02 UTC
