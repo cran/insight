@@ -22,20 +22,21 @@
 #'   other models (e.g., `glm`), prediction intervals are somewhat useless
 #'   (for instance, for a binomial model for which the dependent variable is a
 #'   vector of 1s and 0s, the prediction interval is... `[0, 1]`).
-#' @param vcov_estimation String, indicating the suffix of the
-#'   `vcov*()`-function from the \pkg{sandwich} or \pkg{clubSandwich}
+#' @param vcov_estimation Either a matrix, or a string, indicating the suffix
+#'   of the `vcov*()`-function from the \pkg{sandwich} or \pkg{clubSandwich}
 #'   package, e.g. `vcov_estimation = "CL"` (which calls
 #'   [sandwich::vcovCL()] to compute clustered covariance matrix
 #'   estimators), or `vcov_estimation = "HC"` (which calls
-#'   [sandwich::vcovHC()] to compute
-#'   heteroskedasticity-consistent covariance matrix estimators).
+#'   [sandwich::vcovHC()] to compute heteroskedasticity-consistent covariance
+#'   matrix estimators).
 #' @param vcov_type Character vector, specifying the estimation type for the
 #'   robust covariance matrix estimation (see
 #'   [sandwich::vcovHC()] or `clubSandwich::vcovCR()`
-#'   for details).
+#'   for details). Only applies if `vcov_estimation` is a string, and not a matrix.
 #' @param vcov_args List of named vectors, used as additional arguments that are
 #'   passed down to the \pkg{sandwich}-function specified in
-#'   `vcov_estimation`.
+#'   `vcov_estimation`. Only applies if `vcov_estimation` is a string, and not
+#'   a matrix.
 #' @param dispersion_method,ci_method These arguments are only used in
 #'   the context of bootstrapped and Bayesian models. Possible values are
 #'   `dispersion_method = c("sd", "mad")` and
@@ -122,7 +123,7 @@ get_predicted_ci.default <- function(x,
 
   # Analytical solution
   # 1. Find appropriate interval function
-  if (ci_type == "confidence" || get_family(x)$family %in% c("gaussian")) { # gaussian or CI
+  if (ci_type == "confidence" || get_family(x)$family %in% c("gaussian") || (!is.null(vcov_estimation) && is.matrix(vcov_estimation))) { # gaussian or CI
     se <- get_predicted_se(
       x,
       predictions,
@@ -174,7 +175,7 @@ get_predicted_ci.mlm <- function(x, ...) {
                                    vcov_args = NULL) {
 
   # (robust) variance-covariance matrix
-  if (!is.null(vcov_estimation)) {
+  if (!is.null(vcov_estimation) && !is.matrix(vcov_estimation)) {
     # check for existing vcov-prefix
     if (!grepl("^vcov", vcov_estimation)) {
       vcov_estimation <- paste0("vcov", vcov_estimation)
@@ -204,10 +205,13 @@ get_predicted_ci.mlm <- function(x, ...) {
       vcov_estimation <- clubSandwich::vcovCR
       vcovmat <- as.matrix(do.call(vcov_estimation, c(list(obj = x, type = vcov_type), vcov_args)))
     }
-  } else {
+  } else if (!is.matrix(vcov_estimation)) {
     # get variance-covariance-matrix, depending on model type
     vcovmat <- get_varcov(x, component = "conditional")
+  } else {
+    vcovmat <- vcov_estimation
   }
+
   vcovmat
 }
 
@@ -227,18 +231,23 @@ get_predicted_ci.mlm <- function(x, ...) {
     # else, model.matrix below fails, e.g. for log-terms
     attr(data, "terms") <- NULL
 
-    # model terms, required for model matrix
-    model_terms <- tryCatch(
-      {
-        stats::terms(x)
-      },
-      error = function(e) {
-        find_formula(x)$conditional
-      }
-    )
-
-    # drop offset from model_terms
+    # In these models we need to drop offset from model_terms. To do this, we
+    # must construct the mm by calling `get_modelmatrix` on modified model
+    # terms.  When we do not need to drop offset terms, we call get_modelmatrix
+    # on the model itself. The latter strategy is safer in cases where `data`
+    # does not include all the levels of a factor variable.
     if (inherits(x, c("zeroinfl", "hurdle", "zerotrunc"))) {
+
+      # model terms, required for model matrix
+      model_terms <- tryCatch(
+        {
+          stats::terms(x)
+        },
+        error = function(e) {
+          find_formula(x)$conditional
+        }
+      )
+
       all_terms <- find_terms(x)$conditional
       off_terms <- grepl("^offset\\((.*)\\)", all_terms)
       if (any(off_terms)) {
@@ -252,8 +261,10 @@ get_predicted_ci.mlm <- function(x, ...) {
         off_terms <- grepl("^offset\\((.*)\\)", all_terms)
         model_terms <- stats::reformulate(all_terms[!off_terms], response = find_response(x))
       }
+      mm <- get_modelmatrix(model_terms, data = data)
+    } else {
+      mm <- get_modelmatrix(x, data = data)
     }
-    mm <- get_modelmatrix(model_terms, data = data)
   }
 
   # fix rank deficiency
@@ -291,18 +302,19 @@ get_predicted_se <- function(x,
   mm <- .get_predicted_ci_modelmatrix(x, data = data, vcovmat = vcovmat)
 
   # compute vcov for predictions
-  var_matrix <- mm %*% vcovmat %*% t(mm)
+  # Next line equivalent to: diag(M V M')
+  var_diag <- colSums(t(mm %*% vcovmat) * t(mm))
 
   # add sigma to standard errors, i.e. confidence or prediction intervals
   ci_type <- match.arg(ci_type, c("confidence", "prediction"))
   if (ci_type == "prediction") {
     if (is_mixed_model(x)) {
-      se <- sqrt(diag(var_matrix) + get_variance_residual(x))
+      se <- sqrt(var_diag + get_variance_residual(x))
     } else {
-      se <- sqrt(diag(var_matrix) + get_sigma(x)^2)
+      se <- sqrt(var_diag + get_sigma(x)^2)
     }
   } else {
-    se <- sqrt(diag(var_matrix))
+    se <- sqrt(var_diag)
   }
 
   se

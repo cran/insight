@@ -6,7 +6,14 @@
 #'   second argument has to be a model).
 #' @param data An optional data frame in which to look for variables with which
 #'   to predict. If omitted, the data used to fit the model is used.
-#' @param predict Can be `"link"`, `"expectation"` (default), `"prediction"`, or `"response"`. You can see these 4 options for predictions as on a gradient from "close to the model" to "close to the response data". More specifically, the `predict` argument modulates two things; the scale of the output as well as the type of certainty interval (see the details and examples). More specifically, `"link"` returns predictions on the model's link-scale (for logistic models, that means the log-odds scale) with a confidence interval (CI). `"expectation"` (default) also returns confidence intervals, but this time the output is on the response scale (for logistic models, that means probabilities). `"predict"` also gives an output on the response scale, but this time associated with a prediction interval (PI), which is larger than a confidence interval (though it mostly make sense for linear models). Finally, `"response"` only differs from the previous option for binomial models where it additionally transforms the predictions into the original response's type (for instance, to a factor). Read more about in the **Details** section below.
+#' @param predict string or `NULL`
+#' * `"link"` returns predictions on the model's link-scale (for logistic models, that means the log-odds scale) with a confidence interval (CI).
+#' * `"expectation"` (default) also returns confidence intervals, but this time the output is on the response scale (for logistic models, that means probabilities).
+#' * `"prediction"` also gives an output on the response scale, but this time associated with a prediction interval (PI), which is larger than a confidence interval (though it mostly make sense for linear models).
+#' * `"classification"` only differs from `"prediction"` for binomial models where it additionally transforms the predictions into the original response's type (for instance, to a factor).
+#' * Other strings are passed directly to the `type` argument of the `predict()` method supplied by the modelling package.
+#' * When `predict = NULL`, alternative arguments such as `type` will be captured by the `...` ellipsis and passed directly to the `predict()` method supplied by the modelling package.
+#' * Notes: You can see the 4 options for predictions as on a gradient from "close to the model" to "close to the response data": "link", "expectation", "prediction", "classification". The `predict` argument modulates two things: the scale of the output and the type of certainty interval. Read more about in the **Details** section below.
 #' @param iterations For Bayesian models, this corresponds to the number of
 #'   posterior draws. If `NULL`, will return all the draws (one for each
 #'   iteration of the model). For frequentist models, if not `NULL`, will
@@ -39,10 +46,10 @@
 #' \subsection{Confidence Interval (CI) vs. Prediction Interval (PI))}{
 #' \itemize{
 #'   \item **Linear models** - `lm()`: For linear models, Prediction
-#'   intervals (`predict = "prediction"`) show the range that likely
+#'   intervals (`predict="prediction"`) show the range that likely
 #'   contains the value of a new observation (in what range it is likely to
-#'   fall), whereas confidence intervals (`predict = "expectation"` or
-#'   `predict = "link"`) reflect the uncertainty around the estimated
+#'   fall), whereas confidence intervals (`predict="expectation"` or
+#'   `predict="link"`) reflect the uncertainty around the estimated
 #'   parameters (and gives the range of uncertainty of the regression line). In
 #'   general, Prediction Intervals (PIs) account for both the uncertainty in the
 #'   model's parameters, plus the random variation of the individual values.
@@ -50,22 +57,26 @@
 #'   Moreover, prediction intervals will not necessarily become narrower as the
 #'   sample size increases (as they do not reflect only the quality of the fit,
 #'   but also the variability within the data).
-#'   \item **General Linear models** - `glm()`: For binomial models,
+#'   \item **Generalized Linear models** - `glm()`: For binomial models,
 #'   prediction intervals are somewhat useless (for instance, for a binomial
-#'   (bernoulli) model for which the dependent variable is a vector of 1s and
+#'   (Bernoulli) model for which the dependent variable is a vector of 1s and
 #'   0s, the prediction interval is... `[0, 1]`).
 #' }}
 #'
 #'
 #' \subsection{Link scale vs. Response scale}{
-#' Having the output is on the scale of the response variable is arguably the
-#' most convenient to understand and visualize the relationships. If on the
-#' link-scale, no transformation is applied and the values are on the scale of
-#' the model. For instance, for a logistic model, the response
-#' scale corresponds to the predicted probabilities, whereas the link-scale
-#' makes predictions of log-odds (probabilities on the logit scale). Note that,
-#' when `predict = "response"`, the probabilities are rounded (so that the
-#' prediction corresponds to the most likely outcome).
+#' When users set the `predict` argument to `"expectation"`, the predictions
+#' are returned on the response scale, which is arguably the most convenient
+#' way to understand and visualize relationships of interest. When users set
+#' the `predict` argument to `"link"`, predictions are returned on the link
+#' scale, and no transformation is applied. For instance, for a logistic
+#' regression model, the response scale corresponds to the predicted
+#' probabilities, whereas the link-scale makes predictions of log-odds
+#' (probabilities on the logit scale). Note that when users select
+#' `predict="classification"` in binomial models, the `get_predicted()`
+#' function will first calculate predictions as if the user had selected
+#' `predict="expectation"`. Then, it will round the responses in order to
+#' return the most likely outcome.
 #' }
 #'
 #' @examples
@@ -104,8 +115,8 @@
 #' pred <- get_predicted(x, predict = "link")
 #' head(as.data.frame(pred))
 #'
-#' # Response: response "type" + PI
-#' pred <- get_predicted(x, predict = "response")
+#' # Classification: classification "type" + PI
+#' pred <- get_predicted(x, predict = "classification")
 #' head(as.data.frame(pred))
 #' @export
 get_predicted <- function(x, ...) {
@@ -117,29 +128,24 @@ get_predicted <- function(x, ...) {
 
 #' @export
 get_predicted.default <- function(x, data = NULL, verbose = TRUE, ...) {
-  out <- tryCatch(
-    {
-      if (!is.null(data)) {
-        stats::predict(x, newdata = data, ...)
-      } else {
-        stats::predict(x, ...)
-      }
-    },
-    error = function(e) {
-      NULL
-    }
-  )
+
+  # many predict.CLASS methods do not work when `newdata` is explicitly specified, even if it is NULL
+  if (is.null(data)) {
+    args <- c(list(x), list(...))
+  } else {
+    args <- c(list(x, "newdata" = data), list(...))
+  }
+
+  out <- tryCatch(do.call("predict", args), error = function(e) NULL)
 
   if (is.null(out)) {
-    out <- tryCatch(
-      {
-        stats::fitted(x)
-      },
-      error = function(e) {
-        NULL
-      }
-    )
+    out <- tryCatch(do.call("fitted", args), error = function(e) NULL)
   }
+
+  if (!is.null(out)) {
+    out <- .get_predicted_out(out, args = list("data" = data))
+  }
+
   out
 }
 
@@ -200,6 +206,155 @@ get_predicted.lm <- function(x,
 
 #' @export
 get_predicted.glm <- get_predicted.lm
+
+
+# rms -------------------------------------------------------------------
+# =======================================================================
+
+# the rms::lrm function produces an object of class c("lrm", "rms", glm"). The
+# `get_predicted.glm` function breaks when trying to calculate standard errors,
+# so we use the default method.
+
+#' @export
+get_predicted.lrm <- get_predicted.default
+
+
+# fixest ----------------------------------------------------------------
+# =======================================================================
+
+#' @export
+get_predicted.fixest <- function(x, predict = "expectation", data = NULL, ...) {
+  # Development is ongoing for standard errors. They are too complicated for us
+  # to compute, so we need to wait on the `fixest` developer:
+  # https://github.com/lrberge/fixest/issues/22
+  dots <- list(...)
+
+  # supported prediction types
+  if (!is.null(predict)) {
+    predict <- match.arg(predict, choices = c("expectation", "link"))
+    type_arg <- ifelse(predict == "expectation", "response", "link")
+  } else {
+    if (!"type" %in% names(dots)) {
+      stop("Please specify the `predict` argument.")
+    } else {
+      type_arg <- match.arg(dots$type, choices = c("response", "link"))
+    }
+  }
+
+  # predict.fixest supports: object, newdata, type, na.rm
+  args <- list()
+  args[["type"]] <- type_arg
+  args[["object"]] <- x
+  if ("na.rm" %in% names(dots)) {
+    args[["na.rm"]] <- dots[["na.rm"]]
+  }
+  # newdata=NULL raises error
+  if (!is.null(data)) {
+    args[["newdata"]] <- data
+  }
+
+  out <- do.call("predict", args)
+  .get_predicted_out(out)
+}
+
+
+# ordinal ---------------------------------------------------------------
+# =======================================================================
+
+#' @export
+get_predicted.clm <- function(x, predict = "expectation", data = NULL, ...) {
+  # When (a) `newdata` is not null and (b) the response variable does *not*
+  # appear in `newdata`, predict.clm() returns matrices with predictions for
+  # each levels of the response.  When either of those conditions fail,
+  # `predict.clm()` returns vectors with only predictions for the actually
+  # observed reponse level in each row.
+
+  dots <- list(...)
+
+  # prediction types
+  if (!is.null(predict)) {
+    valid <- c("expectation", "classification")
+    predict <- match.arg(predict, choices = valid)
+    type_arg <- c("prob", "class")[match(predict, valid)]
+  } else {
+    if (!"type" %in% names(dots)) {
+      stop("Please specify the `predict` argument.")
+    } else {
+      type_arg <- match.arg(dots$type, choices = c("prob", "class"))
+    }
+  }
+
+  # hack to get predictions for all response levels
+  if (is.null(data)) {
+    data <- insight::get_data(x)
+  }
+  resp <- insight::find_response(x)
+  data <- data[, setdiff(colnames(data), resp), drop = FALSE]
+  vars <- as.character(attr(x$terms, "variables"))[-1]
+  vars[attr(x$terms, "response")] <- resp
+  s <- paste0("list(", paste(vars, collapse = ", "), ")")
+  new_call <- parse(text = s, keep.source = FALSE)[[1L]]
+  attr(x$terms, "variables") <- new_call
+
+  # compute predictions
+  args <- list(object = x,
+               newdata = data,
+               type = type_arg,
+               se.fit = (type_arg == "prob"))
+  pred <- do.call("predict", args)
+
+  out <- .get_predicted_out(pred$fit)
+
+  # standard error matrix to long format
+  if (type_arg == "prob") {
+    se <- pred$se.fit
+    se <- as.data.frame(se)
+    se$Row <- 1:nrow(se)
+    se <- stats::reshape(se,
+                         direction = "long",
+                         varying = setdiff(colnames(se), "Row"),
+                         times = setdiff(colnames(se), "Row"),
+                         v.names = "SE",
+                         timevar = "Response",
+                         idvar = "Row")
+    row.names(se) <- NULL
+    attr(out, "ci_data") <- se
+  }
+
+  return(out)
+}
+
+
+
+# pscl: hurdle zeroinfl -------------------------------------------------
+# =======================================================================
+
+#' @export
+get_predicted.hurdle <- function(x, data = NULL, verbose = TRUE, ...) {
+
+  # pscl models return the fitted values immediately and ignores the `type`
+  # argument when `data` is NULL
+  if (is.null(data)) {
+    data <- get_data(x)
+  }
+
+  args <- c(list(x, "newdata" = data), list(...))
+
+  out <- tryCatch(do.call("predict", args), error = function(e) NULL)
+
+  if (is.null(out)) {
+    out <- tryCatch(do.call("fitted", args), error = function(e) NULL)
+  }
+
+  if (!is.null(out)) {
+    out <- .get_predicted_out(out, args = list("data" = data))
+  }
+
+  out
+}
+
+#' @export
+get_predicted.zeroinfl <- get_predicted.hurdle
 
 
 
@@ -272,26 +427,29 @@ get_predicted.merMod <- get_predicted.lmerMod
 #' @export
 get_predicted.glmmTMB <- function(x,
                                   data = NULL,
-                                  predict = c("expectation", "link", "prediction", "response", "relation"),
+                                  predict = "expectation",
                                   ci = 0.95,
                                   include_random = TRUE,
                                   iterations = NULL,
                                   verbose = TRUE,
                                   ...) {
-  predict <- match.arg(predict)
+
+  dots <- list(...)
 
   # Sanity checks
-  if (predict == "prediction") {
+  if (!is.null(predict) && predict %in% c("prediction", "predicted", "classification")) {
+    predict <- "expectation"
     if (verbose) {
       warning(
         format_message(
-          "`predict = 'prediction'` is currently not available for glmmTMB models.",
-          "Changing to `predict = 'expectation'`."
-        )
+          '"prediction" and "classification" are currently not supported by the',
+          '`predict` argument for glmmTMB models. Changing to `predict="expectation"`.'
+        ),
+        call. = FALSE
       )
     }
-    predict <- "expectation"
   }
+
   # TODO: prediction intervals
   # https://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#predictions-andor-confidence-or-prediction-intervals-on-predictions
 
@@ -305,6 +463,28 @@ get_predicted.glmmTMB <- function(x,
     verbose = verbose,
     ...
   )
+
+  # predict.glmmTMB has many `type` values which do not map on to our standard
+  # `predict` argument. We don't know how to transform those.
+  if (is.null(predict) && "type" %in% names(dots)) {
+    args$transform <- FALSE
+    args$type <- dots$type
+  } else if (!predict %in% c("expectation", "link")) {
+    args$transform <- FALSE
+    args$type <- predict
+  }
+
+  # TODO: adjust predicted values for zero inflation
+  # mu * (1 - p), where p = predict(model, type = "zprob")
+  if (isTRUE(verbose) &&
+      (!is.null(predict) && predict == "expectation") &&
+      (isTRUE(args$info$is_zero_inflated) || isTRUE(args$info$is_zeroinf))) {
+    warning(format_message(
+      'The `get_predicted()` function does not adjust predictions to account',
+      'for zero-inflation in `glmmTMB` models. This behavior will change in',
+      'future versions of `insight`.'
+      ), call. = FALSE)
+  }
 
   # Prediction function
   predict_function <- function(x, data, ...) {
@@ -341,38 +521,125 @@ get_predicted.glmmTMB <- function(x,
 }
 
 
+# bife ------------------------------------------------------------------
+# =======================================================================
+#' @export
+get_predicted.bife <- function(x,
+                               predict = "expectation",
+                               data = NULL,
+                               verbose = TRUE,
+                               ...) {
+  args <- .get_predicted_args(x,
+    data = data,
+    predict = predict,
+    verbose = TRUE,
+    ...
+  )
 
-# GAM -------------------------------------------------------------------
+  out <- tryCatch(predict(x, type = args$scale, X_new = args$data), error = function(e) NULL)
+
+  if (!is.null(out)) {
+    out <- .get_predicted_out(out, args = list("data" = data))
+  }
+
+  out
+}
+
+
+# nnet::multinom --------------------------------------------------------
 # =======================================================================
 
 #' @export
+get_predicted.multinom <- function(x, predict = "expectation", data = NULL, ...) {
+  dots <- list(...)
+
+  # `type` argument can be: probs | class
+  if (!is.null(predict)) {
+    type_arg <- match.arg(predict, choices = c("classification", "expectation"))
+    type_arg <- c("class", "probs")[c("classification", "expectation") == type_arg]
+  } else if ("type" %in% names(dots)) {
+    type_arg <- match.arg(dots$type, choices = c("class", "probs"))
+  } else {
+    stop('The `predict` argument must be either "expectation" or "classification".')
+  }
+
+  args <- c(list(x, "data" = data), list(...))
+
+  # predict.multinom doesn't work when `newdata` is explicitly set to NULL (weird)
+  if (is.null(data)) {
+    out <- predict(x, type = type_arg)
+  } else {
+    out <- predict(x, newdata = data, type = type_arg)
+  }
+
+  .get_predicted_out(out, args = args)
+}
+
+
+# MASS ------------------------------------------------------------------
+# =======================================================================
+
+#' @export
+get_predicted.rlm <- function(x, predict = "expectation", ...) {
+  # only one prediction type supported
+  if (!is.null(predict)) {
+    predict <- match.arg(predict, choices = "expectation")
+    get_predicted.lm(x, predict = predict, ...)
+  } else {
+    dots <- list(...)
+    if (!"type" %in% names(dots)) {
+      stop("Please specify the `predict` argument.")
+    }
+    dots[["type"]] <- match.arg(dots$type, choices = "response")
+    dots[["x"]] <- x
+    dots <- c(dots, list("predict" = NULL))
+    do.call("get_predicted.lm", dots)
+  }
+}
+
+# MASS::polr accepts only "class" or "probs" types, and "expectation"
+# corresponds to "probs". These are the same as nnet::multinom.
+# Make sure this is below get_predicted.multinom in the file.
+
+#' @export
+get_predicted.polr <- get_predicted.multinom
+
+
+# GAM -------------------------------------------------------------------
+# =======================================================================
+#' @export
 get_predicted.gam <- function(x,
                               data = NULL,
-                              predict = c("expectation", "link", "prediction", "response", "relation"),
+                              predict = "expectation",
                               ci = 0.95,
                               include_random = TRUE,
                               include_smooth = TRUE,
                               iterations = NULL,
                               verbose = TRUE,
                               ...) {
-  predict <- match.arg(predict)
 
-  # Sanity checks
-  if (predict == "prediction") {
-    if (verbose) {
-      warning(
-        format_message(
-          "`predict = 'prediction'` is currently not available for GAM models.",
-          "Changing to `predict = 'expectation'`."
+  # allow users to set `predict=NULL` and specify `type` directly
+  if (!is.null(predict)) {
+    predict <- match.arg(predict, choices = c("expectation", "expected", "link", "prediction", "predicted", "classification"))
+
+    # Sanity checks
+    if (predict %in% c("prediction", "predicted")) {
+      if (verbose) {
+        warning(
+          format_message(
+            "`predict='prediction'` is currently not available for GAM models.",
+            "Changing to `predict='expectation'`."
+          ),
+          call. = FALSE
         )
-      )
+      }
+      predict <- "expectation"
     }
-    predict <- "expectation"
+    # TODO: check this for prediction intervals:
+    # https://fromthebottomoftheheap.net/2016/12/15/simultaneous-interval-revisited/
+    # https://github.com/gavinsimpson/gratia/blob/master/R/confint-methods.R
+    # https://github.com/gavinsimpson/gratia/blob/master/R/posterior-samples.R
   }
-  # TODO: check this for prediction intervals:
-  # https://fromthebottomoftheheap.net/2016/12/15/simultaneous-interval-revisited/
-  # https://github.com/gavinsimpson/gratia/blob/master/R/confint-methods.R
-  # https://github.com/gavinsimpson/gratia/blob/master/R/posterior-samples.R
 
   # Sanitize input
   args <- .get_predicted_args(
@@ -430,6 +697,8 @@ get_predicted.list <- get_predicted.gam # gamm4
 
 
 
+
+
 # Bayesian --------------------------------------------------------------
 # =======================================================================
 
@@ -444,14 +713,7 @@ get_predicted.stanreg <- function(x,
                                   include_smooth = TRUE,
                                   verbose = TRUE,
                                   ...) {
-  if (!requireNamespace("rstantools", quietly = TRUE) || utils::packageVersion("rstantools") < "2.1.0") {
-    stop(
-      format_message(
-        "Package `rstantools` in version 2.1.0 or higher needed for this function to work.",
-        "Please install it."
-      )
-    )
-  }
+  check_if_installed("rstantools", minimum_version = "2.1.0")
 
   args <- .get_predicted_args(
     x,
@@ -546,8 +808,10 @@ get_predicted.principal <- function(x, data = NULL, ...) {
   out
 }
 
+
 #' @export
 get_predicted.fa <- get_predicted.principal
+
 
 #' @export
 get_predicted.prcomp <- function(x, data = NULL, ...) {
@@ -559,6 +823,7 @@ get_predicted.prcomp <- function(x, data = NULL, ...) {
   class(out) <- c("get_predicted", class(out))
   out
 }
+
 
 #' @export
 get_predicted.faMain <- function(x, data = NULL, ...) {
@@ -572,6 +837,8 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
   class(out) <- c("get_predicted", class(out))
   out
 }
+
+
 
 
 # ====================================================================
@@ -600,24 +867,19 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
 
 .get_predicted_args <- function(x,
                                 data = NULL,
-                                predict = c("expectation", "link", "prediction", "response", "response", "relation"),
-                                type = "auto",
+                                predict = "expectation",
                                 include_random = TRUE,
                                 include_smooth = TRUE,
                                 ci = 0.95,
                                 newdata = NULL,
                                 verbose = TRUE,
                                 ...) {
-
-  # Sanitize input
-  predict <- match.arg(predict, choices = c("expectation", "link", "prediction", "response", "relation"))
-  # Other names: "response", "expected", "distribution", "observations"
-  if (predict == "relation") {
-    message(format_message(
-      '`predict = "relation"` is deprecated.',
-      'Use `predict = "expectation"` instead.'
-    ))
-    predict <- "expectation"
+  if (length(predict) > 1) {
+    predict <- predict[1]
+    if (isTRUE(verbose)) {
+      msg <- format_message(sprintf("More than one option provided in `predict`. Using first option '%s' now."), predict[1])
+      warning(msg, call. = FALSE)
+    }
   }
 
   # Get info
@@ -630,25 +892,70 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
   # CI
   if (is.null(ci)) ci <- 0
 
+  # check `predict` user-input
+  supported <- c("expectation", "expected", "link", "prediction", "predicted", "classification")
+  if (isTRUE(verbose) && !is.null(predict) && !predict %in% supported) {
+    msg <- format_message(sprintf('"%s" is not officially supported by the `get_predicted()` function as a value for the `predict` argument. It will not be processed or validated, and will be passed directly to the `predict()` method supplied by the modeling package. Users are encouraged to check the validity and scale of the results. Set `verbose=FALSE` to silence this warning, or use one of the supported values for the `predict` argument: %s.', predict, paste(sprintf('"%s"', setdiff(supported, c("expected", "predicted"))), collapse = ", ")))
+    warning(msg, call. = FALSE)
+  }
+
+  # check aliases
+  if (!is.null(predict)) {
+    if (predict == "expected") {
+      predict <- "expectation"
+    }
+    if (predict == "predicted") {
+      predict <- "prediction"
+    }
+  }
+
+
+  # Arbitrate conflicts between the `predict` and `type` from the ellipsis. We
+  # create a new variable called `predict_arg` to resolve conflicts. This avoids
+  # modifying the values of `type` and `predict` on the fly, which allows us to
+  # keep track of the original user input.
+  dots <- list(...)
+  if (is.null(dots$type)) {
+    predict_arg <- predict
+    if (is.null(predict)) {
+      stop(format_message("Please supply a value for the `predict` argument."))
+    }
+  } else {
+    if (is.null(predict)) {
+      predict_arg <- dots$type
+    } else {
+      stop(format_message('The `predict` and `type` arguments cannot be used simultaneously. The preferred argument for the `get_predicted()` function is `predict`. If you need to pass a `type` argument directly to the `predict()` method associated with your model type, you must set `predict` to `NULL` explicitly: `get_predicted(model, predict=NULL, type="response")`'))
+    }
+  }
+
+  # sanity: `predict` argument (backward compatibility -- we already warned above)
+  if (predict_arg == "relation") {
+    predict_arg <- "expectation"
+  }
+
   # Prediction and CI type
-  if (predict == "link") {
+  if (predict_arg == "link") {
     ci_type <- "confidence"
     scale <- "link"
-  } else if (predict == "expectation") {
+  } else if (predict_arg == "expectation") {
     ci_type <- "confidence"
     scale <- "response"
-  } else if (predict %in% c("prediction", "response")) {
+  } else if (predict_arg %in% c("prediction", "classification")) {
     ci_type <- "prediction"
     scale <- "response"
+  } else if (!is.null(dots$type)) {
+    ci_type <- "confidence"
+    scale <- dots$type
+  } else {
+    ci_type <- "confidence"
+    scale <- predict_arg
   }
 
   # Type (that's for the initial call to stats::predict)
-  if (!is.null(type) && all(type == "auto")) {
-    if (info$is_linear) {
-      type <- "response"
-    } else {
-      type <- "link"
-    }
+  if (info$is_linear) {
+    type_arg <- "response"
+  } else {
+    type_arg <- "link"
   }
 
   # Transform
@@ -696,8 +1003,8 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
     include_smooth = include_smooth,
     ci_type = ci_type,
     ci = ci,
-    type = type,
-    predict = predict,
+    type = type_arg,
+    predict = predict_arg,
     scale = scale,
     transform = transform,
     info = info
@@ -714,8 +1021,8 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
     predictions <- as.factor(predictions)
     levels(predictions) <- levels(response)
   } else {
-    predictions[predictions == 0] <- unique(response)[1]
-    predictions[predictions == 1] <- unique(response)[2]
+    resp <- unique(response)
+    predictions <- resp[match(predictions, resp)]
   }
   predictions
 }
@@ -750,15 +1057,15 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
     if ("iterations" %in% names(attributes(predictions))) {
       attr(predictions, "iterations") <- as.data.frame(sapply(attributes(predictions)$iterations, link_inverse(x)))
     }
-  }
 
-  # Transform to response "type"
-  if (args$predict == "response" && model_info(x)$is_binomial) {
-    response <- get_response(x)
-    ci_data[!se_col] <- lapply(ci_data[!se_col], .get_predict_transform_response, response = response)
-    predictions <- .get_predict_transform_response(predictions, response = response)
-    if ("iterations" %in% names(attributes(predictions))) {
-      attr(predictions, "iterations") <- as.data.frame(sapply(attributes(predictions)$iterations, .get_predict_transform_response, response = response))
+    # Transform to response "type"
+    if (args$predict == "classification" && model_info(x)$is_binomial) {
+      response <- get_response(x)
+      ci_data[!se_col] <- lapply(ci_data[!se_col], .get_predict_transform_response, response = response)
+      predictions <- .get_predict_transform_response(predictions, response = response)
+      if ("iterations" %in% names(attributes(predictions))) {
+        attr(predictions, "iterations") <- as.data.frame(sapply(attributes(predictions)$iterations, .get_predict_transform_response, response = response))
+      }
     }
   }
 
@@ -778,6 +1085,21 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
     attr(predictions, "data") <- args$data
     attr(predictions, "ci") <- args$ci
     attr(predictions, "predict") <- args$predict
+  }
+
+  # multidimensional or "grouped" predictions (e.g., nnet::multinom with `predict(type="probs")`)
+  if (is.matrix(predictions) && ncol(predictions) > 1) {
+    predictions <- as.data.frame(predictions)
+    predictions$Row <- 1:nrow(predictions)
+    predictions <- stats::reshape(predictions,
+      direction = "long",
+      varying = setdiff(colnames(predictions), "Row"),
+      times = setdiff(colnames(predictions), "Row"),
+      v.names = "Predicted",
+      timevar = "Response",
+      idvar = "Row"
+    )
+    row.names(predictions) <- NULL
   }
 
   class(predictions) <- c("get_predicted", class(predictions))

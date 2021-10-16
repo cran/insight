@@ -1,3 +1,49 @@
+# insight 0.14.5
+
+## New functions
+
+* `find_transformation()` and `get_transformation()` to find or get any
+  function that was used to transform the response variable in a regression
+  model.
+
+## General
+
+* Improved support for models of class `sampleSelection`.
+
+* Improved documentation.
+
+* `get_modelmatrix()` now supports: `rms::lrm`
+
+* `get_predicted()` supports: `MASS::polr`, `MASS::rlm`, `rms::lrm`, `fixest`, 
+  `bife::bife`, `ordinal::clm`.
+
+* `get_predicted()` standard errors are often much faster to compute.
+
+* `get_predicted()` supports models with "grouped" or "level" outcomes (e.g., 
+  multinomial logit).
+
+* `get_predicted()` handles factors better.
+
+* Improved documentation
+
+## Changes to functions
+
+* `check_if_installed()` gains a `quietly` argument, if neither stopping nor a
+  warning message for non-installed packages is requested.
+
+* `get_predicted()`'s `predict` argument now accepts these values: "link",
+  "expectation", "prediction", "classification", or NULL.
+
+* `get_predicted()` accepts `predict=NULL`, which allows users to push a `type`
+  argument through the `...` ellipsis, forward to the `predict()` method of the
+  modelling package.
+
+## Bug fixes
+
+* Fixed issue with parameter names from *emmeans* objects in `get_parameters()`.
+
+* Fixed issues with unknown arguments in `get_predicted()`.
+
 # insight 0.14.4
 
 ## Bug fixes

@@ -5,11 +5,11 @@
 #'   from regression models.
 #'
 #' @param x A statistical model.
-#' @param type Can be `"residual"` or `"model"`. `"residual"`
+#' @param type Can be `"residual"`, `"model"` or `"analytical"`. `"residual"`
 #' tries to extract residual degrees of freedoms. If residual degrees of freedom
-#' could not be extracted, returns `n-k` (number of observations minus
-#' number of parameters). `"model"` returns model-based degrees of freedom,
-#' i.e. the number of (estimated) parameters.
+#' could not be extracted, returns analytical degrees of freedom, i.e. `n-k`
+#' (number of observations minus number of parameters). `"model"` returns
+#' model-based degrees of freedom, i.e. the number of (estimated) parameters.
 #' @param verbose Toggle warnings.
 #' @param ... Currently not used.
 #'
@@ -26,13 +26,15 @@ get_df <- function(x, ...) {
 #' @rdname get_df
 #' @export
 get_df.default <- function(x, type = "residual", verbose = TRUE, ...) {
-  type <- match.arg(tolower(type), choices = c("residual", "model"))
+  type <- match.arg(tolower(type), choices = c("residual", "model", "analytical"))
 
   if (type == "residual") {
-    dof <- .degrees_of_freedom_fit(x, verbose = verbose)
+    dof <- .degrees_of_freedom_residual(x, verbose = verbose)
     if (is.null(dof) || all(is.infinite(dof)) || anyNA(dof)) {
       dof <- .degrees_of_freedom_analytical(x)
     }
+  } else if (type == "analytical") {
+    dof <- .degrees_of_freedom_analytical(x)
   } else {
     dof <- .model_df(x)
   }
@@ -135,6 +137,7 @@ get_df.lqmm <- function(x, type = "residual", ...) {
 get_df.lqm <- get_df.lqmm
 
 
+#' @export
 get_df.cgam <- function(x, type = "residual", ...) {
   type <- match.arg(tolower(type), choices = c("residual", "model"))
   if (type == "model") {
@@ -152,6 +155,17 @@ get_df.glht <- function(x, type = "residual", ...) {
     .model_df(x)
   } else {
     x$df
+  }
+}
+
+
+#' @export
+get_df.rlm <- function(x, type = "residual", ...) {
+  type <- match.arg(tolower(type), choices = c("residual", "model"))
+  if (type == "residual") {
+    .degrees_of_freedom_analytical(x)
+  } else {
+    .model_df(x)
   }
 }
 
@@ -277,6 +291,27 @@ get_df.rqs <- function(x, type = "residual", ...) {
 }
 
 
+#' @export
+get_df.systemfit <- function(x, type = "residual", ...) {
+  type <- match.arg(tolower(type), choices = c("residual", "model"))
+  df <- c()
+  s <- summary(x)$eq
+  params <- find_parameters(x)
+  f <- find_formula(x)
+  system_names <- names(f)
+
+  for (i in 1:length(system_names)) {
+    dfs <- rep(s[[i]]$df[2], length(params[[i]]))
+    df_names <- rep(names(params[i]), length(params[[i]]))
+    df <- c(df, stats::setNames(dfs, df_names))
+  }
+
+  df
+}
+
+
+
+
 
 
 # Analytical approach ------------------------------
@@ -295,10 +330,13 @@ get_df.rqs <- function(x, type = "residual", ...) {
 }
 
 
+
+
 # Model approach (Residual df) ------------------------------
 
+
 #' @keywords internal
-.degrees_of_freedom_fit <- function(model, verbose = TRUE) {
+.degrees_of_freedom_residual <- function(model, verbose = TRUE) {
   info <- model_info(model, verbose = FALSE)
 
   if (!is.null(info) && is.list(info) && info$is_bayesian && !inherits(model, c("bayesx", "blmerMod", "bglmerMod"))) {
@@ -316,12 +354,12 @@ get_df.rqs <- function(x, type = "residual", ...) {
   dof <- try(stats::df.residual(model), silent = TRUE)
 
   # 2nd try
-  if (inherits(dof, "try-error") || is.null(dof)) {
+  if (inherits(dof, "try-error") || is.null(dof) || all(is.na(dof))) {
     junk <- utils::capture.output(dof = try(summary(model)$df[2], silent = TRUE))
   }
 
   # 3rd try, nlme
-  if (inherits(dof, "try-error") || is.null(dof)) {
+  if (inherits(dof, "try-error") || is.null(dof) || all(is.na(dof))) {
     dof <- try(unname(model$fixDF$X), silent = TRUE)
   }
 
@@ -333,6 +371,10 @@ get_df.rqs <- function(x, type = "residual", ...) {
   dof
 }
 
+
+
+
+# Model approach (model-based / logLik df) ------------------------------
 
 
 .model_df <- function(x) {

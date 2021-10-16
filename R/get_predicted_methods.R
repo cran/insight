@@ -3,7 +3,8 @@
 #' @export
 print.get_predicted <- function(x, ...) {
   print_colour("Predicted values:\n\n", "blue")
-  if (is.null(ncol(x))) {
+  # vectors have NULL columns; 1-dimensional arrays have NA columns (e.g., mgcv::gam predict() output)
+  if (is.null(ncol(x)) || is.na(ncol(x))) {
     print.default(as.vector(x))
   } else {
     print.data.frame(x)
@@ -36,9 +37,17 @@ print.get_predicted <- function(x, ...) {
 
 #' @export
 as.data.frame.get_predicted <- function(x, ..., keep_iterations = TRUE) {
-  if (inherits(x, "data.frame") && !"iterations" %in% names(attributes(x))) {
-    # Then it must be a regular data.frame (e.g., from PCA/FA)
+  # a regular data.frame (e.g., from PCA/FA)
+  if (inherits(x, "data.frame") && 
+      !"iterations" %in% names(attributes(x)) &&
+      !"Response" %in% colnames(x)) {
     out <- as.data.frame.data.frame(x)
+  # grouped response level (e.g., polr or multinom)
+  } else if (inherits(x, "data.frame") && "Response" %in% colnames(x)) {
+    out <- as.data.frame.data.frame(x)
+    if ("ci_data" %in% names(attributes(x))) {
+      out <- merge(out, attributes(x)$ci_data, by = c("Row", "Response"), sort = FALSE)
+    }
   } else {
     # Then it must be predictions from a regression model
     out <- data.frame("Predicted" = as.vector(x))

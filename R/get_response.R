@@ -28,18 +28,34 @@
 #' @export
 get_response <- function(x, select = NULL, verbose = TRUE) {
   rn <- find_response(x, combine = FALSE)
+  combined_rn <- find_response(x, combine = TRUE)
 
   if (is.null(rn)) {
     return(NULL)
   }
+
+  # check if response is a proportion for a binomial glm
+  proportion_response <- combined_rn[!grepl("I\\((.*)\\)", combined_rn)]
+  binom_fam <- tryCatch(
+    {
+      stats::family(x)$family == "binomial"
+    },
+    error = function(x) {
+      FALSE
+    }
+  )
+  glm_proportion <- any(grepl("/", proportion_response, fixed = TRUE)) && binom_fam
+
+  # data used to fit the model
+  model_data <- get_data(x, verbose = verbose)
 
   # exceptions
   if (inherits(x, "DirichletRegModel")) {
     rv <- x$Y
     class(rv) <- "matrix"
     data.frame(rv)
-  } else if (length(rn) > 1) {
-    rv <- get_data(x, verbose = verbose)[, rn, drop = FALSE]
+  } else if (length(rn) > 1 && all(rn %in% colnames(model_data)) && !glm_proportion) {
+    rv <- model_data[, rn, drop = FALSE]
     colnames(rv) <- rn
     # if user only wants specific response value, return this only
     if (!is.null(select) && all(select %in% colnames(rv))) {
@@ -47,7 +63,7 @@ get_response <- function(x, select = NULL, verbose = TRUE) {
     }
     rv
   } else {
-    rv <- get_data(x, verbose = verbose)[[find_response(x, combine = TRUE)]]
+    rv <- model_data[[combined_rn]]
     if (!is.factor(rv) &&
       !is.numeric(rv) &&
       !is.character(rv) && !is.logical(rv) && !is.integer(rv)) {

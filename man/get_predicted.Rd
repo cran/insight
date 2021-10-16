@@ -38,7 +38,16 @@ second argument has to be a model).}
 \item{data}{An optional data frame in which to look for variables with which
 to predict. If omitted, the data used to fit the model is used.}
 
-\item{predict}{Can be \code{"link"}, \code{"expectation"} (default), \code{"prediction"}, or \code{"response"}. You can see these 4 options for predictions as on a gradient from "close to the model" to "close to the response data". More specifically, the \code{predict} argument modulates two things; the scale of the output as well as the type of certainty interval (see the details and examples). More specifically, \code{"link"} returns predictions on the model's link-scale (for logistic models, that means the log-odds scale) with a confidence interval (CI). \code{"expectation"} (default) also returns confidence intervals, but this time the output is on the response scale (for logistic models, that means probabilities). \code{"predict"} also gives an output on the response scale, but this time associated with a prediction interval (PI), which is larger than a confidence interval (though it mostly make sense for linear models). Finally, \code{"response"} only differs from the previous option for binomial models where it additionally transforms the predictions into the original response's type (for instance, to a factor). Read more about in the \strong{Details} section below.}
+\item{predict}{string or \code{NULL}
+\itemize{
+\item \code{"link"} returns predictions on the model's link-scale (for logistic models, that means the log-odds scale) with a confidence interval (CI).
+\item \code{"expectation"} (default) also returns confidence intervals, but this time the output is on the response scale (for logistic models, that means probabilities).
+\item \code{"prediction"} also gives an output on the response scale, but this time associated with a prediction interval (PI), which is larger than a confidence interval (though it mostly make sense for linear models).
+\item \code{"classification"} only differs from \code{"prediction"} for binomial models where it additionally transforms the predictions into the original response's type (for instance, to a factor).
+\item Other strings are passed directly to the \code{type} argument of the \code{predict()} method supplied by the modelling package.
+\item When \code{predict = NULL}, alternative arguments such as \code{type} will be captured by the \code{...} ellipsis and passed directly to the \code{predict()} method supplied by the modelling package.
+\item Notes: You can see the 4 options for predictions as on a gradient from "close to the model" to "close to the response data": "link", "expectation", "prediction", "classification". The \code{predict} argument modulates two things: the scale of the output and the type of certainty interval. Read more about in the \strong{Details} section below.
+}}
 
 \item{iterations}{For Bayesian models, this corresponds to the number of
 posterior draws. If \code{NULL}, will return all the draws (one for each
@@ -75,10 +84,10 @@ modulates two separate concepts, the \strong{scale} and the \strong{uncertainty 
 \subsection{Confidence Interval (CI) vs. Prediction Interval (PI))}{
 \itemize{
 \item \strong{Linear models} - \code{lm()}: For linear models, Prediction
-intervals (\code{predict = "prediction"}) show the range that likely
+intervals (\code{predict="prediction"}) show the range that likely
 contains the value of a new observation (in what range it is likely to
-fall), whereas confidence intervals (\code{predict = "expectation"} or
-\code{predict = "link"}) reflect the uncertainty around the estimated
+fall), whereas confidence intervals (\code{predict="expectation"} or
+\code{predict="link"}) reflect the uncertainty around the estimated
 parameters (and gives the range of uncertainty of the regression line). In
 general, Prediction Intervals (PIs) account for both the uncertainty in the
 model's parameters, plus the random variation of the individual values.
@@ -86,21 +95,25 @@ Thus, prediction intervals are always wider than confidence intervals.
 Moreover, prediction intervals will not necessarily become narrower as the
 sample size increases (as they do not reflect only the quality of the fit,
 but also the variability within the data).
-\item \strong{General Linear models} - \code{glm()}: For binomial models,
+\item \strong{Generalized Linear models} - \code{glm()}: For binomial models,
 prediction intervals are somewhat useless (for instance, for a binomial
-(bernoulli) model for which the dependent variable is a vector of 1s and
+(Bernoulli) model for which the dependent variable is a vector of 1s and
 0s, the prediction interval is... \verb{[0, 1]}).
 }}
 
 \subsection{Link scale vs. Response scale}{
-Having the output is on the scale of the response variable is arguably the
-most convenient to understand and visualize the relationships. If on the
-link-scale, no transformation is applied and the values are on the scale of
-the model. For instance, for a logistic model, the response
-scale corresponds to the predicted probabilities, whereas the link-scale
-makes predictions of log-odds (probabilities on the logit scale). Note that,
-when \code{predict = "response"}, the probabilities are rounded (so that the
-prediction corresponds to the most likely outcome).
+When users set the \code{predict} argument to \code{"expectation"}, the predictions
+are returned on the response scale, which is arguably the most convenient
+way to understand and visualize relationships of interest. When users set
+the \code{predict} argument to \code{"link"}, predictions are returned on the link
+scale, and no transformation is applied. For instance, for a logistic
+regression model, the response scale corresponds to the predicted
+probabilities, whereas the link-scale makes predictions of log-odds
+(probabilities on the logit scale). Note that when users select
+\code{predict="classification"} in binomial models, the \code{get_predicted()}
+function will first calculate predictions as if the user had selected
+\code{predict="expectation"}. Then, it will round the responses in order to
+return the most likely outcome.
 }
 }
 \examples{
@@ -139,8 +152,8 @@ head(as.data.frame(pred))
 pred <- get_predicted(x, predict = "link")
 head(as.data.frame(pred))
 
-# Response: response "type" + PI
-pred <- get_predicted(x, predict = "response")
+# Classification: classification "type" + PI
+pred <- get_predicted(x, predict = "classification")
 head(as.data.frame(pred))
 }
 \seealso{

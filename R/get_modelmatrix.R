@@ -22,6 +22,19 @@ get_modelmatrix.default <- function(x, ...) {
 }
 
 #' @export
+get_modelmatrix.merMod <- function(x, ...) {
+  dots <- list(...)
+  if ("data" %in% names(dots)) {
+    model_terms <- stats::terms(x)
+    mm <- stats::model.matrix(model_terms, ...)
+  } else {
+    mm <- stats::model.matrix(object = x, ...)
+  }
+
+  mm
+}
+
+#' @export
 get_modelmatrix.lme <- function(x, ...) {
   # we check the dots for a "data" argument. To make model.matrix work
   # for certain objects, we need to specify the data-argument explicitly,
@@ -45,6 +58,30 @@ get_modelmatrix.brmsfit <- function(x, ...) {
   formula_rhs <- .safe_deparse(find_formula(x)$conditional[[3]])
   formula_rhs <- stats::as.formula(paste0("~", formula_rhs))
   .data_in_dots(..., object = formula_rhs, default_data = get_data(x))
+}
+
+#' @export
+get_modelmatrix.rlm <- function(x, ...) {
+  dots <- list(...)
+  # `rlm` objects can inherit to model.matrix.lm, but that function does
+  # not accept the `data` argument for `rlm` objects
+  if (is.null(dots$data)) {
+    mf <- stats::model.frame(x,
+      xleve = x$xlevels,
+      ...
+    )
+  } else {
+    mf <- stats::model.frame(x,
+      xleve = x$xlevels,
+      data = dots$data,
+      ...
+    )
+  }
+  mm <- stats::model.matrix.default(x,
+    data = mf,
+    contrasts.arg = x$contrasts
+  )
+  return(mm)
 }
 
 #' @export
