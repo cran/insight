@@ -125,6 +125,21 @@ get_parameters.model_fit <- function(x, ...) {
 
 
 #' @export
+get_parameters.bfsl <- function(x, ...) {
+  cf <- stats::coef(x)
+
+  params <- data.frame(
+    Parameter = rownames(cf),
+    Estimate = unname(cf[, "Estimate"]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  .remove_backticks_from_parameter_names(params)
+}
+
+
+#' @export
 get_parameters.selection <- function(x, component = c("all", "selection", "outcome", "auxiliary"), ...) {
   component <- match.arg(component)
   s <- summary(x)
@@ -192,7 +207,7 @@ get_parameters.btergm <- function(x, ...) {
 
 #' @export
 get_parameters.mediate <- function(x, ...) {
-  info <- model_info(x$model.y)
+  info <- model_info(x$model.y, verbose = FALSE)
   if (info$is_linear && !x$INT) {
     out <- data.frame(
       Parameter = c("ACME", "ADE", "Total Effect", "Prop. Mediated"),

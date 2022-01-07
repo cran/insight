@@ -67,6 +67,23 @@ get_df.ivFixed <- function(x, type = "residual", ...) {
   }
 }
 
+#' @export
+get_df.ivprobit <- get_df.ivFixed
+
+
+#' @export
+get_df.multinom <- function(x, type = "residual", ...) {
+  type <- match.arg(tolower(type), choices = c("residual", "model"))
+  if (type == "model") {
+    .model_df(x)
+  } else {
+    n_obs(x) - x$edf
+  }
+}
+
+#' @export
+get_df.nnet <- get_df.multinom
+
 
 #' @export
 get_df.summary.lm <- function(x, type = "residual", ...) {
@@ -158,12 +175,40 @@ get_df.glht <- function(x, type = "residual", ...) {
   }
 }
 
+#' @export
+get_df.BBmm <- get_df.glht
+
+#' @export
+get_df.BBreg <- get_df.glht
+
 
 #' @export
 get_df.rlm <- function(x, type = "residual", ...) {
   type <- match.arg(tolower(type), choices = c("residual", "model"))
   if (type == "residual") {
     .degrees_of_freedom_analytical(x)
+  } else {
+    .model_df(x)
+  }
+}
+
+
+#' @export
+get_df.bfsl <- function(x, type = "residual", ...) {
+  type <- match.arg(tolower(type), choices = c("residual", "model"))
+  if (type == "residual") {
+    x$df.residual
+  } else {
+    .model_df(x)
+  }
+}
+
+
+#' @export
+get_df.plm <- function(x, type = "residual", ...) {
+  type <- match.arg(tolower(type), choices = c("residual", "model"))
+  if (type == "residual") {
+    x$df.residual
   } else {
     .model_df(x)
   }
@@ -337,9 +382,7 @@ get_df.systemfit <- function(x, type = "residual", ...) {
 
 #' @keywords internal
 .degrees_of_freedom_residual <- function(model, verbose = TRUE) {
-  info <- model_info(model, verbose = FALSE)
-
-  if (!is.null(info) && is.list(info) && info$is_bayesian && !inherits(model, c("bayesx", "blmerMod", "bglmerMod"))) {
+  if (.is_bayesian_model(model) && !inherits(model, c("bayesx", "blmerMod", "bglmerMod"))) {
     if (requireNamespace("bayestestR", quietly = TRUE)) {
       model <- bayestestR::bayesian_as_frequentist(model)
     } else {
@@ -393,7 +436,7 @@ get_df.systemfit <- function(x, type = "residual", ...) {
     } else {
       n <- n_parameters(x)
       extra <- 0
-      mi <- model_info(x)
+      mi <- model_info(x, verbose = FALSE)
 
       if (mi$is_linear || mi$is_negbin) {
         extra <- extra + 1

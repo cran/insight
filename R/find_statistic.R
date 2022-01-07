@@ -60,7 +60,7 @@ find_statistic <- function(x, ...) {
   # t-value objects ----------------------------------------------------------
 
   t.mods <- c(
-    "bayesx", "BBreg", "BBmm", "bcplm", "biglm", "blmerMod",
+    "bayesx", "BBreg", "BBmm", "bcplm", "biglm", "bfsl", "blmerMod",
     "cch", "censReg", "complmrob", "cpglm", "cpglmm", "crq", "crqs",
     "drc",
     "elm",
@@ -192,13 +192,15 @@ find_statistic <- function(x, ...) {
 
   # edge cases ---------------------------------------------------------------
 
+  m_info <- model_info(x, verbose = FALSE, return_family_only = TRUE)
+
   # tweedie-check needs to come first, because glm can also have tweedie
   # family, so this exception needs to be caught before checking for g.mods
 
   tryCatch(
     {
       suppressWarnings(
-        if (!is_multivariate(x) && model_info(x)$is_tweedie) {
+        if (!is_multivariate(x) && .is_tweedie(x, m_info)) {
           return("t-statistic")
         }
       )
@@ -246,7 +248,7 @@ find_statistic <- function(x, ...) {
         }
       )
       return(stat)
-    } else if (model_info(x)$family %in% g.t.mods) {
+    } else if (m_info$family %in% g.t.mods) {
       return("t-statistic")
     } else {
       return("z-statistic")
@@ -303,4 +305,18 @@ find_statistic <- function(x, ...) {
       return("chi-squared statistic")
     }
   }
+}
+
+
+
+
+
+# helper ---------------
+
+.is_tweedie <- function(model, info) {
+  if (info$family %in% c("Student's-t", "t Family", "gaussian", "Gaussian") || grepl("(\\st)$", info$family)) {
+    linear_model <- TRUE
+  }
+  tweedie_fam <- grepl("^(tweedie|Tweedie)", info$family) | grepl("^(tweedie|Tweedie)", info$link_function)
+  (linear_model && tweedie_fam) || inherits(model, c("bcplm", "cpglm", "cpglmm", "zcpglm"))
 }

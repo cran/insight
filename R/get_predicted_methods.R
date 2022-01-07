@@ -9,7 +9,7 @@ print.get_predicted <- function(x, ...) {
   } else {
     print.data.frame(x)
   }
-  print_colour("\nNOTE: Confidence intervals, if available, are stored as attributes and can be accessed using `as.data.frame()` on this output.", "yellow")
+  print_colour("\nNOTE: Confidence intervals, if available, are stored as attributes and can be accessed using `as.data.frame()` on this output.\n", "yellow")
 }
 
 
@@ -38,11 +38,11 @@ print.get_predicted <- function(x, ...) {
 #' @export
 as.data.frame.get_predicted <- function(x, ..., keep_iterations = TRUE) {
   # a regular data.frame (e.g., from PCA/FA)
-  if (inherits(x, "data.frame") && 
-      !"iterations" %in% names(attributes(x)) &&
-      !"Response" %in% colnames(x)) {
+  if (inherits(x, "data.frame") &&
+    !"iterations" %in% names(attributes(x)) &&
+    !"Response" %in% colnames(x)) {
     out <- as.data.frame.data.frame(x)
-  # grouped response level (e.g., polr or multinom)
+    # grouped response level (e.g., polr or multinom)
   } else if (inherits(x, "data.frame") && "Response" %in% colnames(x)) {
     out <- as.data.frame.data.frame(x)
     if ("ci_data" %in% names(attributes(x))) {

@@ -15,39 +15,40 @@
 #' @return A list of formulas that describe the model. For simple models,
 #'    only one list-element, `conditional`, is returned. For more complex
 #'    models, the returned list may have following elements:
-#'    \itemize{
-#'      \item `conditional`, the "fixed effects" part from the model. One
-#'      exception are `DirichletRegModel` models from \pkg{DirichletReg},
-#'      which has two or three components, depending on `model`.
 #'
-#'      \item `random`, the "random effects" part from the model (or the
+#'    - `conditional`, the "fixed effects" part from the model (in the
+#'      context of fixed-effects or instrumental variable regression, also
+#'      called *regressors*) . One exception are `DirichletRegModel` models
+#'      from \pkg{DirichletReg}, which has two or three components,
+#'      depending on `model`.
+#'
+#'    - `random`, the "random effects" part from the model (or the
 #'      `id` for gee-models and similar)
 #'
-#'      \item `zero_inflated`, the "fixed effects" part from the
+#'    - `zero_inflated`, the "fixed effects" part from the
 #'      zero-inflation component of the model
 #'
-#'      \item `zero_inflated_random`, the "random effects" part from the
+#'    - `zero_inflated_random`, the "random effects" part from the
 #'      zero-inflation component of the model
 #'
-#'      \item `dispersion`, the dispersion formula
+#'    - `dispersion`, the dispersion formula
 #'
-#'      \item `instruments`, for fixed-effects regressions like
-#'      `ivreg::ivreg()`, `lfe::felm()` or `plm::plm()`, the
-#'      instrumental variables
+#'    - `instruments`, for fixed-effects or instrumental variable
+#'      regressions like `ivreg::ivreg()`, `lfe::felm()` or `plm::plm()`,
+#'      the instrumental variables
 #'
-#'      \item `cluster`, for fixed-effects regressions like
+#'    - `cluster`, for fixed-effects regressions like
 #'      `lfe::felm()`, the cluster specification
 #'
-#'      \item `correlation`, for models with correlation-component like
+#'    - `correlation`, for models with correlation-component like
 #'      `nlme::gls()`, the formula that describes the correlation structure
 #'
-#'      \item `slopes`, for fixed-effects individual-slope models like
+#'    - `slopes`, for fixed-effects individual-slope models like
 #'      `feisr::feis()`, the formula for the slope parameters
 #'
-#'      \item `precision`, for `DirichletRegModel` models from
+#'    - `precision`, for `DirichletRegModel` models from
 #'      \pkg{DirichletReg}, when parametrization (i.e. `model`) is
 #'      `"alternative"`.
-#'    }
 #'
 #' @note For models of class `lme` or `gls` the correlation-component
 #'   is only returned, when it is explicitly defined as named argument
@@ -444,7 +445,7 @@ find_formula.afex_aov <- function(x, verbose = TRUE, ...) {
     fff$conditional[2] <- call(attr(x, "dv")) # need to fix LHS
     fff
   } else {
-    d <- insight::get_data(x, shape = "long")
+    d <- get_data(x, shape = "long")
 
     dv <- attr(x, "dv")
     id <- attr(x, "id")
@@ -1407,11 +1408,15 @@ find_formula.BFBayesFactor <- function(x, verbose = TRUE, ...) {
     frand <- names(dt)[which(dt == "random")]
 
     if (!.is_empty_object(frand)) {
-      f.random <- stats::as.formula(paste0("~", frand))
-      fcond <- sub(frand, "", fcond, fixed = TRUE)
-      fcond <- gsub("(.*)\\+$", "\\1", .trim(fcond))
+      f.random <- stats::as.formula(paste0("~", paste(frand, collapse = " + ")))
+      for (i in frand) {
+        fcond <- sub(i, "", fcond, fixed = TRUE)
+      }
+      while (grepl("\\+$", .trim(fcond))) {
+        fcond <- gsub("(.*)\\+$", "\\1", .trim(fcond))
+      }
       # random effects only?
-      if (grepl("~$", fcond)) {
+      if (grepl("~$", .trim(fcond))) {
         fcond <- paste(fcond, "1")
       }
       f.cond <- stats::as.formula(.trim(fcond))
@@ -1618,7 +1623,7 @@ find_formula.model_fit <- function(x, verbose = TRUE, ...) {
     {
       if (as.character(zi.form[2]) == ".") {
         resp <- .safe_deparse(c.form[2])
-        pred <- setdiff(colnames(.get_data_from_env(x)), resp)
+        pred <- setdiff(colnames(.recover_data_from_environment(x)), resp)
         zi.form <- stats::as.formula(paste(resp, "~", paste0(pred, collapse = " + ")))
       }
       zi.form
@@ -1643,7 +1648,7 @@ find_formula.model_fit <- function(x, verbose = TRUE, ...) {
     {
       if (as.character(f[[3]])[1] == ".") {
         resp <- .safe_deparse(f[[2]])
-        pred <- setdiff(colnames(.get_data_from_env(model)), resp)
+        pred <- setdiff(colnames(.recover_data_from_environment(model)), resp)
         f <- stats::as.formula(paste(resp, "~", paste0(pred, collapse = " + ")))
       }
       f

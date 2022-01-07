@@ -59,7 +59,7 @@ get_data.default <- function(x, verbose = TRUE, ...) {
   if (is.null(mf)) {
     mf <- tryCatch(
       {
-        dat <- .get_data_from_env(x)
+        dat <- .recover_data_from_environment(x)
         vars <- find_variables(x, flatten = TRUE, verbose = FALSE)
         dat[, intersect(vars, colnames(dat)), drop = FALSE]
       },
@@ -83,7 +83,7 @@ get_data.data.frame <- function(x, ...) {
 get_data.summary.lm <- function(x, verbose = TRUE, ...) {
   mf <- tryCatch(
     {
-      .get_data_from_env(x)[, all.vars(x$terms), drop = FALSE]
+      .recover_data_from_environment(x)[, all.vars(x$terms), drop = FALSE]
     },
     error = function(x) {
       NULL
@@ -137,7 +137,7 @@ get_data.gee <- function(x,
   effects <- match.arg(effects)
   mf <- tryCatch(
     {
-      dat <- .get_data_from_env(x)
+      dat <- .recover_data_from_environment(x)
       vars <- switch(effects,
         all = find_variables(x, flatten = TRUE, verbose = FALSE),
         fixed = find_variables(x, effects = "fixed", flatten = TRUE, verbose = FALSE),
@@ -165,7 +165,7 @@ get_data.rqss <- function(x,
 
   mf <- tryCatch(
     {
-      dat <- .get_data_from_env(x)
+      dat <- .recover_data_from_environment(x)
       vars <- find_variables(
         x,
         effects = "all",
@@ -186,23 +186,10 @@ get_data.rqss <- function(x,
 
 
 #' @export
-get_data.selection <- function(x, verbose = TRUE, ...) {
-  if ("lm" %in% names(x)) {
-    suppressWarnings(get_data(x$lm, verbose = verbose))
-  } else if (!is.null(x$twoStep$lm)) {
-    suppressWarnings(get_data(x$twoStep$lm, verbose = verbose))
-  } else {
-    NULL
-  }
-}
-
-
-
-#' @export
 get_data.gls <- function(x, verbose = TRUE, ...) {
   mf <- tryCatch(
     {
-      dat <- .get_data_from_env(x)
+      dat <- .recover_data_from_environment(x)
       data_columns <- intersect(
         colnames(dat),
         find_variables(x, flatten = TRUE, verbose = FALSE)
@@ -231,6 +218,17 @@ get_data.nlrq <- get_data.gls
 
 #' @export
 get_data.robmixglm <- get_data.gls
+
+#' @export
+get_data.selection <- get_data.gls
+
+# if ("lm" %in% names(x)) {
+#   suppressWarnings(get_data(x$lm, verbose = verbose))
+# } else if (!is.null(x$twoStep$lm)) {
+#   suppressWarnings(get_data(x$twoStep$lm, verbose = verbose))
+# } else {
+#   NULL
+# }
 
 
 #' @export
@@ -344,7 +342,7 @@ get_data.glmmTMB <- function(x,
   mf <- .add_zeroinf_data(x, mf, model.terms$zero_inflated)
   mf <- .add_zeroinf_data(x, mf, model.terms$zero_inflated_random)
 
-  .return_data(x, mf, effects, component, model.terms, verbose = verbose)
+  .return_combined_data(x, mf, effects, component, model.terms, verbose = verbose)
 }
 
 
@@ -502,7 +500,7 @@ get_data.glmmadmb <- function(x,
   effects <- match.arg(effects)
 
   fixed_data <- x$frame
-  random_data <- .get_data_from_env(x)[, find_random(x, split_nested = TRUE, flatten = TRUE), drop = FALSE]
+  random_data <- .recover_data_from_environment(x)[, find_random(x, split_nested = TRUE, flatten = TRUE), drop = FALSE]
 
   mf <- tryCatch(
     {
@@ -562,7 +560,7 @@ get_data.sem <- function(x, effects = c("all", "fixed", "random"), verbose = TRU
   effects <- match.arg(effects)
   mf <- tryCatch(
     {
-      dat <- .get_data_from_env(x)
+      dat <- .recover_data_from_environment(x)
       vars <- switch(effects,
         all = find_variables(x, flatten = TRUE, verbose = FALSE),
         fixed = find_variables(x, effects = "fixed", flatten = TRUE, verbose = FALSE),
@@ -643,7 +641,7 @@ get_data.MixMod <- function(x,
         verbose = FALSE
       )
 
-      .return_data(x, mf = fitfram, effects, component, model.terms, verbose = verbose)
+      .return_combined_data(x, mf = fitfram, effects, component, model.terms, verbose = verbose)
     },
     error = function(x) {
       NULL
@@ -654,11 +652,11 @@ get_data.MixMod <- function(x,
 
 
 #' @export
-get_data.BBmm <- function(x, effects = c("all", "fixed", "random"), ...) {
+get_data.BBmm <- function(x, effects = c("all", "fixed", "random"), verbose = TRUE, ...) {
   effects <- match.arg(effects)
   mf <- tryCatch(
     {
-      dat <- .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
+      dat <- .recover_data_from_environment(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
       switch(effects,
         all = dat[, find_variables(x, flatten = TRUE), drop = FALSE],
         fixed = dat[, find_variables(x, effects = "fixed", flatten = TRUE), drop = FALSE],
@@ -670,12 +668,12 @@ get_data.BBmm <- function(x, effects = c("all", "fixed", "random"), ...) {
     }
   )
 
-  .prepare_get_data(x, stats::na.omit(mf), effects)
+  .prepare_get_data(x, stats::na.omit(mf), effects, verbose = verbose)
 }
 
 
 #' @export
-get_data.glimML <- function(x, effects = c("all", "fixed", "random"), ...) {
+get_data.glimML <- function(x, effects = c("all", "fixed", "random"), verbose = TRUE, ...) {
   effects <- match.arg(effects)
   dat <- x@data
   mf <- switch(effects,
@@ -684,14 +682,14 @@ get_data.glimML <- function(x, effects = c("all", "fixed", "random"), ...) {
     random = dat[, find_random(x, flatten = TRUE), drop = FALSE]
   )
 
-  .prepare_get_data(x, stats::na.omit(mf), effects)
+  .prepare_get_data(x, stats::na.omit(mf), effects, verbose = verbose)
 }
 
 
 # sem models -------------------------------------
 
 #' @export
-get_data.lavaan <- function(x, ...) {
+get_data.lavaan <- function(x, verbose = TRUE, ...) {
   mf <- tryCatch(
     {
       .get_S4_data_from_env(x)
@@ -701,7 +699,7 @@ get_data.lavaan <- function(x, ...) {
     }
   )
 
-  .prepare_get_data(x, stats::na.omit(mf))
+  .prepare_get_data(x, stats::na.omit(mf), verbose = verbose)
 }
 
 #' @export
@@ -711,7 +709,7 @@ get_data.blavaan <- get_data.lavaan
 # additive models (gam) -------------------------------------
 
 #' @export
-get_data.vgam <- function(x, ...) {
+get_data.vgam <- function(x, verbose = TRUE, ...) {
   mf <- tryCatch(
     {
       get(x@misc$dataname, envir = parent.frame())[, find_variables(x, flatten = TRUE), drop = FALSE]
@@ -721,21 +719,21 @@ get_data.vgam <- function(x, ...) {
     }
   )
 
-  .prepare_get_data(x, mf)
+  .prepare_get_data(x, mf, verbose = verbose)
 }
 
 
 #' @export
-get_data.gamm <- function(x, ...) {
+get_data.gamm <- function(x, verbose = TRUE, ...) {
   x <- x$gam
   class(x) <- c(class(x), c("glm", "lm"))
   mf <- stats::model.frame(x)
-  .prepare_get_data(x, mf)
+  .prepare_get_data(x, mf, verbose = verbose)
 }
 
 
 #' @export
-get_data.gamlss <- function(x, ...) {
+get_data.gamlss <- function(x, verbose = TRUE, ...) {
   mf <- tryCatch(
     {
       elements <- c("mu", "sigma", "nu", "tau")
@@ -763,7 +761,7 @@ get_data.gamlss <- function(x, ...) {
     }
   )
 
-  .prepare_get_data(x, mf, effects = "all")
+  .prepare_get_data(x, mf, effects = "all", verbose = verbose)
 }
 
 
@@ -772,9 +770,9 @@ get_data.gamlss <- function(x, ...) {
 # fixed effects and panel regression --------------------------------------
 
 #' @export
-get_data.felm <- function(x, effects = c("all", "fixed", "random"), ...) {
+get_data.felm <- function(x, effects = c("all", "fixed", "random"), verbose = TRUE, ...) {
   effects <- match.arg(effects)
-  .get_data_from_modelframe(x, stats::model.frame(x), effects)
+  .get_data_from_modelframe(x, stats::model.frame(x), effects, verbose = verbose)
 }
 
 
@@ -783,7 +781,7 @@ get_data.feis <- function(x, effects = c("all", "fixed", "random"), ...) {
   effects <- match.arg(effects)
   mf <- tryCatch(
     {
-      .get_data_from_env(x)
+      .recover_data_from_environment(x)
     },
     error = function(x) {
       stats::model.frame(x)
@@ -796,7 +794,7 @@ get_data.feis <- function(x, effects = c("all", "fixed", "random"), ...) {
 
 #' @export
 get_data.fixest <- function(x, ...) {
-  mf <- .get_data_from_env(x)
+  mf <- .recover_data_from_environment(x)
   .get_data_from_modelframe(x, mf, effects = "all")
 }
 
@@ -813,7 +811,7 @@ get_data.pgmm <- function(x, verbose = TRUE, ...) {
   model_terms <- find_variables(x, effects = "all", component = "all", flatten = TRUE)
   mf <- tryCatch(
     {
-      .get_data_from_env(x)[, model_terms, drop = FALSE]
+      .recover_data_from_environment(x)[, model_terms, drop = FALSE]
     },
     error = function(x) {
       NULL
@@ -824,7 +822,7 @@ get_data.pgmm <- function(x, verbose = TRUE, ...) {
 
 
 #' @export
-get_data.plm <- function(x, ...) {
+get_data.plm <- function(x, verbose = TRUE, ...) {
   mf <- stats::model.frame(x)
   model_terms <- find_variables(x, effects = "all", component = "all", flatten = TRUE)
   cn <- colnames(mf)
@@ -836,7 +834,7 @@ get_data.plm <- function(x, ...) {
 
   # try to get index variables from orignal data
   if (!is.null(index)) {
-    original_data <- .get_data_from_env(x)
+    original_data <- .recover_data_from_environment(x)
     keep <- intersect(index, colnames(original_data))
     if (length(keep)) {
       mf <- cbind(mf, original_data[, keep, drop = FALSE])
@@ -844,12 +842,12 @@ get_data.plm <- function(x, ...) {
     }
   }
 
-  .prepare_get_data(x, mf[, model_terms, drop = FALSE])
+  .prepare_get_data(x, mf[, model_terms, drop = FALSE], verbose = verbose)
 }
 
 
 #' @export
-get_data.wbm <- function(x, effects = c("all", "fixed", "random"), ...) {
+get_data.wbm <- function(x, effects = c("all", "fixed", "random"), verbose = TRUE, ...) {
   effects <- match.arg(effects)
   mf <- stats::model.frame(x)
 
@@ -862,7 +860,7 @@ get_data.wbm <- function(x, effects = c("all", "fixed", "random"), ...) {
   resp.col <- which(colnames(mf) == find_response(x))
   mf <- mf[, c(resp.col, (1:ncol(mf))[-resp.col])]
 
-  .prepare_get_data(x, stats::na.omit(mf), effects)
+  .prepare_get_data(x, stats::na.omit(mf), effects, verbose = verbose)
 }
 
 
@@ -871,7 +869,7 @@ get_data.wbgee <- get_data.wbm
 
 
 #' @export
-get_data.ivreg <- function(x, ...) {
+get_data.ivreg <- function(x, verbose = TRUE, ...) {
   mf <- stats::model.frame(x)
   cn <- clean_names(colnames(mf))
   ft <- find_variables(x, flatten = TRUE)
@@ -883,7 +881,7 @@ get_data.ivreg <- function(x, ...) {
   } else {
     final_mf <- tryCatch(
       {
-        dat <- .get_data_from_env(x)
+        dat <- .recover_data_from_environment(x)
         cbind(mf, dat[, remain, drop = FALSE])
       },
       error = function(x) {
@@ -892,7 +890,7 @@ get_data.ivreg <- function(x, ...) {
     )
   }
 
-  .prepare_get_data(x, stats::na.omit(final_mf))
+  .prepare_get_data(x, stats::na.omit(final_mf), verbose = verbose)
 }
 
 #' @export
@@ -900,13 +898,13 @@ get_data.iv_robust <- get_data.ivreg
 
 
 #' @export
-get_data.ivprobit <- function(x, ...) {
-  .prepare_get_data(x, stats::na.omit(as.data.frame(x$mr1)))
+get_data.ivprobit <- function(x, verbose = TRUE, ...) {
+  .prepare_get_data(x, stats::na.omit(as.data.frame(x$mr1)), verbose = verbose)
 }
 
 
 #' @export
-get_data.bife <- function(x, effects = c("all", "fixed", "random"), ...) {
+get_data.bife <- function(x, effects = c("all", "fixed", "random"), verbose = TRUE, ...) {
   effects <- match.arg(effects)
   mf <- as.data.frame(x$data)
 
@@ -916,7 +914,7 @@ get_data.bife <- function(x, effects = c("all", "fixed", "random"), ...) {
     mf <- mf[, setdiff(colnames(mf), unique(find_random(x, split_nested = TRUE, flatten = TRUE))), drop = FALSE]
   }
 
-  .prepare_get_data(x, stats::na.omit(mf), effects)
+  .prepare_get_data(x, stats::na.omit(mf), effects, verbose = verbose)
 }
 
 
@@ -949,9 +947,9 @@ get_data.brmsfit <- function(x,
     if (!.is_empty_object(rs)) model.terms$random <- c(rs, model.terms$random)
   }
 
-  .return_data(
+  .return_combined_data(
     x,
-    .prepare_get_data(x, mf, effects = effects),
+    .prepare_get_data(x, mf, effects = effects, verbose = verbose),
     effects,
     component,
     model.terms,
@@ -978,7 +976,7 @@ get_data.stanreg <- function(x,
 
   mf <- stats::model.frame(x)
 
-  .return_data(
+  .return_combined_data(
     x,
     .prepare_get_data(x, mf, effects = effects, verbose = verbose),
     effects,
@@ -1000,7 +998,7 @@ get_data.BFBayesFactor <- function(x, ...) {
 
 #' @rdname get_data
 #' @export
-get_data.MCMCglmm <- function(x, effects = c("all", "fixed", "random"), ...) {
+get_data.MCMCglmm <- function(x, effects = c("all", "fixed", "random"), verbose = TRUE, ...) {
   effects <- match.arg(effects)
   mf <- tryCatch(
     {
@@ -1027,13 +1025,13 @@ get_data.MCMCglmm <- function(x, effects = c("all", "fixed", "random"), ...) {
     }
   )
 
-  .prepare_get_data(x, mf, effects = effects)
+  .prepare_get_data(x, mf, effects = effects, verbose = verbose)
 }
 
 
 
 #' @export
-get_data.stanmvreg <- function(x, ...) {
+get_data.stanmvreg <- function(x, verbose = TRUE, ...) {
   mf <- tryCatch(
     {
       out <- data.frame()
@@ -1048,7 +1046,7 @@ get_data.stanmvreg <- function(x, ...) {
     }
   )
 
-  .prepare_get_data(x, mf)
+  .prepare_get_data(x, mf, verbose = verbose)
 }
 
 
@@ -1139,7 +1137,7 @@ get_data.averaging <- function(x, ...) {
   if (is.null(mf)) {
     mf <- tryCatch(
       {
-        .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
+        .recover_data_from_environment(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
       },
       error = function(x) {
         NULL
@@ -1192,10 +1190,10 @@ get_data.mcmc.list <- function(x, ...) {
 
 
 #' @export
-get_data.DirichletRegModel <- function(x, ...) {
+get_data.DirichletRegModel <- function(x, verbose = TRUE, ...) {
   mf <- x$data
   resp <- sapply(x$data, inherits, "DirichletRegData")
-  .prepare_get_data(x, mf[!resp])
+  .prepare_get_data(x, mf[!resp], verbose = verbose)
 }
 
 
@@ -1239,7 +1237,7 @@ get_data.LORgee <- function(x, effects = c("all", "fixed", "random"), ...) {
   effects <- match.arg(effects)
   mf <- tryCatch(
     {
-      dat <- .get_data_from_env(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
+      dat <- .recover_data_from_environment(x)[, find_variables(x, flatten = TRUE), drop = FALSE]
       switch(effects,
         all = dat[, find_variables(x, flatten = TRUE), drop = FALSE],
         fixed = dat[, find_variables(x, effects = "fixed", flatten = TRUE), drop = FALSE],
@@ -1290,7 +1288,7 @@ get_data.gbm <- function(x, ...) {
 
 #' @export
 get_data.tobit <- function(x, verbose = TRUE, ...) {
-  dat <- .get_data_from_env(x)
+  dat <- .recover_data_from_environment(x)
   ft <- find_variables(x, flatten = TRUE, verbose = FALSE)
   remain <- intersect(ft, colnames(dat))
 
@@ -1350,15 +1348,15 @@ get_data.clm2 <- function(x, ...) {
 
 
 #' @export
-get_data.bracl <- function(x, ...) {
+get_data.bracl <- function(x, verbose = TRUE, ...) {
   mf <- stats::model.frame(x)
-  suppressWarnings(.prepare_get_data(x, mf))
+  suppressWarnings(.prepare_get_data(x, mf, verbose = verbose))
 }
 
 
 
 #' @export
-get_data.mlogit <- function(x, ...) {
+get_data.mlogit <- function(x, verbose = TRUE, ...) {
   mf <- tryCatch(
     {
       as.data.frame(stats::model.frame(x))
@@ -1368,23 +1366,23 @@ get_data.mlogit <- function(x, ...) {
     }
   )
 
-  .prepare_get_data(x, mf)
+  .prepare_get_data(x, mf, verbose = verbose)
 }
 
 
 
 #' @export
-get_data.rma <- function(x, ...) {
+get_data.rma <- function(x, verbose = TRUE, ...) {
   mf <- tryCatch(
     {
-      .get_data_from_env(x)
+      .recover_data_from_environment(x)
     },
     error = function(x) {
       NULL
     }
   )
 
-  .prepare_get_data(x, stats::na.omit(mf))
+  .prepare_get_data(x, stats::na.omit(mf), verbose = verbose)
 }
 
 
@@ -1393,7 +1391,7 @@ get_data.metaplus <- get_data.rma
 
 
 #' @export
-get_data.meta_random <- function(x, ...) {
+get_data.meta_random <- function(x, verbose = TRUE, ...) {
   mf <- tryCatch(
     {
       x$data$data
@@ -1403,12 +1401,12 @@ get_data.meta_random <- function(x, ...) {
     }
   )
 
-  .prepare_get_data(x, stats::na.omit(mf))
+  .prepare_get_data(x, stats::na.omit(mf), verbose = verbose)
 }
 
 
 #' @export
-get_data.meta_bma <- function(x, ...) {
+get_data.meta_bma <- function(x, verbose = TRUE, ...) {
   mf <- tryCatch(
     {
       x$meta$fixed$data$data
@@ -1418,7 +1416,7 @@ get_data.meta_bma <- function(x, ...) {
     }
   )
 
-  .prepare_get_data(x, stats::na.omit(mf))
+  .prepare_get_data(x, stats::na.omit(mf), verbose = verbose)
 }
 
 
@@ -1428,6 +1426,12 @@ get_data.meta_fixed <- get_data.meta_random
 
 #' @export
 get_data.ivFixed <- get_data.rma
+
+
+#' @export
+get_data.bfsl <- function(x, ...) {
+  as.data.frame(x$data[c("x", "y", "sd_x", "sd_y")])
+}
 
 
 #' @export

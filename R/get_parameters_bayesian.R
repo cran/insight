@@ -143,8 +143,8 @@ get_parameters.BFBayesFactor <- function(x,
 
     out <- switch(bf_type,
       "correlation" = data.frame("rho" = as.numeric(posteriors$rho)),
-      "ttest1" = data.frame("Difference" = x@numerator[[1]]@prior$mu - as.numeric(posteriors[, 1])),
-      "ttest2" = data.frame("Difference" = x@numerator[[1]]@prior$mu - as.numeric(posteriors[, 2])),
+      "ttest1" = data.frame("Difference" = as.numeric(posteriors[, 1]) - x@numerator[[1]]@prior$mu),
+      "ttest2" = data.frame("Difference" = as.numeric(posteriors[, 2]) - x@numerator[[1]]@prior$mu),
       "meta" = data.frame("Effect" = as.numeric(posteriors$delta)),
       "linear" = .get_bf_posteriors(posteriors, params),
       NULL
@@ -156,7 +156,7 @@ get_parameters.BFBayesFactor <- function(x,
     colnames(posteriors) <- "p"
     out <- posteriors
   } else if (bf_type == "xtable") {
-    data <- get_data(x)
+    data <- get_data(x, verbose = verbose)
     N <- sum(data)
     cells <- prod(dim(data))
     posts <- as.data.frame(as.matrix(suppressMessages(

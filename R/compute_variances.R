@@ -13,7 +13,7 @@
   ## Major revisions and adaption to more complex models and other packages
   ## by Daniel Lüdecke
 
-  faminfo <- model_info(x)
+  faminfo <- model_info(x, verbose = FALSE)
 
   if (faminfo$family %in% c("truncated_nbinom1")) {
     if (verbose) {
@@ -104,21 +104,30 @@
     var.residual <- var.distribution + var.dispersion
   }
 
-  if (component %in% c("intercept", "all")) {
-    var.intercept <- .between_subject_variance(vals, x)
+  if (isTRUE(faminfo$is_mixed) || inherits(x, c("wblm", "wbgee"))) {
+    if (component %in% c("intercept", "all")) {
+      var.intercept <- .between_subject_variance(vals, x)
+    }
+
+    if (component %in% c("slope", "all")) {
+      var.slope <- .random_slope_variance(vals, x)
+    }
+
+    if (component %in% c("rho01", "all")) {
+      cor.slope_intercept <- .random_slope_intercept_corr(vals, x)
+    }
+
+    if (component %in% c("rho00", "all")) {
+      cor.slopes <- .random_slopes_corr(vals, x)
+    }
+  } else {
+    var.intercept <- NULL
+    var.slope <- NULL
+    cor.slope_intercept <- NULL
+    cor.slopes <- NULL
   }
 
-  if (component %in% c("slope", "all")) {
-    var.slope <- .random_slope_variance(vals, x)
-  }
 
-  if (component %in% c("rho01", "all")) {
-    cor.slope_intercept <- .random_slope_intercept_corr(vals, x)
-  }
-
-  if (component %in% c("rho00", "all")) {
-    cor.slopes <- .random_slopes_corr(vals, x)
-  }
 
   # if we only need residual variance, we can delete those
   # values again...
@@ -144,9 +153,17 @@
 
 
 
+
 # store essential information on coefficients, model matrix and so on
 # as list, since we need these information throughout the functions to
 # calculate the variance components...
+#
+# basically, this function should return a list that has the same
+# structure for any mixed models like this code for lme4:
+# beta = lme4::fixef(x),
+# X = lme4::getME(x, "X"),
+# vc = lme4::VarCorr(x),
+# re = lme4::ranef(x)
 #
 .get_variance_information <- function(x,
                                       faminfo,
@@ -166,6 +183,7 @@
   }
 
   # stanreg
+  # ---------------------------
   if (inherits(x, "stanreg")) {
     vals <- list(
       beta = lme4::fixef(x),
@@ -175,6 +193,7 @@
     )
 
     # GLMMapdative
+    # ---------------------------
   } else if (inherits(x, "MixMod")) {
     vc1 <- vc2 <- NULL
     re_names <- find_random(x)
@@ -217,6 +236,7 @@
     names(vals$re) <- x$id_name
 
     # joineRML
+    # ---------------------------
   } else if (inherits(x, "mjoint")) {
     re_names <- find_random(x, flatten = TRUE)
     vcorr <- summary(x)$D
@@ -235,6 +255,7 @@
     names(vals$re) <- re_names[1:length(vals$re)]
 
     # nlme
+    # ---------------------------
   } else if (inherits(x, "lme")) {
     re_names <- find_random(x, split_nested = TRUE, flatten = TRUE)
     comp_x <- get_modelmatrix(x)
@@ -256,6 +277,7 @@
     names(vals$vc) <- re_names
 
     # ordinal
+    # ---------------------------
   } else if (inherits(x, "clmm")) {
     if (requireNamespace("ordinal", quietly = TRUE)) {
       mm <- get_modelmatrix(x)
@@ -268,6 +290,7 @@
     }
 
     # glmmadmb
+    # ---------------------------
   } else if (inherits(x, "glmmadmb")) {
     vals <- list(
       beta = lme4::fixef(x),
@@ -277,6 +300,7 @@
     )
 
     # brms
+    # ---------------------------
   } else if (inherits(x, "brmsfit")) {
     comp_x <- get_modelmatrix(x)
     rownames(comp_x) <- 1:nrow(comp_x)
@@ -312,6 +336,7 @@
     names(vals$beta) <- gsub("Intercept", "(Intercept)", names(vals$beta), fixed = TRUE)
 
     # cpglmm
+    # ---------------------------
   } else if (inherits(x, "cpglmm")) {
     # installed?
     check_if_installed("cplm")
@@ -324,6 +349,7 @@
     )
 
     # lme4 / glmmTMB
+    # ---------------------------
   } else {
     vals <- list(
       beta = lme4::fixef(x),
@@ -354,13 +380,16 @@
 
 
 
-# helper-function, telling user if family / distribution is supported or not
+
+# helper-function, telling user if family / distribution
+# is supported or not
 .badlink <- function(link, family, verbose = TRUE) {
   if (verbose) {
     warning(format_message(sprintf("Model link '%s' is not yet supported for the %s distribution.", link, family)), call. = FALSE)
   }
   return(NA)
 }
+
 
 
 
@@ -387,16 +416,20 @@
 
 
 
-# fixed effects variance ----
 
+
+# fixed effects variance ----
+# ---------------------------
 .compute_variance_fixed <- function(vals) {
   with(vals, stats::var(as.vector(beta %*% t(X))))
 }
 
 
 
-# variance associated with a random-effects term (Johnson 2014) ----
 
+
+# variance associated with a random-effects term (Johnson 2014) ----
+# ------------------------------------------------------------------
 .compute_variance_random <- function(terms, x, vals) {
   if (is.null(terms)) {
     return(NULL)
@@ -434,9 +467,8 @@
 
 
 
-
 # distribution-specific variance (Nakagawa et al. 2017) ----
-
+# ----------------------------------------------------------
 .compute_variance_distribution <- function(x, var.cor, faminfo, name, verbose = TRUE) {
   if (inherits(x, "lme")) {
     sig <- x$sigma
@@ -450,9 +482,18 @@
   # and the related link-function
 
   if (faminfo$is_linear && !faminfo$is_tweedie) {
+
+    # linear / Gaussian ----
+    # ----------------------
+
     dist.variance <- sig^2
+
   } else {
     if (faminfo$is_betabinomial) {
+
+      # beta-binomial ----
+      # ------------------
+
       dist.variance <- switch(faminfo$link_function,
         logit = ,
         probit = ,
@@ -460,7 +501,12 @@
         clogloglink = .variance_distributional(x, faminfo, sig, name = name, verbose = verbose),
         .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
       )
+
     } else if (faminfo$is_binomial) {
+
+      # binomial / bernoulli  ----
+      # --------------------------
+
       dist.variance <- switch(faminfo$link_function,
         logit = pi^2 / 3,
         probit = 1,
@@ -468,13 +514,23 @@
         clogloglink = pi^2 / 6,
         .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
       )
+
     } else if (faminfo$is_count) {
+
+      # count  ----
+      # -----------
+
       dist.variance <- switch(faminfo$link_function,
         log = .variance_distributional(x, faminfo, sig, name = name, verbose = verbose),
         sqrt = 0.25,
         .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
       )
+
     } else if (faminfo$family %in% c("Gamma", "gamma")) {
+
+      # Gamma  ----
+      # -----------
+
       ## TODO needs some more checking - should now be in line with other packages
       dist.variance <- switch(faminfo$link_function,
         inverse = ,
@@ -483,16 +539,27 @@
         # log = .variance_distributional(x, faminfo, sig, name = name, verbose = verbose),
         .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
       )
+
     } else if (faminfo$family == "beta") {
+
+      # Beta  ----
+      # ----------
+
       dist.variance <- switch(faminfo$link_function,
         logit = .variance_distributional(x, faminfo, sig, name = name, verbose = verbose),
         .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
       )
+
     } else if (faminfo$is_tweedie) {
+
+      # Tweedie  ----
+      # -------------
+
       dist.variance <- switch(faminfo$link_function,
         log = .variance_distributional(x, faminfo, sig, name = name, verbose = verbose),
         .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
       )
+
     } else {
       dist.variance <- sig
     }
@@ -506,7 +573,7 @@
 
 
 # dispersion-specific variance ----
-
+# ---------------------------------
 .compute_variance_dispersion <- function(x, vals, faminfo, obs.terms) {
   if (faminfo$is_linear) {
     0
@@ -518,7 +585,6 @@
     }
   }
 }
-
 
 
 
@@ -569,17 +635,25 @@
       vv <- switch(faminfo$family,
 
         # (zero-inflated) poisson ----
+        # ----------------------------
+
         `zero-inflated poisson` = ,
         poisson = .variance_family_poisson(x, mu, faminfo),
 
         # hurdle-poisson ----
+        # -------------------
+
         `hurdle poisson` = ,
         truncated_poisson = stats::family(x)$variance(sig),
 
         # Gamma, exponential ----
+        # -----------------------
+
         Gamma = stats::family(x)$variance(sig),
 
         # (zero-inflated) negative binomial ----
+        # --------------------------------------
+
         `zero-inflated negative binomial` = ,
         `negative binomial` = ,
         genpois = ,
@@ -588,12 +662,16 @@
         truncated_nbinom2 = stats::family(x)$variance(mu, sig),
 
         # other distributions ----
+        # ------------------------
+
         tweedie = .variance_family_tweedie(x, mu, sig),
         beta = .variance_family_beta(x, mu, sig),
         # betabinomial = stats::family(x)$variance(mu, sig),
         # betabinomial = .variance_family_betabinom(x, mu, sig),
 
         # default variance for non-captured distributions ----
+        # ----------------------------------------------------
+
         .variance_family_default(x, mu, verbose)
       )
 
@@ -616,7 +694,9 @@
 
 
 
+
 # Get distributional variance for poisson-family
+# ----------------------------------------------
 .variance_family_poisson <- function(x, mu, faminfo) {
   if (faminfo$is_zero_inflated) {
     .variance_zip(x, faminfo, family_var = mu)
@@ -634,7 +714,9 @@
 
 
 
+
 # Get distributional variance for beta-family
+# ----------------------------------------------
 .variance_family_beta <- function(x, mu, phi) {
   if (inherits(x, "MixMod")) {
     stats::family(x)$variance(mu)
@@ -646,7 +728,9 @@
 
 
 
+
 # Get distributional variance for beta-family
+# ----------------------------------------------
 .variance_family_betabinom <- function(x, mu, phi) {
   if (inherits(x, "MixMod")) {
     stats::family(x)$variance(mu)
@@ -659,7 +743,9 @@
 
 
 
+
 # Get distributional variance for tweedie-family
+# ----------------------------------------------
 .variance_family_tweedie <- function(x, mu, phi) {
   p <- unname(stats::plogis(x$fit$par["thetaf"]) + 1)
   phi * mu^p
@@ -668,7 +754,9 @@
 
 
 
+
 # Get distributional variance for nbinom-family
+# ----------------------------------------------
 .variance_family_nbinom <- function(x, mu, sig, faminfo) {
   if (faminfo$is_zero_inflated) {
     if (missing(sig)) sig <- 0
@@ -688,9 +776,10 @@
 
 
 
-# For zero-inflated negative-binomial models, the distributional variance
-# is based on Zuur et al. 2012
-#
+
+# For zero-inflated negative-binomial models,
+# the distributional variance is based on Zuur et al. 2012
+# ----------------------------------------------
 .variance_zinb <- function(model, sig, faminfo, family_var) {
   if (inherits(model, "glmmTMB")) {
     v <- stats::family(model)$variance
@@ -727,9 +816,10 @@
 
 
 
-# For zero-inflated poisson models, the distributional variance
-# is based on Zuur et al. 2012
-#
+
+# For zero-inflated poisson models, the
+# distributional variance is based on Zuur et al. 2012
+# ----------------------------------------------
 .variance_zip <- function(model, faminfo, family_var) {
   if (inherits(model, "glmmTMB")) {
     p <- stats::predict(model, type = "zprob")
@@ -749,8 +839,10 @@
 
 
 
+
 # Get distribution-specific variance for general and
 # undefined families / link-functions
+# ----------------------------------------------
 .variance_family_default <- function(x, mu, verbose) {
   # installed?
   check_if_installed("lme4")
@@ -784,7 +876,9 @@
 
 
 
-# return existence of random slopes
+
+# return existence of random slopes ----
+# ----------------------------------------------
 .random_slopes_in_fixed <- function(model) {
   rs <- find_random_slopes(model)
   fe <- find_predictors(model, effects = "fixed", component = "all")
@@ -812,8 +906,10 @@
 
 
 
+
 # random intercept-variances, i.e.
-# between-subject-variance (tau 00)
+# between-subject-variance (tau 00) ----
+# ----------------------------------------------
 .between_subject_variance <- function(vals, x) {
   vars <- lapply(vals$vc, function(i) i[1])
   # check for uncorrelated random slopes-intercept
@@ -828,7 +924,9 @@
 
 
 
-# random slope-variances (tau 11)
+
+# random slope-variances (tau 11) ----
+# ----------------------------------------------
 .random_slope_variance <- function(vals, x) {
   if (inherits(x, "lme")) {
     unlist(lapply(vals$vc, function(x) diag(x)[-1]))
@@ -849,7 +947,9 @@
 
 
 
-# slope-intercept-correlations (rho 01)
+
+# slope-intercept-correlations (rho 01) ----
+# ----------------------------------------------
 .random_slope_intercept_corr <- function(vals, x) {
   if (inherits(x, "lme")) {
     rho01 <- unlist(sapply(vals$vc, function(i) attr(i, "cor_slope_intercept")))
@@ -879,7 +979,10 @@
 
 
 
-# slope-slope-correlations (rho 01)
+
+
+# slope-slope-correlations (rho 01) ----
+# ----------------------------------------------
 .random_slopes_corr <- function(vals, x) {
   corrs <- lapply(vals$vc, attr, "correlation")
   rnd_slopes <- unlist(find_random_slopes(x))
@@ -894,7 +997,7 @@
         d[upper.tri(d, diag = TRUE)] <- NA
         d <- as.data.frame(d)
 
-        d <- reshape_longer(d, colnames_to = "Parameter1", rows_to = "Parameter2")
+        d <- .reshape_longer(d, colnames_to = "Parameter1", rows_to = "Parameter2")
         d <- d[stats::complete.cases(d), ]
         d <- d[!d$Parameter1 %in% c("Intercept", "(Intercept)"), ]
 
@@ -927,4 +1030,64 @@
   # )
 
   unlist(rho01)
+}
+
+
+
+
+
+
+# helper --------------------------
+
+.reshape_longer <- function(data,
+                            colnames_to = "Name",
+                            rows_to = NULL) {
+  cols <- names(data)
+  values_to <- "Value"
+
+  # save attribute of each variable
+  variable_attr <- lapply(data, attributes)
+
+  # Create Index column as needed by reshape
+  data[["_Row"]] <- .to_numeric(row.names(data))
+
+  # Reshape
+  long <- stats::reshape(data,
+    varying = cols,
+    idvar = "_Row",
+    v.names = values_to,
+    timevar = colnames_to,
+    direction = "long"
+  )
+
+  # Sort the dataframe (to match pivot_longer's output)
+  long <- long[order(long[["_Row"]], long[[colnames_to]]), ]
+
+  # Remove or rename the row index
+  if (is.null(rows_to)) {
+    long[["_Row"]] <- NULL
+  } else {
+    names(long)[names(long) == "_Row"] <- rows_to
+  }
+
+  # Re-insert col names as levels
+  long[[colnames_to]] <- cols[long[[colnames_to]]]
+
+  # Reset row names
+  row.names(long) <- NULL
+
+  # Remove reshape attributes
+  attributes(long)$reshapeLong <- NULL
+
+  # add back attributes where possible
+  for (i in colnames(long)) {
+    attributes(long[[i]]) <- variable_attr[[i]]
+  }
+
+  long
+}
+
+
+.to_numeric <- function(x) {
+  tryCatch(as.numeric(as.character(x)), error = function(e) x, warning = function(w) x)
 }

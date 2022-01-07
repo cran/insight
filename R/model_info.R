@@ -644,6 +644,7 @@ model_info.brmsfit <- function(x, ...) {
         logit.link = .x$link == "logit",
         multi.var = TRUE,
         link.fun = .x$link,
+        dispersion = !.is_empty_object(insight::find_formula(x)$sigma),
         ...
       )
     })
@@ -654,6 +655,7 @@ model_info.brmsfit <- function(x, ...) {
       logit.link = faminfo$link == "logit",
       multi.var = FALSE,
       link.fun = faminfo$link,
+      dispersion = !.is_empty_object(insight::find_formula(x)$sigma),
       ...
     )
   }
@@ -737,8 +739,8 @@ model_info.ivprobit <- function(x, ...) {
 
 
 #' @export
-model_info.glht <- function(x, ...) {
-  model_info(x$model, ...)
+model_info.glht <- function(x, verbose = TRUE, ...) {
+  model_info(x$model, verbose = verbose, ...)
 }
 
 
@@ -1022,8 +1024,8 @@ model_info.vglm <- model_info.vgam
 
 
 #' @export
-model_info.svy_vglm <- function(x, ...) {
-  model_info(x$fit)
+model_info.svy_vglm <- function(x, verbose = TRUE, ...) {
+  model_info(x$fit, verbose = verbose)
 }
 
 
@@ -1172,11 +1174,11 @@ model_info.gamlss <- function(x, ...) {
 
 
 #' @export
-model_info.mipo <- function(x, ...) {
+model_info.mipo <- function(x, verbose = TRUE, ...) {
   tryCatch(
     {
       models <- eval(x$call$object)
-      model_info(models$analyses[[1]], ...)
+      model_info(models$analyses[[1]], verbose = verbose, ...)
     },
     error = function(e) {
       NULL
@@ -1223,6 +1225,19 @@ model_info.poissonirr <- model_info.logitmfx
 
 #' @export
 model_info.negbinirr <- model_info.logitmfx
+
+
+#' @export
+model_info.bfsl <- function(x, verbose = TRUE, ...) {
+  .make_family(
+    x = x,
+    fitfam = "gaussian",
+    logit.link = FALSE,
+    link.fun = "identity",
+    verbose = verbose,
+    ...
+  )
+}
 
 
 

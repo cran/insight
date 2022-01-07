@@ -1,6 +1,7 @@
 #' Data frame and Tables Pretty Formatting
 #'
-#' @param x A data frame.
+#' @param x A data frame. May also be a list of data frames, to export multiple
+#'   data frames into multiple tables.
 #' @param sep Column separator.
 #' @param header Header separator. Can be `NULL`.
 #' @param empty_line Separator used for empty lines. If `NULL`, line remains
@@ -11,10 +12,12 @@
 #'   `"md"`) for markdown and `"html"` for HTML output.
 #' @param title,caption,subtitle Table title (same as caption) and subtitle, as strings. If `NULL`,
 #'   no title or subtitle is printed, unless it is stored as attributes (`table_title`,
-#'   or its alias `table_caption`, and `table_subtitle`).
+#'   or its alias `table_caption`, and `table_subtitle`). If `x` is a list of
+#'   data frames, `caption` may be a list of table captions, one for each table.
 #' @param footer Table footer, as string. For markdown-formatted tables, table
 #'   footers, due to the limitation in markdown rendering, are actually just a
-#'   new text line under the table.
+#'   new text line under the table. If `x` is a list of data frames, `footer`
+#'   may be a list of table captions, one for each table.
 #' @param align Column alignment. For markdown-formatted tables, the default
 #'   `align = NULL` will right-align numeric columns, while all other
 #'   columns will be left-aligned. If `format = "html"`, the default is
@@ -30,6 +33,19 @@
 #' @param group_by Name of column in `x` that indicates grouping for tables.
 #'   Only applies when `format = "html"`. `group_by` is passed down
 #'   to `gt::gt(groupname_col = group_by)`.
+#' @param width Refers to the width of columns (with numeric values). Can be
+#'   either `NULL`, a number or a named numeric vector. If `NULL`, the width for
+#'   each column is adjusted to the minimum required width. If a number, columns
+#'   with numeric values will have the minimum width specified in `width`. If
+#'   a named numeric vector, value names are matched against column names, and
+#'   for each match, the specified width is used (see 'Examples'). Only applies
+#'   to text-format (see `format`).
+#' @param table_width Numeric, or `"auto"`, indicating the width of the complete
+#'   table. If `table_width = "auto"` and the table is wider than the current
+#'   width (i.e. line length) of the console (or any other source for textual
+#'   output, like markdown files), the table is split into two parts. Else,
+#'   if `table_width` is numeric and table rows are larger than `table_width`,
+#'   the table is split into two parts.
 #' @inheritParams format_value
 #' @inheritParams get_data
 #'
@@ -43,29 +59,44 @@
 #'
 #' @return A data frame in character format.
 #' @examples
-#' cat(export_table(iris))
-#' cat(export_table(iris, sep = " ", header = "*", digits = 1))
+#' export_table(head(iris))
+#' export_table(head(iris), sep = " ", header = "*", digits = 1)
+#'
+#' # split longer tables
+#' export_table(head(iris), table_width = 30)
+#'
 #' \dontrun{
 #' # colored footers
 #' data(iris)
 #' x <- as.data.frame(iris[1:5, ])
 #' attr(x, "table_footer") <- c("This is a yellow footer line.", "yellow")
-#' cat(export_table(x))
+#' export_table(x)
 #'
 #' attr(x, "table_footer") <- list(
 #'   c("\nA yellow line", "yellow"),
 #'   c("\nAnd a red line", "red"),
 #'   c("\nAnd a blue line", "blue")
 #' )
-#' cat(export_table(x))
+#' export_table(x)
 #'
 #' attr(x, "table_footer") <- list(
 #'   c("Without the ", "yellow"),
 #'   c("new-line character ", "red"),
 #'   c("we can have multiple colors per line.", "blue")
 #' )
-#' cat(export_table(x))
+#' export_table(x)
 #' }
+#'
+#' # column-width
+#' d <- data.frame(
+#'   x = c(1, 2, 3),
+#'   y = c(100, 200, 300),
+#'   z = c(10000, 20000, 30000)
+#' )
+#' export_table(d)
+#' export_table(d, width = 8)
+#' export_table(d, width = c(x = 5, z = 10))
+#' export_table(d, width = c(x = 5, y = 5, z = 10), align = "lcr")
 #' @export
 export_table <- function(x,
                          sep = " | ",
@@ -83,6 +114,7 @@ export_table <- function(x,
                          align = NULL,
                          group_by = NULL,
                          zap_small = FALSE,
+                         table_width = NULL,
                          verbose = TRUE) {
 
   # check args
@@ -152,7 +184,8 @@ export_table <- function(x,
       zap_small = zap_small,
       empty_line = empty_line,
       indent_groups = indent_groups,
-      indent_rows = indent_rows
+      indent_rows = indent_rows,
+      table_width = table_width
     )
   } else if (is.list(x)) {
 
@@ -168,17 +201,40 @@ export_table <- function(x,
 
       # ...unless we have a footer-argument.
       # Then use this as last (final) footer
-      if (element == length(l) &&
-        is.null(attributes(i)$table_footer) &&
-        !is.null(footer)) {
+      if (element == length(l) && is.null(attributes(i)$table_footer) && !is.null(footer) && !is.list(footer)) {
         t_footer <- footer
       }
+
+      # if we still have no footer, check if user provided a list of titles
+      if (is.null(t_footer) && !is.null(footer) && is.list(footer) && length(footer) == length(l)) {
+        t_footer <- footer[[element]]
+      }
+
 
       # for lists of data frame, each list element may have
       # an own attribute for the title, to have "subheadings"
       # for each table
 
       attr_name <- .check_caption_attr_name(i)
+
+      # if only alias "title" is provided, copy it to caption-variable
+      if (!is.null(title) && is.null(caption)) {
+        caption <- title
+      }
+
+      # use individual title for each list element...
+      t_title <- attributes(i)[[attr_name]]
+
+      # ...unless we have a title-argument.
+      # Then use this as first (main) header
+      if (element == 1 && is.null(attributes(i)[[attr_name]]) && !is.null(caption) && !is.list(caption)) {
+        t_title <- caption
+      }
+
+      # if we still have no title, check if user provided a list of titles
+      if (is.null(t_title) && !is.null(caption) && is.list(caption) && length(caption) == length(l)) {
+        t_title <- caption[[element]]
+      }
 
       # convert data frame into specified output format
       .export_table(
@@ -190,7 +246,7 @@ export_table <- function(x,
         missing = missing,
         width = width,
         format = format,
-        caption = attributes(i)[[attr_name]],
+        caption = t_title,
         subtitle = attributes(i)$table_subtitle,
         footer = t_footer,
         align = align,
@@ -198,7 +254,8 @@ export_table <- function(x,
         zap_small = zap_small,
         empty_line = empty_line,
         indent_groups = indent_groups,
-        indent_rows = indent_rows
+        indent_rows = indent_rows,
+        table_width = table_width
       )
     })
 
@@ -223,6 +280,8 @@ export_table <- function(x,
   if (format == "markdown") {
     attr(out, "format") <- "pipe"
     class(out) <- c("knitr_kable", "character")
+  } else if (format == "text") {
+    class(out) <- c("insight_table", class(out))
   }
   out
 }
@@ -259,8 +318,17 @@ export_table <- function(x,
                           zap_small = FALSE,
                           empty_line = NULL,
                           indent_groups = NULL,
-                          indent_rows = NULL) {
+                          indent_rows = NULL,
+                          table_width = NULL) {
   df <- as.data.frame(x)
+
+  # check width argument, for format value. cannot have
+  # named vector of length > 1 here
+  if (is.null(width) || length(width) == 1) {
+    col_width <- width
+  } else {
+    col_width <- NULL
+  }
 
   # round all numerics
   col_names <- names(df)
@@ -268,7 +336,7 @@ export_table <- function(x,
     if (is.numeric(i)) {
       format_value(i,
         digits = digits, protect_integers = protect_integers,
-        missing = missing, width = width, zap_small = zap_small
+        missing = missing, width = col_width, zap_small = zap_small
       )
     } else {
       i
@@ -280,6 +348,7 @@ export_table <- function(x,
   df <- as.data.frame(sapply(df, as.character, simplify = FALSE), stringsAsFactors = FALSE)
   names(df) <- col_names
   df[is.na(df)] <- as.character(missing)
+
 
   if (identical(format, "html")) {
     # html formatting starts here, needs less preparation of table matrix
@@ -302,6 +371,9 @@ export_table <- function(x,
     # Align
     aligned <- format(df, justify = "right")
 
+    # default alignment
+    col_align <- rep("right", ncol(df))
+
     # Center first row
     first_row <- as.character(aligned[1, ])
     for (i in 1:length(first_row)) {
@@ -313,9 +385,12 @@ export_table <- function(x,
     # left-align first column (if a character or a factor)
     if (!is.numeric(x[, 1])) {
       final[, 1] <- format(trimws(final[, 1]), justify = "left")
+      col_align[1] <- "left"
     }
 
     if (format == "text") {
+
+      # go for simple text output
       out <- .format_basic_table(
         final,
         header,
@@ -326,9 +401,15 @@ export_table <- function(x,
         align = align,
         empty_line = empty_line,
         indent_groups = indent_groups,
-        indent_rows = indent_rows
+        indent_rows = indent_rows,
+        col_names = col_names,
+        col_width = width,
+        col_align = col_align,
+        table_width = table_width
       )
     } else if (format == "markdown") {
+
+      # markdown is a bit different...
       out <- .format_markdown_table(
         final,
         x,
@@ -362,7 +443,11 @@ export_table <- function(x,
                                 align = NULL,
                                 empty_line = NULL,
                                 indent_groups = NULL,
-                                indent_rows = NULL) {
+                                indent_rows = NULL,
+                                col_names = NULL,
+                                col_width = NULL,
+                                col_align = NULL,
+                                table_width = NULL) {
 
   # align table, if requested
   if (!is.null(align) && length(align) == 1) {
@@ -377,14 +462,17 @@ export_table <- function(x,
       # left alignment, or at least first line only left?
       if (align == "left" || (align == "firstleft" && i == 1) || align_char == "l") {
         final[, i] <- format(trimws(final[, i]), justify = "left")
+        col_align[i] <- "left"
 
         # right-alignment
       } else if (align == "right" || align_char == "r") {
         final[, i] <- format(trimws(final[, i]), justify = "right")
+        col_align[i] <- "right"
 
         # else, center
       } else {
         final[, i] <- format(trimws(final[, i]), justify = "centre")
+        col_align[i] <- "centre"
       }
     }
   }
@@ -396,28 +484,79 @@ export_table <- function(x,
     final <- .indent_rows(final, indent_rows)
   }
 
-  # Transform to character
-  rows <- c()
-  for (row in 1:nrow(final)) {
-    final_row <- paste0(final[row, ], collapse = sep)
-
-    # check if we have an empty row
-    if (!is.null(empty_line) && all(nchar(trimws(final[row, ])) == 0)) {
-      rows <- paste0(rows, paste0(rep_len(empty_line, nchar(final_row)), collapse = ""), sep = "\n")
-    } else {
-      rows <- paste0(rows, final_row, sep = "\n")
-    }
-
-    # First row separation
-    if (row == 1) {
-      if (!is.null(header)) {
-        rows <- paste0(rows, paste0(rep_len(header, nchar(final_row)), collapse = ""), sep = "\n")
+  # check for fixed column widths
+  if (!is.null(col_width) && length(col_width) > 1 && !is.null(names(col_width))) {
+    matching_columns <- stats::na.omit(match(names(col_width), col_names))
+    if (length(matching_columns)) {
+      for (i in matching_columns) {
+        w <- as.vector(col_width[col_names[i]])
+        final[, i] <- format(trimws(final[, i]), width = w, justify = col_align[i])
       }
     }
   }
 
+  # we can split very wide table into maximum three parts
+  # this is currently hardcoded, not flexible, so we cannot allow
+  # more than three parts of one wide table
+  final2 <- NULL
+  final3 <- NULL
+
+  # save first column we may need this when table is wrapped into multiple
+  # parts due to over-lengthy lines
+  if (identical(table_width, "auto") || (!is.null(table_width) && is.numeric(table_width))) {
+    # check current line width in console and width of table rows
+    if (is.numeric(table_width)) {
+      line_width <- table_width
+    } else {
+      line_width <- options()$width
+    }
+    # first split - table columns longer than "line_width" go
+    # into a second string
+    row_width <- nchar(paste0(final[1, ], collapse = sep))
+    # if wider, save first column - we need to repeat this later
+    if (row_width > line_width) {
+      i <- 1
+      while (nchar(paste0(final[1, 1:i], collapse = sep)) < line_width) {
+        i <- i + 1
+      }
+      if (i > 2 && i < ncol(final)) {
+        final2 <- final[, c(1, i:ncol(final))]
+        final <- final[, 1:(i - 1)]
+      }
+    }
+    # second split - table columns longer than "line_width" go
+    # into a third string
+    row_width <- nchar(paste0(final2[1, ], collapse = sep))
+    # if wider, save first column - we need to repeat this later
+    if (row_width > line_width) {
+      i <- 1
+      while (nchar(paste0(final2[1, 1:i], collapse = sep)) < line_width) {
+        i <- i + 1
+      }
+      if (i > 2 && i < ncol(final2)) {
+        final3 <- final2[, c(1, i:ncol(final2))]
+        final2 <- final2[, 1:(i - 1)]
+      }
+    }
+  }
+
+  # Transform to character
+  rows <- .table_parts(c(), final, header, sep, empty_line)
+
+  # if we have over-lengthy tables that are split into two parts,
+  # print second table here
+  if (!is.null(final2)) {
+    rows <- .table_parts(paste0(rows, "\n"), final2, header, sep, empty_line)
+  }
+
+  # if we have over-lengthy tables that are split into two parts,
+  # print second table here
+  if (!is.null(final3)) {
+    rows <- .table_parts(paste0(rows, "\n"), final3, header, sep, empty_line)
+  }
+
   # if caption is available, add a row with a headline
-  if (!is.null(caption) && caption != "") {
+  if (!is.null(caption) && caption[1] != "") {
     if (length(caption) == 2 && .is_valid_colour(caption[2])) {
       caption <- .colour(caption[2], caption[1])
     }
@@ -450,6 +589,39 @@ export_table <- function(x,
   }
 
   rows
+}
+
+
+
+.table_parts <- function(rows, final, header, sep, empty_line) {
+  for (row in 1:nrow(final)) {
+    final_row <- paste0(final[row, ], collapse = sep)
+
+    # check if we have an empty row
+    if (!is.null(empty_line) && all(nchar(trimws(final[row, ])) == 0)) {
+      rows <- paste0(rows, paste0(rep_len(empty_line, nchar(final_row)), collapse = ""), sep = "\n")
+    } else {
+      rows <- paste0(rows, final_row, sep = "\n")
+    }
+
+    # First row separation
+    if (row == 1) {
+      if (!is.null(header)) {
+        rows <- paste0(rows, paste0(rep_len(header, nchar(final_row)), collapse = ""), sep = "\n")
+      }
+    }
+  }
+
+  rows
+}
+
+
+
+
+#' @export
+print.insight_table <- function(x, ...) {
+  cat(x)
+  invisible(x)
 }
 
 

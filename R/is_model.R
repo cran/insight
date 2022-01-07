@@ -61,8 +61,8 @@ is_regression_model <- function(x) {
 
     # b --------------------
     "bamlss", "bamlss.frame", "bayesGAM", "bayesmeta", "bayesx",
-    "bayesQR", "BBmm", "BBreg", "bcplm", "betamfx", "betaor",
-    "betareg", "BFBayesFactor", "BGGM", "bglmerMod", "bife", "bifeAPEs",
+    "bayesQR", "BBmm", "BBreg", "bcplm", "betamfx", "betaor", "betareg",
+    "bfsl", "BFBayesFactor", "BGGM", "bglmerMod", "bife", "bifeAPEs",
     "biglm", "bigglm", "blrm", "blavaan", "blmerMod",
     "boot_test_mediation", "bracl", "brglm", "brglmFit", "brmsfit",
     "brmultinom", "bsem", "btergm", "buildmer",
@@ -175,7 +175,7 @@ is_regression_model <- function(x) {
 
 .get_gam_classes <- function() {
   out <- c(
-    "bamlss", "bamlss.frame", "brms",
+    "bamlss", "bamlss.frame", "brmsfit",
     "cgam", "cgamm",
     "gam", "Gam", "GAMBoost", "gamlr", "gamlss", "gamm", "gamm4",
     "stanmvreg", "stanreg"

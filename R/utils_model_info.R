@@ -8,6 +8,10 @@
                          dispersion = FALSE,
                          verbose = TRUE,
                          ...) {
+  dots <- list(...)
+  if (isTRUE(dots$return_family_only)) {
+    return(list(family = fitfam, link_function = link.fun))
+  }
 
   # create logical for family
 
@@ -201,8 +205,7 @@
 
   # save model terms --------
 
-  dots <- list(...)
-  if (.obj_has_name(dots, "no_terms") && isTRUE(dots$no_terms)) {
+  if (isTRUE(dots$no_terms)) {
     model_terms <- NULL
   } else {
     if (inherits(x, "mcmc")) {

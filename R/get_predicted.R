@@ -286,9 +286,9 @@ get_predicted.clm <- function(x, predict = "expectation", data = NULL, ...) {
 
   # hack to get predictions for all response levels
   if (is.null(data)) {
-    data <- insight::get_data(x)
+    data <- get_data(x)
   }
-  resp <- insight::find_response(x)
+  resp <- find_response(x)
   data <- data[, setdiff(colnames(data), resp), drop = FALSE]
   vars <- as.character(attr(x$terms, "variables"))[-1]
   vars[attr(x$terms, "response")] <- resp
@@ -297,10 +297,12 @@ get_predicted.clm <- function(x, predict = "expectation", data = NULL, ...) {
   attr(x$terms, "variables") <- new_call
 
   # compute predictions
-  args <- list(object = x,
-               newdata = data,
-               type = type_arg,
-               se.fit = (type_arg == "prob"))
+  args <- list(
+    object = x,
+    newdata = data,
+    type = type_arg,
+    se.fit = (type_arg == "prob")
+  )
   pred <- do.call("predict", args)
 
   out <- .get_predicted_out(pred$fit)
@@ -311,12 +313,13 @@ get_predicted.clm <- function(x, predict = "expectation", data = NULL, ...) {
     se <- as.data.frame(se)
     se$Row <- 1:nrow(se)
     se <- stats::reshape(se,
-                         direction = "long",
-                         varying = setdiff(colnames(se), "Row"),
-                         times = setdiff(colnames(se), "Row"),
-                         v.names = "SE",
-                         timevar = "Response",
-                         idvar = "Row")
+      direction = "long",
+      varying = setdiff(colnames(se), "Row"),
+      times = setdiff(colnames(se), "Row"),
+      v.names = "SE",
+      timevar = "Response",
+      idvar = "Row"
+    )
     row.names(se) <- NULL
     attr(out, "ci_data") <- se
   }
@@ -330,7 +333,13 @@ get_predicted.clm <- function(x, predict = "expectation", data = NULL, ...) {
 # =======================================================================
 
 #' @export
-get_predicted.hurdle <- function(x, data = NULL, verbose = TRUE, ...) {
+get_predicted.hurdle <- function(x,
+                                 data = NULL,
+                                 predict = "expectation",
+                                 ci = 0.95,
+                                 iterations = NULL,
+                                 verbose = TRUE,
+                                 ...) {
 
   # pscl models return the fitted values immediately and ignores the `type`
   # argument when `data` is NULL
@@ -338,19 +347,63 @@ get_predicted.hurdle <- function(x, data = NULL, verbose = TRUE, ...) {
     data <- get_data(x)
   }
 
-  args <- c(list(x, "newdata" = data), list(...))
+  dots <- list(...)
 
-  out <- tryCatch(do.call("predict", args), error = function(e) NULL)
+  # Sanitize input
+  args <- .get_predicted_args(
+    x,
+    data = data,
+    predict = predict,
+    ci = ci,
+    verbose = verbose,
+    ...
+  )
 
-  if (is.null(out)) {
-    out <- tryCatch(do.call("fitted", args), error = function(e) NULL)
+  if (!is.null(predict) && predict != "expectation") {
+    warning(format_message("Currently, only `predict='expectation'` is supported."), call. = FALSE)
+    predict <- "expectation"
   }
 
-  if (!is.null(out)) {
-    out <- .get_predicted_out(out, args = list("data" = data))
+  # predict.glmmTMB has many `type` values which do not map on to our standard
+  # `predict` argument. We don't know how to transform those.
+  if (is.null(predict) && "type" %in% names(dots)) {
+    args$type <- dots$type
+  } else {
+    args$type <- "count"
   }
 
-  out
+  # Prediction function
+  predict_function <- function(x, data, ...) {
+    stats::predict(
+      x,
+      newdata = data,
+      type = args$type,
+      ...
+    )
+  }
+
+  # Get prediction
+  predictions <- as.vector(predict_function(x, data = args$data))
+
+  # "expectation" for zero-inflated? we need a special handling
+  # for predictions and CIs here.
+
+  if (identical(predict, "expectation")) {
+    zi_predictions <- stats::predict(
+      x,
+      newdata = args$data,
+      type = "zero",
+      ...
+    )
+    predictions <- predictions * (1 - as.vector(zi_predictions))
+    ci_data <- .simulate_zi_predictions(model = x, newdata = data, predictions = predictions, nsim = iterations, ci = ci)
+  } else {
+    # Get CI
+    ci_data <- get_predicted_ci(x, predictions = predictions, data = args$data, ci = ci, ci_type = args$ci_type)
+  }
+
+  out <- list(predictions = predictions, ci_data = ci_data)
+  .get_predicted_out(out$predictions, args = args, ci_data = out$ci_data)
 }
 
 #' @export
@@ -433,7 +486,6 @@ get_predicted.glmmTMB <- function(x,
                                   iterations = NULL,
                                   verbose = TRUE,
                                   ...) {
-
   dots <- list(...)
 
   # Sanity checks
@@ -474,18 +526,6 @@ get_predicted.glmmTMB <- function(x,
     args$type <- predict
   }
 
-  # TODO: adjust predicted values for zero inflation
-  # mu * (1 - p), where p = predict(model, type = "zprob")
-  if (isTRUE(verbose) &&
-      (!is.null(predict) && predict == "expectation") &&
-      (isTRUE(args$info$is_zero_inflated) || isTRUE(args$info$is_zeroinf))) {
-    warning(format_message(
-      'The `get_predicted()` function does not adjust predictions to account',
-      'for zero-inflation in `glmmTMB` models. This behavior will change in',
-      'future versions of `insight`.'
-      ), call. = FALSE)
-  }
-
   # Prediction function
   predict_function <- function(x, data, ...) {
     stats::predict(
@@ -501,7 +541,7 @@ get_predicted.glmmTMB <- function(x,
   # Get prediction
   rez <- predict_function(x, data = args$data, se.fit = TRUE)
 
-  if (is.null(iterations)) {
+  if (is.null(iterations) || identical(predict, "expectation")) {
     predictions <- as.numeric(rez$fit)
   } else {
     predictions <- .get_predicted_boot(
@@ -514,9 +554,27 @@ get_predicted.glmmTMB <- function(x,
     )
   }
 
-  # Get CI
-  ci_data <- .get_predicted_se_to_ci(x, predictions = predictions, se = rez$se.fit, ci = ci)
-  out <- .get_predicted_transform(x, predictions, args, ci_data)
+  # "expectation" for zero-inflated? we need a special handling
+  # for predictions and CIs here.
+
+  if (identical(predict, "expectation") && args$info$is_zero_inflated) {
+    zi_predictions <- stats::predict(
+      x,
+      newdata = data,
+      type = "zprob",
+      re.form = args$re.form,
+      unconditional = FALSE,
+      ...
+    )
+    predictions <- link_inverse(x)(predictions) * (1 - as.vector(zi_predictions))
+    ci_data <- .simulate_zi_predictions(model = x, newdata = data, predictions = predictions, nsim = iterations, ci = ci)
+    out <- list(predictions = predictions, ci_data = ci_data)
+  } else {
+    # Get CI
+    ci_data <- .get_predicted_se_to_ci(x, predictions = predictions, se = rez$se.fit, ci = ci)
+    out <- .get_predicted_transform(x, predictions, args, ci_data)
+  }
+
   .get_predicted_out(out$predictions, args = args, ci_data = out$ci_data)
 }
 
@@ -536,7 +594,7 @@ get_predicted.bife <- function(x,
     ...
   )
 
-  out <- tryCatch(predict(x, type = args$scale, X_new = args$data), error = function(e) NULL)
+  out <- tryCatch(stats::predict(x, type = args$scale, X_new = args$data), error = function(e) NULL)
 
   if (!is.null(out)) {
     out <- .get_predicted_out(out, args = list("data" = data))
@@ -567,9 +625,9 @@ get_predicted.multinom <- function(x, predict = "expectation", data = NULL, ...)
 
   # predict.multinom doesn't work when `newdata` is explicitly set to NULL (weird)
   if (is.null(data)) {
-    out <- predict(x, type = type_arg)
+    out <- stats::predict(x, type = type_arg)
   } else {
-    out <- predict(x, newdata = data, type = type_arg)
+    out <- stats::predict(x, newdata = data, type = type_arg)
   }
 
   .get_predicted_out(out, args = args)
@@ -725,6 +783,17 @@ get_predicted.stanreg <- function(x,
     ...
   )
 
+  # when the `type` argument is passed through ellipsis, we need to manually set
+  # the `args$predict` value, because this is what determines which `rstantools`
+  # function we will use to draw from the posterior predictions.
+  dots <- list(...)
+  if (is.null(predict) && "type" %in% names(dots)) {
+    if (dots$type == "link") {
+      args$predict <- "link"
+    } else if (dots$type == "response") {
+      args$predict <- "expectation"
+    }
+  }
 
   # Get draws
   if (args$predict %in% c("link")) {
@@ -755,11 +824,9 @@ get_predicted.stanreg <- function(x,
       ...
     )
   }
-  draws <- as.data.frame(t(draws))
-  names(draws) <- gsub("^V(\\d+)$", "iter_\\1", names(draws))
 
   # Get predictions (summarize)
-  predictions <- .get_predicted_centrality_from_draws(x, draws, ...)
+  predictions <- .get_predicted_centrality_from_draws(x, iter = draws, ...)
 
   # Output
   ci_data <- get_predicted_ci(
@@ -883,7 +950,7 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
   }
 
   # Get info
-  info <- model_info(x)
+  info <- model_info(x, verbose = FALSE)
 
   # Data
   if (!is.null(newdata) && is.null(data)) data <- newdata
@@ -920,9 +987,15 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
     if (is.null(predict)) {
       stop(format_message("Please supply a value for the `predict` argument."))
     }
+    # Type (that's for the initial call to stats::predict)
+    if (info$is_linear) {
+      type_arg <- "response"
+    } else {
+      type_arg <- "link"
+    }
   } else {
     if (is.null(predict)) {
-      predict_arg <- dots$type
+      type_arg <- predict_arg <- dots$type
     } else {
       stop(format_message('The `predict` and `type` arguments cannot be used simultaneously. The preferred argument for the `get_predicted()` function is `predict`. If you need to pass a `type` argument directly to the `predict()` method associated with your model type, you must set `predict` to `NULL` explicitly: `get_predicted(model, predict=NULL, type="response")`'))
     }
@@ -951,16 +1024,10 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
     scale <- predict_arg
   }
 
-  # Type (that's for the initial call to stats::predict)
-  if (info$is_linear) {
-    type_arg <- "response"
-  } else {
-    type_arg <- "link"
-  }
-
   # Transform
   if (info$is_linear == FALSE && scale == "response") {
     transform <- TRUE
+    type_arg <- "link" # set from response to link, because we back-transform
   } else {
     transform <- FALSE
   }
@@ -1034,7 +1101,7 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
                                      ...) {
 
   # Transform to response scale
-  if (args$transform == TRUE) {
+  if (isTRUE(args$transform)) {
     if (!is.null(ci_data)) {
       # Transform CI
       se_col <- names(ci_data) == "SE"
@@ -1059,7 +1126,7 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
     }
 
     # Transform to response "type"
-    if (args$predict == "classification" && model_info(x)$is_binomial) {
+    if (args$predict == "classification" && model_info(x, verbose = FALSE)$is_binomial) {
       response <- get_response(x)
       ci_data[!se_col] <- lapply(ci_data[!se_col], .get_predict_transform_response, response = response)
       predictions <- .get_predict_transform_response(predictions, response = response)
@@ -1155,7 +1222,32 @@ get_predicted.faMain <- function(x, data = NULL, ...) {
                                                  iter,
                                                  centrality_function = base::mean,
                                                  ...) {
-  predictions <- apply(iter, 1, centrality_function)
+
+  # outcome: ordinal/multinomial/multivariate produce a 3D array of predictions,
+  # which we stack in "long" format
+  if (length(dim(iter)) == 3) {
+    # 3rd dimension of the array is the response level. This stacks the draws into:
+    # Rows * Response ~ Draws
+    iter_stacked <- apply(iter, 1, c)
+    predictions <- data.frame(
+      # rows repeated for each response level
+      Row = rep(1:ncol(iter), times = dim(iter)[3]),
+      # response levels repeated for each row
+      Response = rep(dimnames(iter)[[3]], each = dim(iter)[2]),
+      Predicted = apply(iter_stacked, 1, centrality_function),
+      stringsAsFactors = FALSE
+    )
+    iter <- as.data.frame(iter_stacked)
+    names(iter) <- paste0("iter_", names(iter))
+    # outcome with a single level
+  } else {
+    # .get_predicted_boot already gives us the correct observation ~ draws format
+    if (is.null(colnames(iter)) || !all(grepl("^iter", colnames(iter)))) {
+      iter <- as.data.frame(t(iter))
+      names(iter) <- gsub("^V(\\d+)$", "iter_\\1", names(iter))
+    }
+    predictions <- apply(iter, 1, centrality_function)
+  }
   attr(predictions, "iterations") <- iter
   predictions
 }

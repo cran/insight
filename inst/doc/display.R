@@ -3,15 +3,17 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-if (!requireNamespace("dplyr", quietly = TRUE) ||
+
+if (!requireNamespace("poorman", quietly = TRUE) ||
     !requireNamespace("gt", quietly = TRUE)) {
   knitr::opts_chunk$set(eval = FALSE)
+} else {
+  library(poorman)
+  library(gt)
 }
-
 
 ## ---- warning=FALSE, message=FALSE--------------------------------------------
 library(insight)
-library(dplyr)
 
 df <- data.frame(
   Variable = c(1, 3, 5, 3, 1),

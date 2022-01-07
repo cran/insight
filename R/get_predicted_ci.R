@@ -67,10 +67,10 @@
 #' predictions <- get_predicted(x, iterations = 500)
 #' get_predicted_ci(x, predictions)
 #'
-#' if (require("bayestestR")) {
+#' if (require("datawizard")) {
 #'   ci_vals <- get_predicted_ci(x, predictions, ci = c(0.80, 0.95))
 #'   head(ci_vals)
-#'   bayestestR::reshape_ci(ci_vals)
+#'   datawizard::reshape_ci(ci_vals)
 #'
 #'   ci_vals <- get_predicted_ci(x,
 #'     predictions,
@@ -114,11 +114,16 @@ get_predicted_ci.default <- function(x,
   # If draws are present (bootstrapped or Bayesian)
   if ("iterations" %in% names(attributes(predictions))) {
     iter <- attributes(predictions)$iteration
-
     se <- .get_predicted_se_from_iter(iter = iter, dispersion_method)
     out <- .get_predicted_ci_from_iter(iter = iter, ci = ci, ci_method)
-
-    return(cbind(se, out))
+    out <- cbind(se, out)
+    # outcome is multinomial/ordinal/cumulative
+    if (inherits(predictions, "data.frame") &&
+      "Response" %in% colnames(predictions) &&
+      "Row" %in% colnames(predictions)) {
+      out <- cbind(predictions[, c("Row", "Response")], out)
+    }
+    return(out)
   }
 
   # Analytical solution
@@ -261,6 +266,14 @@ get_predicted_ci.mlm <- function(x, ...) {
         off_terms <- grepl("^offset\\((.*)\\)", all_terms)
         model_terms <- stats::reformulate(all_terms[!off_terms], response = find_response(x))
       }
+
+      # check for at least to factor levels, in order to build contrasts
+      single_factor_levels <- sapply(data, function(i) is.factor(i) && nlevels(i) == 1)
+      if (any(single_factor_levels)) {
+        warning(format_message("Some factors in the data have only one level. Cannot compute model matrix for standard errors and confidence intervals."), call. = FALSE)
+        return(NULL)
+      }
+
       mm <- get_modelmatrix(model_terms, data = data)
     } else {
       mm <- get_modelmatrix(x, data = data)
@@ -300,6 +313,11 @@ get_predicted_se <- function(x,
     vcov_args = vcov_args
   )
   mm <- .get_predicted_ci_modelmatrix(x, data = data, vcovmat = vcovmat)
+
+  # return NULL for fail
+  if (is.null(mm)) {
+    return(NULL)
+  }
 
   # compute vcov for predictions
   # Next line equivalent to: diag(M V M')
@@ -346,7 +364,7 @@ get_predicted_se <- function(x,
 
   # Return NA
   if (is.null(se)) {
-    ci_low <- ci_high <- rep(NA, length(predictions))
+    se <- ci_low <- ci_high <- rep(NA, length(predictions))
 
     # Get CI
     # TODO: Does this cover all the model families?
@@ -444,9 +462,9 @@ get_predicted_se <- function(x,
     if (length(ci) == 1) names(out) <- c("Parameter", "CI_low", "CI_high")
   } else {
     # installed?
-    check_if_installed("bayestestR")
+    check_if_installed(c("bayestestR", "datawizard"))
     out <- as.data.frame(bayestestR::ci(as.data.frame(t(iter)), ci = ci, method = ci_method))
-    if (length(ci) > 1) out <- reshape_ci(out)
+    if (length(ci) > 1) out <- datawizard::reshape_ci(out)
   }
   out$Parameter <- out$CI <- NULL
   row.names(out) <- NULL
