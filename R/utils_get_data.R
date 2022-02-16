@@ -217,6 +217,16 @@
     mf <- mf[!mos_eisly]
   }
 
+  # strata-variables in coxph() -----------------------------------------------
+
+  strata_columns <- grepl("^strata\\((.*)\\)", colnames(mf))
+  if (any(strata_columns)) {
+    for (sc in colnames(mf)[strata_columns]) {
+      strata_variable <- gsub("strata\\((.*)\\)", "\\1", sc)
+      levels(mf[[sc]]) <- gsub(paste0("\\Q", strata_variable, "=", "\\E"), "", levels(mf[[sc]]))
+    }
+  }
+
   # restore original data for factors -----------------------------------------
 
   # are there any factor variables that have been coerced "on-the-fly",
@@ -300,7 +310,8 @@
   # check if data argument was used
   model_call <- get_call(model)
   if (!is.null(model_call)) {
-    data_arg <- parse(text = .safe_deparse(model_call))[[1]]$data
+    data_arg <- tryCatch(parse(text = .safe_deparse(model_call))[[1]]$data,
+                         error = function(e) NULL)
   } else {
     data_arg <- NULL
   }
@@ -362,7 +373,7 @@
   response <- unlist(model.terms$response)
 
   # save factors attribute
-  factors <-  attr(mf, "factors", exact = TRUE)
+  factors <- attr(mf, "factors", exact = TRUE)
 
   if (is_mv) {
     fixed.component.data <- switch(component,
