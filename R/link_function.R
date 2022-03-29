@@ -32,7 +32,7 @@ link_function <- function(x, ...) {
 
 #' @export
 link_function.default <- function(x, ...) {
-  if (inherits(x, "list") && .obj_has_name(x, "gam")) {
+  if (inherits(x, "list") && object_has_names(x, "gam")) {
     x <- x$gam
     class(x) <- c(class(x), c("glm", "lm"))
   }
@@ -267,7 +267,7 @@ link_function.psm <- link_function.tobit
 
 #' @export
 link_function.flexsurvreg <- function(x, ...) {
-  dist <- parse(text = .safe_deparse(x$call))[[1]]$dist
+  dist <- parse(text = safe_deparse(x$call))[[1]]$dist
   .make_tobit_family(x, dist)$linkfun
 }
 
@@ -403,8 +403,8 @@ link_function.MCMCglmm <- function(x, ...) {
 
 #' @export
 link_function.cglm <- function(x, ...) {
-  link <- parse(text = .safe_deparse(x$call))[[1]]$link
-  method <- parse(text = .safe_deparse(x$call))[[1]]$method
+  link <- parse(text = safe_deparse(x$call))[[1]]$link
+  method <- parse(text = safe_deparse(x$call))[[1]]$method
 
   if (!is.null(method) && method == "clm") {
     link <- "identiy"
@@ -491,8 +491,8 @@ link_function.gam <- function(x, ...) {
 
   if (is.null(lf)) {
     mi <- .gam_family(x)
-    if (.obj_has_name(mi, "linfo")) {
-      if (.obj_has_name(mi$linfo, "linkfun")) {
+    if (object_has_names(mi, "linfo")) {
+      if (object_has_names(mi$linfo, "linkfun")) {
         lf <- mi$linfo$linkfun
       } else {
         lf <- mi$linfo[[1]]$linkfun

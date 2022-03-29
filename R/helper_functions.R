@@ -1,18 +1,3 @@
-# remove trailing/leading spaces from character vectors
-.trim <- function(x) gsub("^\\s+|\\s+$", "", x)
-
-
-
-# remove NULL elements from lists
-.compact_list <- function(x) x[!sapply(x, function(i) all(length(i) == 0) || all(is.null(i)) || (!is.data.frame(i) && any(i == "NULL", na.rm = TRUE)) || (is.data.frame(i) && nrow(i) == 0))]
-
-
-
-# remove empty string from character
-.compact_character <- function(x) x[!sapply(x, function(i) nchar(i) == 0 || is.null(i) || any(i == "NULL", na.rm = TRUE))]
-
-
-
 # remove values from vector
 .remove_values <- function(x, values) {
   remove <- x %in% values
@@ -38,52 +23,13 @@
 }
 
 
-# is object empty?
-.is_empty_object <- function(x) {
-  flag_empty <- FALSE
-  if (inherits(x, "data.frame")) {
-    x <- as.data.frame(x)
-    if (nrow(x) > 0 && ncol(x) > 0) {
-      x <- x[, !sapply(x, function(i) all(is.na(i))), drop = FALSE]
-      # this is much faster than apply(x, 1, FUN)
-      flag_empty <- all(rowSums(is.na(x)) == ncol(x))
-    } else {
-      flag_empty <- TRUE
-    }
-    # a list but not a data.frame
-  } else if (is.list(x) && length(x) > 0) {
-    x <- tryCatch(
-      {
-        .compact_list(x)
-      },
-      error = function(x) {
-        x
-      }
-    )
-  } else if (!is.null(x)) {
-    x <- stats::na.omit(x)
-  }
-  # need to check for is.null for R 3.4
-  isTRUE(flag_empty) ||
-    length(x) == 0 ||
-    is.null(x) ||
-    isTRUE(nrow(x) == 0) ||
-    isTRUE(ncol(x) == 0)
-}
-
-
-
 # does string contain pattern?
 .string_contains <- function(pattern, x) {
-  pattern <- paste0("\\Q", pattern, "\\E")
-  grepl(pattern, x, perl = TRUE)
-}
+  # This is a bit slower - restore if tests fail...
+  # pattern <- paste0("\\Q", pattern, "\\E")
+  # grepl(pattern, x, perl = TRUE)
 
-
-
-# has object an element with given name?
-.obj_has_name <- function(x, name) {
-  name %in% names(x)
+  grepl(pattern, x, fixed = TRUE)
 }
 
 
@@ -166,26 +112,26 @@
     )
   )
 
-  if (identical(.safe_deparse(f), "~0") || identical(.safe_deparse(f), "~1")) {
+  if (identical(safe_deparse(f), "~0") || identical(safe_deparse(f), "~1")) {
     return(NULL)
   }
 
-  re <- sapply(.findbars(f), .safe_deparse)
+  re <- sapply(.findbars(f), safe_deparse)
 
-  if (is_special && .is_empty_object(re)) {
+  if (is_special && is_empty_object(re)) {
     re <- all.vars(f[[2L]])
     if (length(re) > 1) {
       re <- as.list(re)
       split_nested <- FALSE
     }
   } else {
-    re <- .trim(substring(re, max(gregexpr(pattern = "\\|", re)[[1]]) + 1))
+    re <- trim_ws(substring(re, max(gregexpr(pattern = "\\|", re)[[1]]) + 1))
   }
 
   # check for multi-membership models
   if (inherits(model, "brmsfit")) {
     if (grepl("mm\\((.*)\\)", re)) {
-      re <- trimws(unlist(strsplit(gsub("mm\\((.*)\\)", "\\1", re), ",")))
+      re <- trim_ws(unlist(strsplit(gsub("mm\\((.*)\\)", "\\1", re), ",")))
     }
   }
 
@@ -460,7 +406,7 @@
 #   else
 #     f[[2L]]
 #
-#   lapply(.extract_formula_parts(rhs), .safe_deparse)
+#   lapply(.extract_formula_parts(rhs), safe_deparse)
 # }
 #
 #
@@ -476,15 +422,6 @@
 #   }
 #   c(x, rval)
 # }
-
-
-
-.safe_deparse <- function(string) {
-  if (is.null(string)) {
-    return(NULL)
-  }
-  paste0(sapply(deparse(string, width.cutoff = 500), .trim, simplify = TRUE), collapse = " ")
-}
 
 
 
@@ -807,17 +744,6 @@
   }
   FALSE
 }
-
-
-
-.n_unique <- function(x, na.rm = TRUE) {
-  if (is.null(x)) {
-    return(0)
-  }
-  if (isTRUE(na.rm)) x <- stats::na.omit(x)
-  length(unique(x))
-}
-
 
 
 

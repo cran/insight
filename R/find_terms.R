@@ -77,7 +77,7 @@ find_terms.default <- function(x, flatten = FALSE, verbose = TRUE, ...) {
     }
   })
 
-  .compact_list(c(list(response = response), out))
+  compact_list(c(list(response = response), out))
 }
 
 
@@ -145,18 +145,18 @@ find_terms.bfsl <- function(x, flatten = FALSE, verbose = TRUE, ...) {
 
 .get_variables_list <- function(f, resp = NULL) {
   # exception for formula w/o response
-  if (is.null(resp) || !.is_empty_object(resp)) {
-    f$response <- sub("(.*)::(.*)", "\\2", .safe_deparse(f$conditional[[2L]]))
-    f$conditional <- .safe_deparse(f$conditional[[3L]])
+  if (is.null(resp) || !is_empty_object(resp)) {
+    f$response <- sub("(.*)::(.*)", "\\2", safe_deparse(f$conditional[[2L]]))
+    f$conditional <- safe_deparse(f$conditional[[3L]])
   } else {
-    f$conditional <- .safe_deparse(f$conditional[[2L]])
+    f$conditional <- safe_deparse(f$conditional[[2L]])
   }
 
   f <- lapply(f, function(.x) {
     if (is.list(.x)) {
       .x <- sapply(.x, .formula_to_string)
     } else {
-      if (!is.character(.x)) .x <- .safe_deparse(.x)
+      if (!is.character(.x)) .x <- safe_deparse(.x)
     }
     .x
   })
@@ -166,7 +166,7 @@ find_terms.bfsl <- function(x, flatten = FALSE, verbose = TRUE, ...) {
 
   f <- lapply(f, function(.x) {
     pattern <- "[*+:|\\-\\/](?![^(]*\\))" # was: "[\\*\\+:\\-\\|/](?![^(]*\\))"
-    f_parts <- gsub("~", "", .trim(unlist(strsplit(split = pattern, x = .x, perl = TRUE))))
+    f_parts <- gsub("~", "", trim_ws(unlist(strsplit(split = pattern, x = .x, perl = TRUE))), fixed = TRUE)
     # if user has used namespace in formula-functions, these are returned
     # as empty elements. remove those here
     if (any(nchar(f_parts) == 0)) {
@@ -178,12 +178,12 @@ find_terms.bfsl <- function(x, flatten = FALSE, verbose = TRUE, ...) {
 
   # remove "1" and "0" from variables in random effects
 
-  if (.obj_has_name(f, "random")) {
+  if (object_has_names(f, "random")) {
     pos <- which(f$random %in% c("1", "0"))
     if (length(pos)) f$random <- f$random[-pos]
   }
 
-  if (.obj_has_name(f, "zero_inflated_random")) {
+  if (object_has_names(f, "zero_inflated_random")) {
     pos <- which(f$zero_inflated_random %in% c("1", "0"))
     if (length(pos)) f$zero_inflated_random <- f$zero_inflated_random[-pos]
   }
@@ -193,13 +193,13 @@ find_terms.bfsl <- function(x, flatten = FALSE, verbose = TRUE, ...) {
   if (any(need_split)) {
     f$conditional <- c(
       f$conditional[!need_split],
-      .trim(unlist(strsplit(f$conditional[need_split], " ", fixed = TRUE)))
+      trim_ws(unlist(strsplit(f$conditional[need_split], " ", fixed = TRUE)))
     )
   }
   f$conditional <- gsub("#1", "-1", f$conditional, fixed = TRUE)
 
   # reorder, so response is first
-  .compact_list(f[c(length(f), 1:(length(f) - 1))])
+  compact_list(f[c(length(f), 1:(length(f) - 1))])
 }
 
 .get_variables_list_aovlist <- function(f, resp = NULL) {
@@ -219,6 +219,6 @@ find_terms.bfsl <- function(x, flatten = FALSE, verbose = TRUE, ...) {
 }
 
 .formula_to_string <- function(f) {
-  if (!is.character(f)) f <- .safe_deparse(f)
+  if (!is.character(f)) f <- safe_deparse(f)
   f
 }

@@ -10,7 +10,14 @@ get_loglikelihood(x, ...)
 
 loglikelihood(x, ...)
 
-\method{get_loglikelihood}{lm}(x, estimator = "ML", REML = FALSE, verbose = TRUE, ...)
+\method{get_loglikelihood}{lm}(
+  x,
+  estimator = "ML",
+  REML = FALSE,
+  check_response = FALSE,
+  verbose = TRUE,
+  ...
+)
 }
 \arguments{
 \item{x}{A model.}
@@ -21,7 +28,8 @@ loglikelihood(x, ...)
 deviation of the errors. If \code{estimator="ML"} (default), the scaling is
 done by n (the biased ML estimator), which is then equivalent to using
 \code{stats::logLik()}. If \code{estimator="OLS"}, it returns the unbiased
-OLS estimator.}
+OLS estimator. \code{estimator="REML"} will give same results as
+\code{logLik(..., REML=TRUE)}.}
 
 \item{REML}{Only for linear models. This argument is present for
 compatibility with \code{stats::logLik()}. Setting it to \code{TRUE} will
@@ -29,6 +37,11 @@ overwrite the \code{estimator} argument and is thus equivalent to setting
 \code{estimator="REML"}. It will give the same results as
 \code{stats::logLik(..., REML=TRUE)}. Note that individual log-likelihoods
 are not available under REML.}
+
+\item{check_response}{Logical, if \code{TRUE}, checks if the response variable
+is transformed (like \code{log()} or \code{sqrt()}), and if so, returns a corrected
+log-likelihood. To get back to the original scale, the likelihood of the
+model is multiplied by the Jacobian/derivative of the transformation.}
 
 \item{verbose}{Toggle warnings and messages.}
 }

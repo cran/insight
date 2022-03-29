@@ -86,8 +86,8 @@ n_obs.glm <- function(x, disaggregate = FALSE, ...) {
     resp_data <- get_response(x, verbose = FALSE)
 
     # response is a matrix of numbers of trials and successes
-    if (grepl("^cbind\\(", resp)) {
-      trials <- trimws(sub("cbind\\((.*),(.*)\\)", "\\2", resp))
+    if (grepl("cbind(", resp, fixed = TRUE)) {
+      trials <- trim_ws(sub("cbind\\((.*),(.*)\\)", "\\2", resp))
       if (grepl("-", trials, fixed = TRUE)) {
         .nobs <- sum(resp_data[[2]])
       } else {
@@ -129,6 +129,12 @@ n_obs.model_fit <- n_obs.svy_vglm
 
 
 #' @export
+n_obs.HLfit <- function(x, ...) {
+  stats::nobs(x)
+}
+
+
+#' @export
 n_obs.gam <- function(x, ...) {
   if (!is.null(dim(x$y))) {
     dim(x$y)[1]
@@ -139,7 +145,7 @@ n_obs.gam <- function(x, ...) {
 
 #' @export
 n_obs.gamm <- function(x, ...) {
-  if (.obj_has_name(x, "gam")) {
+  if (object_has_names(x, "gam")) {
     n_obs(x$gam, ...)
   } else {
     stop("Cannot find n_obs for this object. Please an open an issue!")
@@ -460,7 +466,7 @@ n_obs.BBmm <- n_obs.BBreg
 #' @export
 n_obs.crq <- function(x, ...) {
   n <- nrow(x$residuals)
-  if (.is_empty_object(n)) {
+  if (is_empty_object(n)) {
     n <- nrow(x$fitted.values)
   }
   n

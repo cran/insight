@@ -114,7 +114,7 @@ print_parameters <- function(x,
   obj <- list(...)
 
   # save attributes of original object
-  att <- do.call(c, .compact_list(lapply(obj, function(i) {
+  att <- do.call(c, compact_list(lapply(obj, function(i) {
     a <- attributes(i)
     a$names <- a$class <- a$row.names <- NULL
     a
@@ -142,7 +142,7 @@ print_parameters <- function(x,
   )
 
   # return merged data frame if no splitting requested
-  if (.is_empty_object(split_by)) {
+  if (is_empty_object(split_by)) {
     return(obj)
   }
 
@@ -155,7 +155,7 @@ print_parameters <- function(x,
 
   # split into groups, remove empty elements
   out <- split(obj, f)
-  out <- .compact_list(lapply(out, function(i) {
+  out <- compact_list(lapply(out, function(i) {
     if (nrow(i) > 0) i
   }))
 
@@ -210,7 +210,7 @@ print_parameters <- function(x,
     # we don't need "Effects" and "Component" column any more, and probably
     # also no longer the "Group" column
     columns_to_remove <- c("Effects", "Component", "Cleaned_Parameter")
-    if (.n_unique(.group) == 1) {
+    if (n_unique(.group) == 1) {
       columns_to_remove <- c(columns_to_remove, "Group")
     } else {
       .group <- NULL
@@ -251,14 +251,14 @@ print_parameters <- function(x,
     title2 <- format_capitalize(title2)
 
     # add attributes
-    attr(element, "main_title") <- .trim(title1)
-    attr(element, "sub_title") <- .trim(title2)
+    attr(element, "main_title") <- trim_ws(title1)
+    attr(element, "sub_title") <- trim_ws(title2)
     if (is.null(format) || format == "text") {
-      attr(element, "table_caption") <- c(paste0(title_prefix, .trim(title1)), "blue")
-      attr(element, "table_subtitle") <- c(.trim(title2), "blue")
+      attr(element, "table_caption") <- c(paste0(title_prefix, trim_ws(title1)), "blue")
+      attr(element, "table_subtitle") <- c(trim_ws(title2), "blue")
     } else {
-      attr(element, "table_caption") <- .trim(title1)
-      attr(element, "table_subtitle") <- .trim(title2)
+      attr(element, "table_caption") <- trim_ws(title1)
+      attr(element, "table_subtitle") <- trim_ws(title2)
     }
     attr(element, "Effects") <- .effects
     attr(element, "Component") <- .component

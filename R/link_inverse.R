@@ -35,7 +35,7 @@ link_inverse <- function(x, ...) {
 
 #' @export
 link_inverse.default <- function(x, ...) {
-  if (inherits(x, "list") && .obj_has_name(x, "gam")) {
+  if (inherits(x, "list") && object_has_names(x, "gam")) {
     x <- x$gam
     class(x) <- c(class(x), c("glm", "lm"))
   }
@@ -97,7 +97,7 @@ link_inverse.psm <- link_inverse.tobit
 
 #' @export
 link_inverse.flexsurvreg <- function(x, ...) {
-  dist <- parse(text = .safe_deparse(x$call))[[1]]$dist
+  dist <- parse(text = safe_deparse(x$call))[[1]]$dist
   .make_tobit_family(x, dist)$linkinv
 }
 
@@ -393,8 +393,8 @@ link_inverse.robmixglm <- function(x, ...) {
 
 #' @export
 link_inverse.cglm <- function(x, ...) {
-  link <- parse(text = .safe_deparse(x$call))[[1]]$link
-  method <- parse(text = .safe_deparse(x$call))[[1]]$method
+  link <- parse(text = safe_deparse(x$call))[[1]]$link
+  method <- parse(text = safe_deparse(x$call))[[1]]$method
 
   if (!is.null(method) && method == "clm") {
     link <- "identiy"
@@ -656,8 +656,8 @@ link_inverse.gam <- function(x, ...) {
 
   if (is.null(li)) {
     mi <- .gam_family(x)
-    if (.obj_has_name(mi, "linfo")) {
-      if (.obj_has_name(mi$linfo, "linkinv")) {
+    if (object_has_names(mi, "linfo")) {
+      if (object_has_names(mi$linfo, "linkinv")) {
         li <- mi$linfo$linkinv
       } else {
         li <- mi$linfo[[1]]$linkinv
@@ -707,7 +707,7 @@ link_inverse.mira <- function(x, ...) {
 
 
 .get_cplm_family <- function(x) {
-  link <- parse(text = .safe_deparse(x@call))[[1]]$link
+  link <- parse(text = safe_deparse(x@call))[[1]]$link
 
   if (is.null(link)) link <- "log"
 

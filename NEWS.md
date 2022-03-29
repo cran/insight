@@ -1,3 +1,78 @@
+# insight 0.17.0
+
+## Breaking changes
+
+* Arguments `vcov_estimation` and `vcov_type` in `get_predicted()`, 
+  `get_predicted_se()` and `get_predicted_ci()` are replaced by `vcov` and
+  `vcov_args`, to have a more simplified and common interface to control
+  robust covariance matrix estimation.
+
+## General
+
+* Improved performance for various functions, in particular `get_data()` and
+  `model_info()`.
+
+## New functions
+
+* To check for names: `object_has_names()` and `object_has_rownames()`
+
+* To work with lists: `is_empty_object()` and `compact_list()`
+
+* To work with strings: `compact_character()`
+
+* Further utility functions are `safe_deparse()`, `trim_ws()` and `n_unique()`.
+
+## Changes to functions
+
+* `export_table()` now better checks for invalid values of caption and footer
+  for tables in HTML format, and silently removes, e.g., ansi-colour codes that
+  only work for text-format.
+  
+* `get_data.coxph()` returns the original data frame instead of data with type 
+   coercion.
+
+* `get_loglikelihood()` gets a `check_response` argument, to check if a model
+  has a transformed response variable (like `log()` or `sqrt()` transformation), 
+  and if so, returns a corrected log-likelihood.
+  
+* `get_modelmatrix()` now supports *BayesFactor* models.
+
+* `get_loglikelihood()` and `get_df()` now support more model classes.
+
+* `get_predicted()` was improved for multinomial models from *brms*.
+
+* `get_variance()` was improved to cover more edge cases of (more complex)
+  random effect structures.
+
+* `get_data()` now includes variables in the returned data frame that were
+  used in the `subset` argument of regression functions (like `lm()`).
+
+* In some edge cases, where `get_data()` is unable to retrieve the data that 
+  was used to fit the model, now a more informative error is printed.
+
+* `ellipses_info()` now also accepts a list of model objects, is more stable
+  and returns more information about the provided models (like if all fixed 
+  or random effects are the same across models, if all models are mixed models
+  or null-models, etc.)
+
+* `check_if_installed()` now works interactively and lets the user prompt
+  whether to automatically update or install packages.
+
+## Bug fixes
+
+* Fixed incorrect column name conversion in `standardize_names()` for certain
+  columns returned by `broom::glance()`.
+
+* Fixed issue with correctly detecting Tweedie-models in `model_info()`.
+
+* Fixed issue with `get_datagrid()` for *brms* models with monotonic factors.
+
+* Fixed issue in `find_formula()` when argument `correlation` was defined
+  outside of `lme()` and `gls()` (@etiennebacher, #525).
+
+* Fixed issue with `get_data()` when back-transforming data from predictors 
+  that used `cos()`, `sin()` or `tan()` transformations.
+
 # insight 0.16.0
 
 ## New functions

@@ -7,39 +7,42 @@
                          link.fun = "identity",
                          dispersion = FALSE,
                          verbose = TRUE,
+                         glmmtmb_zeroinf = FALSE, # needed for edge cases
                          ...) {
   dots <- list(...)
   if (isTRUE(dots$return_family_only)) {
     return(list(family = fitfam, link_function = link.fun))
   }
 
+  fitfam_lower <- tolower(fitfam)
+
   # create logical for family
 
   # binomial family --------
 
   binom_fam <-
-    fitfam %in% c("bernoulli", "binomial", "quasibinomial", "binomialff") |
-      grepl("\\Qbinomial\\E", fitfam, ignore.case = TRUE)
+    fitfam_lower %in% c("bernoulli", "binomial", "quasibinomial", "binomialff") |
+      grepl("binomial", fitfam_lower, fixed = TRUE)
 
 
   # poisson family --------
 
   poisson_fam <-
     fitfam %in% c("poisson", "quasipoisson", "genpois", "ziplss") |
-      grepl("\\Qpoisson\\E", fitfam, ignore.case = TRUE)
+      grepl("poisson", fitfam_lower, fixed = TRUE)
 
 
   # negative binomial family --------
 
   neg_bin_fam <-
-    grepl("\\Qnegative binomial\\E", fitfam, ignore.case = TRUE) |
-      grepl("\\Qnbinom\\E", fitfam, ignore.case = TRUE) |
-      grepl("\\Qnegbin\\E", fitfam, ignore.case = TRUE) |
-      grepl("\\Qnzbinom\\E", fitfam, ignore.case = TRUE) |
-      grepl("\\Qgenpois\\E", fitfam, ignore.case = TRUE) |
-      grepl("\\Qnegbinomial\\E", fitfam, ignore.case = TRUE) |
-      grepl("\\Qneg_binomial\\E", fitfam, ignore.case = TRUE) |
-      fitfam %in% c("ztnbinom", "nbinom")
+    grepl("negative binomial", fitfam_lower, fixed = TRUE) |
+      grepl("nbinom", fitfam_lower, fixed = TRUE) |
+      grepl("negbin", fitfam_lower, fixed = TRUE) |
+      grepl("nzbinom", fitfam_lower, fixed = TRUE) |
+      grepl("genpois", fitfam_lower, fixed = TRUE) |
+      grepl("negbinomial", fitfam_lower, fixed = TRUE) |
+      grepl("neg_binomial", fitfam_lower, fixed = TRUE) |
+      fitfam_lower %in% c("ztnbinom", "nbinom")
 
 
   # bernoulli family --------
@@ -47,11 +50,11 @@
   is_bernoulli <- FALSE
 
   if (binom_fam && inherits(x, "glm") && !neg_bin_fam && !poisson_fam) {
-    resp <- get_response(x, verbose = FALSE)
-    if (is.data.frame(resp) && ncol(resp) == 1) {
+    resp <- stats::model.response(stats::model.frame(x))
+    if ((is.data.frame(resp) || is.matrix(resp)) && ncol(resp) == 1) {
       resp <- as.vector(resp[[1]])
     }
-    if (!is.data.frame(resp) && all(.is.int(.factor_to_numeric(resp[[1]])))) {
+    if (!is.data.frame(resp) && !is.matrix(resp) && all(.is.int(.factor_to_numeric(resp[[1]])))) {
       is_bernoulli <- TRUE
     }
   } else if (fitfam %in% "bernoulli") {
@@ -90,21 +93,26 @@
 
   # zero-inflated or hurdle component --------
 
-  zero.inf <- zero.inf | fitfam == "ziplss" |
-    grepl("\\Qzero_inflated\\E", fitfam, ignore.case = TRUE) |
-    grepl("\\Qzero-inflated\\E", fitfam, ignore.case = TRUE) |
-    grepl("\\Qneg_binomial\\E", fitfam, ignore.case = TRUE) |
-    grepl("\\Qhurdle\\E", fitfam, ignore.case = TRUE) |
-    grepl("^(zt|zi|za|hu)", fitfam, perl = TRUE) |
-    grepl("^truncated", fitfam, perl = TRUE)
+  zero.inf <- zero.inf | fitfam_lower == "ziplss" |
+    grepl("zero_inflated", fitfam_lower, fixed = TRUE) |
+    grepl("zero-inflated", fitfam_lower, fixed = TRUE) |
+    grepl("neg_binomial", fitfam_lower, fixed = TRUE) |
+    grepl("hurdle", fitfam_lower, fixed = TRUE) |
+    grepl("^(zt|zi|za|hu)", fitfam_lower, perl = TRUE) |
+    grepl("truncated", fitfam_lower, fixed = TRUE)
+
+  # overwrite for glmmTMB exceptions
+  if (inherits(x, "glmmTMB")) {
+    zero.inf <- glmmtmb_zeroinf
+  }
 
 
   # only hurdle component --------
 
   hurdle <- hurdle |
-    grepl("\\Qhurdle\\E", fitfam, ignore.case = TRUE) |
+    grepl("hurdle", fitfam_lower, fixed = TRUE) |
     grepl("^hu", fitfam, perl = TRUE) |
-    grepl("^truncated", fitfam, perl = TRUE) |
+    grepl("truncated", fitfam, fixed = TRUE) |
     fitfam == "ztnbinom" |
     fitfam %in% c("truncpoiss", "truncnbinom", "truncnbinom1", "truncpoisson")
 
@@ -132,7 +140,7 @@
 
   if (inherits(x, c("lrm", "blrm"))) {
     resp <- get_response(x, verbose = FALSE)
-    if (.n_unique(resp) == 2) {
+    if (n_unique(resp) == 2) {
       binom_fam <- TRUE
     } else {
       is.ordinal <- TRUE
@@ -176,7 +184,7 @@
   if (inherits(x, "brmsfit") && is.null(stats::formula(x)$responses)) {
     rv <- tryCatch(
       {
-        .safe_deparse(stats::formula(x)$formula[[2L]])
+        safe_deparse(stats::formula(x)$formula[[2L]])
       },
       error = function(x) {
         NULL
@@ -184,7 +192,7 @@
     )
 
     if (!is.null(rv)) {
-      is.trial <- .trim(sub("(.*)\\|(.*)\\(([^,)]*).*", "\\2", rv)) %in% c("trials", "resp_trials")
+      is.trial <- trim_ws(sub("(.*)\\|(.*)\\(([^,)]*).*", "\\2", rv)) %in% c("trials", "resp_trials")
       is.censored <- grepl("(.*)\\|(.*)cens\\(", rv)
       is.truncated <- grepl("(.*)\\|(.*)trunc\\(", rv)
     }
@@ -193,7 +201,7 @@
   if (binom_fam && !inherits(x, "brmsfit")) {
     is.trial <- tryCatch(
       {
-        rv <- .safe_deparse(stats::formula(x)[[2L]])
+        rv <- safe_deparse(stats::formula(x)[[2L]])
         grepl("cbind\\((.*)\\)", rv)
       },
       error = function(x) {
@@ -205,32 +213,35 @@
 
   # save model terms --------
 
-  if (isTRUE(dots$no_terms)) {
-    model_terms <- NULL
-  } else {
-    if (inherits(x, "mcmc")) {
-      model_terms <- find_parameters(x)
-    } else {
-      model_terms <- tryCatch(
-        {
-          find_variables(
-            x,
-            effects = "all",
-            component = "all",
-            flatten = FALSE,
-            verbose = FALSE
-          )
-        },
-        error = function(x) {
-          NULL
-        }
-      )
-    }
-  }
+  # drop this for now...
+
+  # if (isTRUE(dots$no_terms)) {
+  #   model_terms <- NULL
+  # } else {
+  #   if (inherits(x, "mcmc")) {
+  #     model_terms <- find_parameters(x)
+  #   } else {
+  #     model_terms <- tryCatch(
+  #       {
+  #         find_variables(
+  #           x,
+  #           effects = "all",
+  #           component = "all",
+  #           flatten = FALSE,
+  #           verbose = FALSE
+  #         )
+  #       },
+  #       error = function(x) {
+  #         NULL
+  #       }
+  #     )
+  #   }
+  # }
 
 
   # significance tests --------
 
+  is_ftest <- FALSE
   is_ttest <- FALSE
   is_correlation <- FALSE
   is_oneway <- FALSE
@@ -249,8 +260,10 @@
       grepl("wilcoxon", tolower(x$method), fixed = TRUE) ||
       grepl("friedman", tolower(x$method), fixed = TRUE)) {
       is_ranktest <- TRUE
-    } else if (grepl("t-test", x$method)) {
+    } else if (grepl("t-test", x$method, fixed = TRUE)) {
       is_ttest <- TRUE
+    } else if (grepl("F test", x$method, fixed = TRUE)) {
+      is_ftest <- TRUE
     } else if (grepl("^One-way", x$method)) {
       is_oneway <- TRUE
     } else if (x$method == "Exact binomial test") {
@@ -286,6 +299,7 @@
 
   is_meta <- FALSE
   if (inherits(x, "BFBayesFactor")) {
+    is_ftest <- FALSE
     is_ttest <- FALSE
     is_correlation <- FALSE
     is_oneway <- FALSE
@@ -318,7 +332,7 @@
   }
 
   if (inherits(x, "brmsfit") && !is_multivariate(x)) {
-    is_meta <- grepl("(.*)\\|(.*)se\\((.*)\\)", .safe_deparse(find_formula(x, verbose = FALSE)$conditional[[2]]))
+    is_meta <- grepl("(.*)\\|(.*)se\\((.*)\\)", safe_deparse(find_formula(x, verbose = FALSE)$conditional[[2]]))
   }
 
 
@@ -339,8 +353,8 @@
 
   # tweedie family --------
 
-  tweedie_fam <- grepl("^(tweedie|Tweedie)", fitfam) | grepl("^(tweedie|Tweedie)", link.fun)
-  tweedie_model <- (linear_model && tweedie_fam) || inherits(x, c("bcplm", "cpglm", "cpglmm", "zcpglm"))
+  tweedie_fam <- grepl("tweedie", fitfam_lower, fixed = TRUE) | grepl("tweedie", tolower(link.fun), fixed = TRUE)
+  tweedie_model <- tweedie_fam | inherits(x, c("bcplm", "cpglm", "cpglmm", "zcpglm"))
 
 
   # return...
@@ -386,11 +400,11 @@
     is_xtab = is_xtab,
     is_proptest = is_proptest,
     is_binomtest = is_binomtest,
+    is_ftest = is_ftest,
     is_meta = is_meta,
     link_function = link.fun,
     family = fitfam,
-    n_obs = n_obs(x),
-    model_terms = model_terms
+    n_obs = n_obs(x)
   )
 }
 
@@ -406,7 +420,7 @@
 .make_tobit_family <- function(x, dist = NULL) {
   if (is.null(dist)) {
     if (inherits(x, "flexsurvreg")) {
-      dist <- parse(text = .safe_deparse(x$call))[[1]]$dist
+      dist <- parse(text = safe_deparse(x$call))[[1]]$dist
     } else {
       dist <- x$dist
     }

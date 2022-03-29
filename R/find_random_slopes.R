@@ -28,9 +28,9 @@ find_random_slopes <- function(x) {
   random_slopes$random <- .extract_random_slopes(forms$random)
   random_slopes$zero_inflated_random <- .extract_random_slopes(forms$zero_inflated_random)
 
-  random_slopes <- .compact_list(random_slopes)
+  random_slopes <- compact_list(random_slopes)
 
-  if (.is_empty_object(random_slopes)) {
+  if (is_empty_object(random_slopes)) {
     NULL
   } else {
     random_slopes
@@ -46,17 +46,17 @@ find_random_slopes <- function(x) {
   if (!is.list(fr)) fr <- list(fr)
 
   random_slope <- lapply(fr, function(forms) {
-    if (grepl("(.*)\\|(.*)\\|(.*)", .safe_deparse(forms))) {
+    if (grepl("(.*)\\|(.*)\\|(.*)", safe_deparse(forms))) {
       pattern <- "(.*)\\|(.*)\\|(.*)"
     } else {
       pattern <- "(.*)\\|(.*)"
     }
-    pattern <- gsub(pattern, "\\1", .safe_deparse(forms))
+    pattern <- gsub(pattern, "\\1", safe_deparse(forms))
     re <- all.vars(forms)
     re[sapply(re, function(x) {
       grepl(x, pattern, fixed = TRUE)
     })]
   })
 
-  unique(unlist(.compact_list(random_slope)))
+  unique(unlist(compact_list(random_slope)))
 }

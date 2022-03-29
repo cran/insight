@@ -137,7 +137,7 @@
   }
 
 
-  .compact_list(list(
+  compact_list(list(
     "var.fixed" = var.fixed,
     "var.random" = var.random,
     "var.residual" = var.residual,
@@ -224,7 +224,7 @@
       attr(vc2, "sc") <- sqrt(get_deviance(x, verbose = FALSE) / get_df(x, type = "residual", verbose = FALSE))
     }
 
-    vcorr <- .compact_list(list(vc1, vc2))
+    vcorr <- compact_list(list(vc1, vc2))
     names(vcorr) <- c("cond", "zi")[1:length(vcorr)]
 
     vals <- list(
@@ -320,7 +320,7 @@
       }
       out
     })
-    vc <- .compact_list(vc)
+    vc <- compact_list(vc)
     names(vc) <- setdiff(names(lme4::VarCorr(x)), "residual__")
     attr(vc, "sc") <- lme4::VarCorr(x)$residual__$sd[1, 1]
     vals <- list(
@@ -883,7 +883,7 @@
 
   # make sure we have identical subcomponents between random and
   # fixed effects
-  fe <- .compact_list(fe[c("conditional", "zero_inflated")])
+  fe <- compact_list(fe[c("conditional", "zero_inflated")])
   if (length(rs) > length(fe)) rs <- rs[1:length(fe)]
   if (length(fe) > length(rs)) fe <- fe[1:length(rs)]
 
@@ -918,14 +918,46 @@
   if (inherits(x, "lme")) {
     unlist(lapply(vals$vc, function(x) diag(x)[-1]))
   } else {
+    # random slopes for correlated slope-intercept
     out <- unlist(lapply(vals$vc, function(x) diag(x)[-1]))
     # check for uncorrelated random slopes-intercept
     non_intercepts <- which(sapply(vals$vc, function(i) !grepl("^\\(Intercept\\)", dimnames(i)[[1]][1])))
-    if (length(non_intercepts)) {
+    if (length(non_intercepts) == length(vals$vc)) {
+      out <- unlist(lapply(vals$vc, function(x) diag(x)))
+    } else if (length(non_intercepts)) {
       dn <- unlist(lapply(vals$vc, function(i) dimnames(i)[1])[non_intercepts])
-      rndslopes <- unlist(lapply(vals$vc, function(i) i[1])[non_intercepts])
+      rndslopes <- unlist(lapply(vals$vc, function(i) {
+        if (is.null(dim(i)) || identical(dim(i), c(1, 1))) {
+          as.vector(i)
+        } else {
+          as.vector(diag(i))
+        }
+      })[non_intercepts])
+      # random slopes for uncorrelated slope-intercept
       names(rndslopes) <- gsub("(.*)\\.\\d+$", "\\1", names(rndslopes))
-      out <- c(out, stats::setNames(rndslopes, paste0(names(rndslopes), ".", dn)))
+      rndslopes <- stats::setNames(rndslopes, paste0(names(rndslopes), ".", dn))
+      # anything missing? (i.e. correlated slope-intercept slopes)
+      missig_rnd_slope <- setdiff(names(out), names(rndslopes))
+      if (length(missig_rnd_slope)) {
+        # sanity check
+        to_remove <- c()
+        for (j in 1:length(out)) {
+          # identical random slopes might have different names, so
+          # we here check if random slopes from correlated and uncorrelated
+          # are duplicated (i.e. their difference is 0 - including a tolerance)
+          # and then remove duplicated elements
+          the_same <- which(abs(outer(out[j], rndslopes, `-`)) < .0001)
+          if (length(the_same) && grepl(dn[the_same], names(out[j]), fixed = TRUE)) {
+            to_remove <- c(to_remove, j)
+          }
+        }
+        if (length(to_remove)) {
+          out <- out[-to_remove]
+        }
+        out <- c(out, rndslopes)
+      } else {
+        out <- rndslopes
+      }
     }
     out
   }

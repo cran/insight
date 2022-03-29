@@ -34,8 +34,7 @@ find_statistic <- function(x, ...) {
     } else if (x$method == "Wilcoxon signed rank test with continuity correction") {
       stat <- "z-statistic"
     } else {
-      stat <- switch(
-        names(x$statistic),
+      stat <- switch(names(x$statistic),
         t = "t-statistic",
         Z = "z-statistic",
         `Quade F` = ,
@@ -98,7 +97,7 @@ find_statistic <- function(x, ...) {
     "ivreg", "ivFixed", "iv_robust", "ivprobit",
     "lm", "lm_robust", "lm.beta", "lme", "lmerMod", "lmerModLmerTest",
     "lmodel2", "lmRob", "lmrob", "lqm", "lqmm",
-    "maxLik", "mixed", "mhurdle", "mlm", "multinom",
+    "maxLik", "mixed", "mhurdle", "mlm", "multinom", "marginaleffects", "marginaleffects.summary",
     "nlmerMod", "nlrq", "nls",
     "ols", "orcutt",
     "pb1", "pb2", "polr",
@@ -145,6 +144,7 @@ find_statistic <- function(x, ...) {
     "afex_aov", "Anova.mlm", "aov", "aovlist", "anova",
     "Gam",
     "manova", "maov",
+    "svychisq", "svytable",
     "t1way"
   )
 
@@ -345,6 +345,6 @@ find_statistic <- function(x, ...) {
   if (info$family %in% c("Student's-t", "t Family", "gaussian", "Gaussian") || grepl("(\\st)$", info$family)) {
     linear_model <- TRUE
   }
-  tweedie_fam <- grepl("^(tweedie|Tweedie)", info$family) | grepl("^(tweedie|Tweedie)", info$link_function)
+  tweedie_fam <- grepl("tweedie", tolower(info$family), fixed = TRUE) | grepl("tweedie", tolower(info$link_function), fixed = TRUE)
   (linear_model && tweedie_fam) || inherits(model, c("bcplm", "cpglm", "cpglmm", "zcpglm"))
 }

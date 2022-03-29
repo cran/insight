@@ -38,10 +38,10 @@ get_priors.stanreg <- function(x, verbose = TRUE, ...) {
 
   ps <- rstanarm::prior_summary(x)
 
-  l <- .compact_list(lapply(ps[c("prior_intercept", "prior")], function(.x) {
+  l <- compact_list(lapply(ps[c("prior_intercept", "prior")], function(.x) {
     if (!is.null(.x)) {
       # quick and dirty fix for flat priors
-      # else, .compact_list() will set this item as "NA"
+      # else, compact_list() will set this item as "NA"
       if (is.na(.x$dist)) {
         .x$dist <- "uniform"
         .x$location <- 0
@@ -98,8 +98,8 @@ get_priors.stanreg <- function(x, verbose = TRUE, ...) {
   }
   prior_info <- prior_info[, intersect(c("parameter", "dist", "location", "scale", "adjusted_scale"), colnames(prior_info))]
 
-  colnames(prior_info) <- gsub("dist", "distribution", colnames(prior_info))
-  colnames(prior_info) <- gsub("df", "DoF", colnames(prior_info))
+  colnames(prior_info) <- gsub("dist", "distribution", colnames(prior_info), fixed = TRUE)
+  colnames(prior_info) <- gsub("df", "DoF", colnames(prior_info), fixed = TRUE)
 
   priors <- as.data.frame(lapply(prior_info, function(x) {
     if (.is_numeric_character(x)) {
@@ -125,7 +125,7 @@ get_priors.stanmvreg <- function(x, ...) {
 
   ps <- rstanarm::prior_summary(x)
 
-  l <- .compact_list(lapply(ps[c("prior_intercept", "prior")], function(.x) {
+  l <- compact_list(lapply(ps[c("prior_intercept", "prior")], function(.x) {
     lapply(.x, function(.i) {
       if (!is.null(.i)) do.call(cbind, .i)
     })
@@ -152,8 +152,8 @@ get_priors.stanmvreg <- function(x, ...) {
 
   prior_info <- prior_info[, intersect(c("parameter", "dist", "location", "scale", "adjusted_scale", "response"), colnames(prior_info))]
 
-  colnames(prior_info) <- gsub("dist", "distribution", colnames(prior_info))
-  colnames(prior_info) <- gsub("df", "DoF", colnames(prior_info))
+  colnames(prior_info) <- gsub("dist", "distribution", colnames(prior_info), fixed = TRUE)
+  colnames(prior_info) <- gsub("df", "DoF", colnames(prior_info), fixed = TRUE)
 
   priors <- as.data.frame(lapply(prior_info, function(x) {
     if (.is_numeric_character(x)) {
@@ -396,10 +396,10 @@ get_priors.brmsfit <- function(x, verbose = TRUE, ...) {
 get_priors.bcplm <- function(x, ...) {
   params <- setdiff(find_parameters(x, flatten = TRUE), c("phi", "p"))
 
-  location <- eval(parse(text = .safe_deparse(x@call))[[1]]$prior.beta.mean)
+  location <- eval(parse(text = safe_deparse(x@call))[[1]]$prior.beta.mean)
   if (is.null(location)) location <- 0
 
-  scale <- eval(parse(text = .safe_deparse(x@call))[[1]]$prior.beta.var)
+  scale <- eval(parse(text = safe_deparse(x@call))[[1]]$prior.beta.var)
   if (is.null(scale)) scale <- 10000
 
   data.frame(
@@ -485,7 +485,7 @@ get_priors.meta_fixed <- function(x, ...) {
 
 #' @export
 get_priors.BFBayesFactor <- function(x, ...) {
-  prior <- .compact_list(utils::tail(x@numerator, 1)[[1]]@prior[[1]])
+  prior <- compact_list(utils::tail(x@numerator, 1)[[1]]@prior[[1]])
   bf_type <- .classify_BFBayesFactor(x)
 
   prior_names <- switch(bf_type,

@@ -206,7 +206,7 @@ get_parameters.mvord <- function(x,
 
   params <- rbind(params, params_error)
 
-  if (.n_unique(params$Response) == 1) {
+  if (n_unique(params$Response) == 1) {
     params$Response <- NULL
   }
 
@@ -273,4 +273,11 @@ get_parameters.systemfit <- function(x, ...) {
   })
 
   do.call(rbind, out)
+}
+
+#' @export
+get_parameters.marginaleffects <- function(x, ...) {
+  params <- x[!names(x) %in% c("rowid", "type", "std.error", "contrast", "term", "dydx")]
+  params$Estimate <- x$dydx
+  params
 }

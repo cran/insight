@@ -885,25 +885,34 @@ if (requiet("testthat") &&
     test_that("get_predicted", {
 
       # response
-      x <- get_predicted(m1, predict = "expectation", verbose = FALSE)
-      y <- get_predicted(m1, predict = "response")
+      x <- get_predicted(m1, predict = "expectation", verbose = FALSE, include_random = TRUE)
+      y <- get_predicted(m1, predict = "response", include_random = TRUE)
       z <- predict(m1, type = "response")
       expect_equal(x, y, ignore_attr = TRUE)
       expect_equal(x, z, ignore_attr = TRUE)
       expect_equal(y, z, ignore_attr = TRUE)
       expect_error(get_predicted(m1, predict = NULL, type = "response"))
 
+      # should be the same, when include_random = "default"
+      x <- get_predicted(m1, predict = "expectation", verbose = FALSE)
+      y <- get_predicted(m1, predict = "response")
+      z <- predict(m1, type = "response")
+      expect_equal(x, y, ignore_attr = TRUE)
+      expect_equal(x, z, ignore_attr = TRUE)
+      expect_equal(y, z, ignore_attr = TRUE)
+
+
       # link
-      x <- get_predicted(m1, predict = "link")
-      y <- get_predicted(m1, predict = NULL, type = "link")
+      x <- get_predicted(m1, predict = "link", include_random = TRUE)
+      y <- get_predicted(m1, predict = NULL, type = "link", include_random = TRUE)
       z <- predict(m1, type = "link")
       expect_equal(x, y, ignore_attr = TRUE)
       expect_equal(y, z, ignore_attr = TRUE)
       expect_equal(x, z, ignore_attr = TRUE)
 
       # unsupported: zprob
-      x <- suppressWarnings(get_predicted(m1, predict = "zprob"))
-      y <- get_predicted(m1, predict = NULL, type = "zprob")
+      x <- suppressWarnings(get_predicted(m1, predict = "zprob", include_random = TRUE))
+      y <- get_predicted(m1, predict = NULL, type = "zprob", include_random = TRUE)
       z <- predict(m1, type = "zprob")
       expect_equal(x, y)
       expect_equal(x, z, ignore_attr = TRUE)

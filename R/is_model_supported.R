@@ -1,5 +1,4 @@
-#' @title Checks if an object is a regression model object supported in
-#'   \pkg{insight} package.
+#' @title Checks if a regression model object is supported in \pkg{insight} package
 #' @name is_model_supported
 #'
 #' @description Small helper that checks if a model is a *supported*
@@ -10,16 +9,23 @@
 #'
 #' @return A logical, `TRUE` if `x` is a (supported) model object.
 #'
-#' @details This function returns `TRUE` if `x` is a model object
-#'   that works with the package's functions. A list of supported models can
-#'   also be found here: <https://github.com/easystats/insight>.
+#' @details
+#'
+#' This function returns `TRUE` if `x` is a model object that works with the
+#' package's functions. A list of supported models can also be found here:
+#' <https://github.com/easystats/insight>.
 #'
 #' @examples
+#'
 #' data(mtcars)
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #'
 #' is_model_supported(m)
 #' is_model_supported(mtcars)
+#'
+#' # to see all supported models
+#' supported_models()
+#'
 #' @export
 is_model_supported <- function(x) {
   inherits(x, .supported_models_list())
@@ -101,7 +107,7 @@ supported_models <- function() {
     # s ----------------------------
     "Sarlm", "scam", "selection", "sem", "semLm", "semLme", "SemiParBIV", "slm",
     "speedlm", "speedglm", "stanfit", "stanmvreg", "stanreg", "summary.lm",
-    "survfit", "survreg", "svy_vglm", "svyglm", "svyolr",
+    "survfit", "survreg", "svy_vglm", "svychisq", "svyglm", "svyolr",
 
     # t ----------------------------
     "t1way", "tobit", "trimcibt", "truncreg",

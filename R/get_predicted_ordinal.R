@@ -7,7 +7,7 @@ get_predicted.clm <- function(x, predict = "expectation", data = NULL, ...) {
   # appear in `newdata`, predict.clm() returns matrices with predictions for
   # each levels of the response.  When either of those conditions fail,
   # `predict.clm()` returns vectors with only predictions for the actually
-  # observed reponse level in each row.
+  # observed response level in each row.
 
   dots <- list(...)
 
@@ -45,7 +45,8 @@ get_predicted.clm <- function(x, predict = "expectation", data = NULL, ...) {
   )
   pred <- do.call("predict", args)
 
-  out <- .get_predicted_out(pred$fit)
+  args$data <- args$newdata
+  out <- .get_predicted_out(pred$fit, args = args)
 
   # standard error matrix to long format
   if (type_arg == "prob") {
@@ -53,12 +54,12 @@ get_predicted.clm <- function(x, predict = "expectation", data = NULL, ...) {
     se <- as.data.frame(se)
     se$Row <- 1:nrow(se)
     se <- stats::reshape(se,
-                         direction = "long",
-                         varying = setdiff(colnames(se), "Row"),
-                         times = setdiff(colnames(se), "Row"),
-                         v.names = "SE",
-                         timevar = "Response",
-                         idvar = "Row"
+      direction = "long",
+      varying = setdiff(colnames(se), "Row"),
+      times = setdiff(colnames(se), "Row"),
+      v.names = "SE",
+      timevar = "Response",
+      idvar = "Row"
     )
     row.names(se) <- NULL
     attr(out, "ci_data") <- se

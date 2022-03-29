@@ -116,7 +116,8 @@ is_regression_model <- function(x) {
     "meta_fixed", "meta_random", "meta_ordered", "metaplus",
     "mhurdle", "mipo", "mira", "mixed", "mixor", "MixMod", "mjoint",
     "mle", "mle2", "mlergm", "mlm", "mlma", "mlogit", "model_fit",
-    "multinom", "mvmeta", "mvord", "mvr",
+    "multinom", "mvmeta", "mvord", "mvr", "marginaleffects",
+    "marginaleffects.summary",
 
     # n --------------------
     "negbin", "negbinmfx", "negbinirr", "nlreg", "nlrq", "nls",
@@ -140,8 +141,8 @@ is_regression_model <- function(x) {
     # s --------------------
     "Sarlm", "scam", "selection", "sem", "SemiParBIV", "slm", "speedlm",
     "speedglm", "splmm", "spml", "stanmvreg", "stanreg", "summary.lm",
-    "survfit", "survreg", "survPresmooth", "svyglm", "svy_vglm", "svyolr",
-    "systemfit",
+    "survfit", "survreg", "survPresmooth", "svychisq", "svyglm", "svy_vglm",
+    "svyolr", "svytable", "systemfit",
 
     # t --------------------
     "t1way", "t2way", "t3way", "test_mediation", "tobit", "trendPMCMR",

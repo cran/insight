@@ -36,7 +36,7 @@
 #' * `is_survival`: model is a survival model
 #' * `is_zero_inflated`: model has zero-inflation component
 #' * `is_hurdle`: model has zero-inflation component and is a hurdle-model (truncated family distribution)
-#' * `is_dispersion`: model has dispersion component
+#' * `is_dispersion`: model has dispersion component (not only dispersion _parameter_)
 #' * `is_mixed`: model is a mixed effects model (with random effects)
 #' * `is_multivariate`: model is a multivariate response model (currently only works for _brmsfit_ objects)
 #' * `is_trial`: model response contains additional information about the trials
@@ -55,7 +55,6 @@
 #' * `link_function`: the link-function
 #' * `family`: the family-object
 #' * `n_obs`: number of observations
-#' * `model_terms`: a list with all model terms, including terms such as random effects or from zero-inflated model parts.
 #'
 #' @examples
 #' ldose <- rep(0:5, 2)
@@ -96,7 +95,7 @@ model_info.data.frame <- function(x, ...) {
 #' @rdname model_info
 #' @export
 model_info.default <- function(x, verbose = TRUE, ...) {
-  if (inherits(x, "list") && .obj_has_name(x, "gam")) {
+  if (inherits(x, "list") && object_has_names(x, "gam")) {
     x <- x$gam
     class(x) <- c(class(x), c("glm", "lm"))
   }
@@ -144,7 +143,7 @@ model_info.model_fit <- function(x, verbose = TRUE, ...) {
 #' @export
 model_info.anova <- function(x, verbose = TRUE, ...) {
   if (!is.null(attributes(x)$heading) && grepl("Levene's Test", attributes(x)$heading, fixed = TRUE)) {
-    .make_family(x, verbose = verbose)
+    .make_family(x, verbose = verbose, ...)
   } else {
     NULL
   }
@@ -406,7 +405,7 @@ model_info.brmultinom <- model_info.speedglm
 
 #' @export
 model_info.flexsurvreg <- function(x, verbose = TRUE, ...) {
-  dist <- parse(text = .safe_deparse(x$call))[[1]]$dist
+  dist <- parse(text = safe_deparse(x$call))[[1]]$dist
   faminfo <- .make_tobit_family(x, dist)
 
   .make_family(
@@ -644,7 +643,7 @@ model_info.brmsfit <- function(x, ...) {
         logit.link = .x$link == "logit",
         multi.var = TRUE,
         link.fun = .x$link,
-        dispersion = !.is_empty_object(insight::find_formula(x)$sigma),
+        dispersion = !is_empty_object(insight::find_formula(x)$sigma),
         ...
       )
     })
@@ -655,7 +654,7 @@ model_info.brmsfit <- function(x, ...) {
       logit.link = faminfo$link == "logit",
       multi.var = FALSE,
       link.fun = faminfo$link,
-      dispersion = !.is_empty_object(insight::find_formula(x)$sigma),
+      dispersion = !is_empty_object(insight::find_formula(x)$sigma),
       ...
     )
   }
@@ -820,8 +819,8 @@ model_info.merModList <- function(x, ...) {
 
 #' @export
 model_info.cglm <- function(x, ...) {
-  link <- parse(text = .safe_deparse(x$call))[[1]]$link
-  method <- parse(text = .safe_deparse(x$call))[[1]]$method
+  link <- parse(text = safe_deparse(x$call))[[1]]$link
+  method <- parse(text = safe_deparse(x$call))[[1]]$method
 
   if (!is.null(method) && method == "clm") {
     .make_family(x, ...)
@@ -925,7 +924,7 @@ model_info.glmmadmb <- function(x, ...) {
 
 #' @export
 model_info.cpglmm <- function(x, ...) {
-  link <- parse(text = .safe_deparse(x@call))[[1]]$link
+  link <- parse(text = safe_deparse(x@call))[[1]]$link
   if (is.null(link)) link <- "log"
   if (is.numeric(link)) link <- "tweedie"
   .make_family(
@@ -940,7 +939,7 @@ model_info.cpglmm <- function(x, ...) {
 
 #' @export
 model_info.zcpglm <- function(x, ...) {
-  link <- parse(text = .safe_deparse(x@call))[[1]]$link
+  link <- parse(text = safe_deparse(x@call))[[1]]$link
   if (is.null(link)) link <- "log"
   if (is.numeric(link)) link <- "tweedie"
   .make_family(
@@ -1035,14 +1034,17 @@ model_info.glmmTMB <- function(x, ...) {
   check_if_installed("lme4")
 
   faminfo <- stats::family(x)
+  zero_inflated <- !is_empty_object(lme4::fixef(x)$zi)
+
   .make_family(
     x = x,
     fitfam = faminfo$family,
-    zero.inf = !.is_empty_object(lme4::fixef(x)$zi),
-    hurdle = grepl("truncated", faminfo$family),
+    zero.inf = zero_inflated,
+    hurdle = grepl("truncated", faminfo$family, fixed = TRUE),
     logit.link = faminfo$link == "logit",
     link.fun = faminfo$link,
-    dispersion = !.is_empty_object(lme4::fixef(x)$disp),
+    dispersion = !is.null(find_formula(x)$dispersion),
+    glmmtmb_zeroinf = zero_inflated,
     ...
   )
 }
@@ -1237,6 +1239,13 @@ model_info.bfsl <- function(x, verbose = TRUE, ...) {
     verbose = verbose,
     ...
   )
+}
+
+# marginaleffects objects -------------------------------
+
+#' @export
+model_info.marginaleffects <- function(x, ...) {
+  model_info(attributes(x)$model)
 }
 
 
