@@ -180,6 +180,21 @@ get_statistic.afex_aov <- function(x, ...) {
 
 
 #' @export
+get_statistic.anova.rms <- function(x, ...) {
+  out <- data.frame(
+    Parameter = rownames(x),
+    Statistic = as.vector(x[, "Chi-Square"]),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  out <- text_remove_backticks(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
 get_statistic.plm <- get_statistic.default
 
 
@@ -881,6 +896,26 @@ get_statistic.bracl <- function(x, ...) {
   out
 }
 
+#' @export
+get_statistic.deltaMethod <- function(x, ...) {
+  stat <- standardize_names(x)
+
+  if (is.null(stat$Statistic)) {
+    s <- stat$Coefficient / stat$SE
+  } else {
+    s <- stat[["Statistic"]]
+  }
+
+  out <- data.frame(
+    Parameter = rownames(stat),
+    Statistic = s,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
 
 #' @export
 get_statistic.mlogit <- function(x, ...) {
@@ -1256,6 +1291,25 @@ get_statistic.HLfit <- function(x, ...) {
   out <- text_remove_backticks(out)
   attr(out, "statistic") <- find_statistic(x)
   out
+}
+
+
+#' @export
+get_statistic.marginaleffects.summary <- function(x, ...) {
+  out <- data.frame(
+    Parameter = x$term,
+    Statistic = x$statistic,
+    stringsAsFactors = FALSE
+  )
+  out <- text_remove_backticks(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
+get_statistic.marginaleffects <- function(x, ...) {
+  get_statistic(summary(x))
 }
 
 

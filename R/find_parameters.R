@@ -19,6 +19,8 @@
 #' @param ... Currently not used.
 #' @inheritParams find_predictors
 #'
+#' @inheritSection find_predictors Model components
+#'
 #' @return A list of parameter names. For simple models, only one list-element,
 #'    `conditional`, is returned.
 #'
@@ -514,6 +516,18 @@ find_parameters.afex_aov <- function(x, flatten = FALSE, ...) {
     find_parameters(x$aov, flatten = flatten, ...)
   } else {
     find_parameters(x$lm, flatten = flatten, ...)
+  }
+}
+
+
+#' @export
+find_parameters.anova.rms <- function(x, flatten = FALSE, ...) {
+  l <- list(conditional = text_remove_backticks(rownames(x)))
+
+  if (flatten) {
+    unique(unlist(l))
+  } else {
+    l
   }
 }
 

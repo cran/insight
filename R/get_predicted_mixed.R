@@ -1,15 +1,18 @@
 # Mixed Models (lme4, glmmTMB, MixMod, ...) -----------------------------
 # =======================================================================
 
+#' @rdname get_predicted
 #' @export
 get_predicted.lmerMod <- function(x,
                                   data = NULL,
                                   predict = "expectation",
                                   ci = 0.95,
+                                  ci_method = NULL,
                                   include_random = "default",
                                   iterations = NULL,
                                   verbose = TRUE,
                                   ...) {
+
 
   # Sanitize input
   args <- .get_predicted_args(
@@ -17,6 +20,7 @@ get_predicted.lmerMod <- function(x,
     data = data,
     predict = predict,
     ci = ci,
+    ci_method = ci_method,
     include_random = include_random,
     verbose = verbose,
     ...
@@ -57,7 +61,9 @@ get_predicted.lmerMod <- function(x,
   }
 
   # 2. step: confidence intervals
-  ci_data <- get_predicted_ci(x, predictions, data = args$data, ci = ci, ci_type = args$ci_type, ...)
+  ci_data <- get_predicted_ci(x, predictions,data = args$data, ci = ci,
+                              ci_method = ci_method, ci_type = args$ci_type,
+                              ...)
 
   # 3. step: back-transform
   out <- .get_predicted_transform(x, predictions, args, ci_data, verbose = verbose)
@@ -161,7 +167,7 @@ get_predicted.glmmTMB <- function(x,
     out <- list(predictions = predictions, ci_data = ci_data)
   } else {
     # 2. step: confidence intervals
-    ci_data <- .get_predicted_se_to_ci(x, predictions = predictions, se = rez$se.fit, ci = ci)
+    ci_data <- .get_predicted_se_to_ci(x, predictions = predictions, se = rez$se.fit, ci = ci, ...)
 
     # 3. step: back-transform
     out <- .get_predicted_transform(x, predictions, args, ci_data, verbose = verbose)

@@ -6,10 +6,11 @@
 #'   generic description.
 #' @param stop Logical that decides whether the function should stop if the
 #'   needed package is not installed.
-#' @param quietly Logical, if `TRUE`, invisibly returns either `TRUE` if all
-#'   packages are installed, `FALSE` otherwise, and does not stop or throw a
-#'   warning. If `quietly = TRUE`, argument `stop` is ignored. Use this argument
-#'   to internally check for package dependencies without stopping or warnings.
+#' @param quietly Logical, if `TRUE`, invisibly returns a vector of logicals
+#'   (`TRUE` for each installed package, `FALSE` otherwise), and does not stop
+#'   or throw a warning. If `quietly = TRUE`, arguments `stop` and `prompt` are
+#'   ignored. Use this argument to internally check for package dependencies
+#'   without stopping or warnings.
 #' @param prompt If `TRUE`, will prompt the user to install needed package(s).
 #'   Ignored if `quietly = TRUE`.
 #' @param minimum_version A character vector, representing the minimum package
@@ -90,7 +91,7 @@ check_if_installed <- function(package,
   if (!is.null(what_is_wrong) && !quietly) {
     if (prompt) {
       what_you_can_do <- sprintf(
-        "Would you like to %s %s? [y/n]",
+        " Would you like to %s %s? [y/n] ",
         if (grepl("update", what_you_can_do)) "update" else "install",
         if (grepl("them", what_you_can_do)) "them" else "it"
       )

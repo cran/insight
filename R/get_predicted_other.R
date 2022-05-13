@@ -15,6 +15,7 @@ get_predicted.crr <- function(x, verbose = TRUE, ...) {
 # ======================================================================
 
 
+#' @rdname get_predicted
 #' @export
 get_predicted.principal <- function(x, data = NULL, ...) {
   if (is.null(data)) {

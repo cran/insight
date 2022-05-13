@@ -41,8 +41,9 @@
   # offcol <- grep("^(\\(offset\\)|offset\\((.*)\\))", colnames(mf))
 
   offcol <- grepl("(offset)", colnames(mf), fixed = TRUE) | grepl("offset(", colnames(mf), fixed = TRUE)
-  if (length(offcol) && object_has_names(x, "call") && object_has_names(x$call, "offset")) {
-    colnames(mf)[offcol] <- clean_names(safe_deparse(x$call$offset))
+  model_call <- get_call(x)
+  if (length(offcol) && object_has_names(model_call, "offset")) {
+    colnames(mf)[offcol] <- clean_names(safe_deparse(model_call$offset))
   }
 
 
@@ -123,12 +124,26 @@
     # try to get model data from environment
     md <- tryCatch(
       {
-        eval(stats::getCall(x)$data, environment(stats::formula(x)))
+        eval(get_call(x)$data, environment(stats::formula(x)))
       },
       error = function(x) {
         NULL
       }
     )
+
+    # in case we have missing data, the data frame in the environment
+    # has more rows than the model frame
+    if (!is.null(md) && nrow(md) != nrow(mf)) {
+      md <- tryCatch(
+        {
+          md <- .recover_data_from_environment(x)
+          md <- stats::na.omit(md[intersect(colnames(md), find_variables(x, effects = "all", component = "all", flatten = TRUE))])
+        },
+        error = function(e) {
+          NULL
+        }
+      )
+    }
 
     # if data not found in environment,
     # reduce matrix variables into regular vectors
@@ -602,9 +617,10 @@
 .add_zeroinf_data <- function(x, mf, tn) {
   tryCatch(
     {
-      env_data <- eval(x$call$data, envir = parent.frame())[, tn, drop = FALSE]
-      if (object_has_names(x$call, "subset")) {
-        env_data <- subset(env_data, subset = eval(x$call$subset))
+      model_call <- get_call(x)
+      env_data <- eval(model_call$data, envir = parent.frame())[, tn, drop = FALSE]
+      if (object_has_names(model_call, "subset")) {
+        env_data <- subset(env_data, subset = eval(model_call$subset))
       }
 
       .merge_dataframes(env_data, mf, replace = TRUE)
@@ -709,6 +725,14 @@
       NULL
     }
   )
+
+  # sanity check- if data frame is named like a function, e.g.
+  # rep <- data.frame(...), we now have a function instead of the data
+  # we then need to reset "dat" to NULL and search in the global env
+
+  if (!is.null(dat) && !is.data.frame(dat)) {
+    dat <- tryCatch(as.data.frame(dat), error = function(e) NULL)
+  }
 
   if (is.null(dat)) {
     # second try, global env

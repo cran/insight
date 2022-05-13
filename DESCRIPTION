@@ -1,7 +1,7 @@
 Type: Package
 Package: insight
 Title: Easy Access to Model Information for Various Model Objects
-Version: 0.17.0
+Version: 0.17.1
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -36,7 +36,7 @@ Authors@R:
       person(given = "Vincent", 
              family = "Arel-Bundock", 
              email = "vincent.arel-bundock@umontreal.ca", 
-             role = c("ctb"),
+             role = c("aut", "ctb"),
              comment = c(ORCID = "0000-0003-2042-7063")),
       person(given = "Alex",
              family = "Hayes",
@@ -63,21 +63,21 @@ Suggests: AER, afex, aod, BayesFactor, bayestestR, bbmle, bdsmatrix,
         clubSandwich, coxme, cplm, crch, datawizard, effectsize,
         emmeans, epiR, estimatr, feisr, fixest, fungible, gam, gamlss,
         gamm4, gbm, gee, geepack, GLMMadaptive, glmmTMB, gmnl, gt,
-        httr, ivreg, JM, knitr, lavaan, lfe, lme4, lmtest, logistf,
-        MASS, marginaleffects, Matrix, mclust, MCMCglmm, merTools,
-        metaBMA, mgcv, mice, mlogit, multgee, nlme, nnet, nonnest2,
-        ordinal, panelr, parameters, parsnip, performance, plm,
-        poorman, pscl, psych, quantreg, rmarkdown, rms, robustbase,
-        robustlmm, rstanarm (>= 2.21.1), rstantools, rstudioapi,
-        sandwich, speedglm, spelling, splines, statmod, survey,
-        survival, testthat, tripack, truncreg, tweedie, VGAM
+        httr, ivreg, JM, knitr, lavaan, lfe, lme4, lmerTest, lmtest,
+        logistf, MASS, marginaleffects, Matrix, mclust, MCMCglmm,
+        merTools, metaBMA, mgcv, mice, mlogit, mhurdle, multgee, nlme,
+        nnet, nonnest2, ordinal, panelr, parameters, parsnip, pbkrtest,
+        performance, plm, poorman, pscl, psych, quantreg, rmarkdown,
+        rms, robustbase, robustlmm, rstanarm (>= 2.21.1), rstantools,
+        rstudioapi, sandwich, speedglm, spelling, splines, statmod,
+        survey, survival, testthat, tripack, truncreg, tweedie, VGAM
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
 RoxygenNote: 7.1.2
 Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2022-03-23 17:57:24 UTC; Daniel
+Packaged: 2022-05-04 07:25:12 UTC; DL
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @strengejacke),
   Dominique Makowski [aut, ctb] (<https://orcid.org/0000-0001-5375-9967>,
@@ -89,7 +89,8 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     (<https://orcid.org/0000-0002-4287-4801>),
   Brenton M. Wiernik [aut] (<https://orcid.org/0000-0001-9560-6336>,
     @bmwiernik),
-  Vincent Arel-Bundock [ctb] (<https://orcid.org/0000-0003-2042-7063>),
+  Vincent Arel-Bundock [aut, ctb]
+    (<https://orcid.org/0000-0003-2042-7063>),
   Alex Hayes [rev] (<https://orcid.org/0000-0002-4985-5160>)
 Repository: CRAN
-Date/Publication: 2022-03-29 06:40:05 UTC
+Date/Publication: 2022-05-13 09:00:02 UTC
