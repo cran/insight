@@ -5,7 +5,6 @@
                                verbose = TRUE,
                                tolerance = 1e-5,
                                model_component = "conditional") {
-
   ## Original code taken from GitGub-Repo of package glmmTMB
   ## Author: Ben Bolker, who used an cleaned-up/adapted
   ## version of Jon Lefcheck's code from SEMfit
@@ -170,7 +169,6 @@
                                       name_fun = "get_variances",
                                       verbose = TRUE,
                                       model_component = "conditional") {
-
   # installed?
   check_if_installed("lme4", reason = "to compute variances for mixed models")
 
@@ -482,14 +480,12 @@
   # and the related link-function
 
   if (faminfo$is_linear && !faminfo$is_tweedie) {
-
     # linear / Gaussian ----
     # ----------------------
 
     dist.variance <- sig^2
   } else {
     if (faminfo$is_betabinomial) {
-
       # beta-binomial ----
       # ------------------
 
@@ -501,7 +497,6 @@
         .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
       )
     } else if (faminfo$is_binomial) {
-
       # binomial / bernoulli  ----
       # --------------------------
 
@@ -513,7 +508,6 @@
         .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
       )
     } else if (faminfo$is_count) {
-
       # count  ----
       # -----------
 
@@ -523,7 +517,6 @@
         .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
       )
     } else if (faminfo$family %in% c("Gamma", "gamma")) {
-
       # Gamma  ----
       # -----------
 
@@ -536,7 +529,6 @@
         .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
       )
     } else if (faminfo$family == "beta") {
-
       # Beta  ----
       # ----------
 
@@ -545,7 +537,6 @@
         .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
       )
     } else if (faminfo$is_tweedie) {
-
       # Tweedie  ----
       # -------------
 
@@ -986,7 +977,7 @@
   } else {
     corrs <- lapply(vals$vc, attr, "correlation")
     rho01 <- sapply(corrs, function(i) {
-      if (!is.null(i)) {
+      if (!is.null(i) && colnames(i)[1] == "(Intercept)") {
         i[-1, 1]
       } else {
         NULL
@@ -1006,13 +997,31 @@
   corrs <- lapply(vals$vc, attr, "correlation")
   rnd_slopes <- unlist(find_random_slopes(x))
 
-  if (length(rnd_slopes) < 2) {
+  # check if any categorical random slopes. we then have
+  # correlation among factor levels
+  cat_random_slopes <- tryCatch(
+    {
+      d <- get_data(x)[rnd_slopes]
+      any(sapply(d, is.factor))
+    },
+    error = function(e) {
+      NULL
+    }
+  )
+
+  # check if any polynomial / I term in random slopes.
+  # we then have correlation among levels
+  rs_names <- unique(unlist(lapply(corrs, colnames)))
+  pattern <- paste0("(I|poly)(.*)(", paste0(rnd_slopes, collapse = "|"), ")")
+  poly_random_slopes <- any(grepl(pattern, rs_names))
+
+  if (length(rnd_slopes) < 2 && !isTRUE(cat_random_slopes) && !isTRUE(poly_random_slopes)) {
     return(NULL)
   }
 
-  rho01 <- tryCatch(
+  rho00 <- tryCatch(
     {
-      lapply(corrs, function(d) {
+      compact_list(lapply(corrs, function(d) {
         d[upper.tri(d, diag = TRUE)] <- NA
         d <- as.data.frame(d)
 
@@ -1020,10 +1029,14 @@
         d <- d[stats::complete.cases(d), ]
         d <- d[!d$Parameter1 %in% c("Intercept", "(Intercept)"), ]
 
+        if (nrow(d) == 0) {
+          return(NULL)
+        }
+
         d$Parameter <- paste0(d$Parameter1, "-", d$Parameter2)
         d$Parameter1 <- d$Parameter2 <- NULL
         stats::setNames(d$Value, d$Parameter)
-      })
+      }))
     },
     error = function(e) {
       NULL
@@ -1048,7 +1061,7 @@
   #   }
   # )
 
-  unlist(rho01)
+  unlist(rho00)
 }
 
 

@@ -107,7 +107,6 @@ clean_names.character <- function(x, include_names = FALSE, ...) {
                                        ignore_asis = FALSE,
                                        ignore_lag = FALSE,
                                        is_emmeans = FALSE) {
-
   # return if x is empty
   if (.is_empty_string(x)) {
     return("")
@@ -117,10 +116,10 @@ clean_names.character <- function(x, include_names = FALSE, ...) {
   # for survival, remove strata(), and so on...
   pattern <- c(
     "as.factor", "as.numeric", "factor", "frailty", "offset", "log1p", "log10",
-    "log2", "log(log", "scale(log", "log", "lag", "diff", "lspline",
-    "pspline", "scale(poly", "poly", "catg", "asis", "matrx", "pol", "strata",
-    "strat", "scale", "scored", "interaction", "sqrt", "sin", "cos", "tan",
-    "acos", "asin", "atan", "atan2", "exp", "lsp", "rcs", "pb", "lo",
+    "log2", "log(log", "scale(log", "log", "lag", "diff", "lspline", "as.logical",
+    "logical", "pspline", "scale(poly", "poly", "catg", "asis", "matrx", "pol",
+    "strata", "strat", "scale", "scored", "interaction", "sqrt", "sin", "cos",
+    "tan", "acos", "asin", "atan", "atan2", "exp", "lsp", "rcs", "pb", "lo",
     "bs", "ns", "mSpline", "bSpline", "t2", "te", "ti", "tt", # need to be fixed first "mmc", "mm",
     "mi", "mo", "gp", "s", "I"
   )
@@ -165,6 +164,19 @@ clean_names.character <- function(x, include_names = FALSE, ...) {
           p <- paste0("^", pattern[j], "\\((.*)\\).*")
           g <- trim_ws(sub(p, "\\1", x[i]))
           x[i] <- trim_ws(unlist(strsplit(g, ",")))
+        } else if (pattern[j] == "s" && grepl("^s\\(", x[i])) {
+          x[i] <- gsub("^s\\(", "", x[i])
+          x[i] <- gsub("\\)$", "", x[i])
+          if (grepl("=|[[:digit:]]", x[i])) {
+            new_x <- trim_ws(unlist(strsplit(x[i], ",")))
+            to_remove <- which(!grepl("\\D", new_x))
+            to_remove <- c(to_remove, which(grepl("=", new_x)))
+            if (length(to_remove) == 0) {
+              x[i] <- paste(new_x, collapse = ", ")
+            } else {
+              x[i] <- paste(new_x[-to_remove], collapse = ", ")
+            }
+          }
         } else {
           # p <- paste0("^", pattern[j], "\\(([^,/)]*).*")
           # this one should be more generic...

@@ -5,11 +5,10 @@
                                 predict = "expectation",
                                 include_random = "default",
                                 include_smooth = TRUE,
-                                ci = 0.95,
+                                ci = NULL,
                                 ci_method = NULL,
                                 verbose = TRUE,
                                 ...) {
-
   # First step, check whether "predict" or type argument is used -------------
   ############################################################################
 
@@ -54,6 +53,25 @@
   # Data
   if (!is.null(dots$newdata) && is.null(data)) data <- dots$newdata
   if (is.null(data)) data <- get_data(x, verbose = verbose)
+
+
+  # Intermediate step, check data classes  ------
+  ############################################################################
+
+  tryCatch(
+    {
+      data_classes <- attributes(stats::terms(x))$dataClasses
+      if (any(grepl("matrix", data_classes, fixed = TRUE)) && isTRUE(verbose)) {
+        message(format_message(
+          "Some of the variables were in matrix-format - probably you used 'scale()' on your data?",
+          "If so, and you get an error, please try 'datawizard::standardize()' to standardize your data."
+        ))
+      }
+    },
+    error = function(e) {
+
+    }
+  )
 
 
   # Second step, evaluate "predict" argument                      ------------
@@ -129,7 +147,7 @@
     transform <- FALSE
 
     # linear models are always on response scale (there is no other)
-  } else if (info$is_linear) {
+  } else if (info$is_linear && !info$is_gam) {
     type_arg <- "response"
     scale_arg <- "response"
     transform <- FALSE
@@ -238,7 +256,6 @@
 
   # only check and yield warnings when random effects are requested.
   if ((isTRUE(include_random) || identical(include_random, "default")) && !is.null(data) && !is.null(x)) {
-
     # get random effect terms
     re_terms <- find_random(x, flatten = TRUE)
 
@@ -253,7 +270,6 @@
       }
       include_random <- FALSE
     } else if (!allow_new_levels) {
-
       # we have random effects in data, but do we also have new levels?
       # get data of random effects from the model, and compare random effect
       # variables with data provided by the user - all values/levels need to

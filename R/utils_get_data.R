@@ -4,7 +4,6 @@
 # variables transformed during model fitting are not included in this data frame
 #
 .prepare_get_data <- function(x, mf, effects = "fixed", verbose = TRUE) {
-
   # check if we have any data yet
   if (is_empty_object(mf)) {
     if (isTRUE(verbose)) {
@@ -120,7 +119,6 @@
   # model frame and convert them to regular data frames, give
   # proper column names and bind them back to the original model frame
   if (any(mc)) {
-
     # try to get model data from environment
     md <- tryCatch(
       {
@@ -133,7 +131,7 @@
 
     # in case we have missing data, the data frame in the environment
     # has more rows than the model frame
-    if (!is.null(md) && nrow(md) != nrow(mf)) {
+    if (isTRUE(!is.null(md) && nrow(md) != nrow(mf))) {
       md <- tryCatch(
         {
           md <- .recover_data_from_environment(x)
@@ -148,7 +146,6 @@
     # if data not found in environment,
     # reduce matrix variables into regular vectors
     if (is.null(md)) {
-
       # we select the non-matrix variables and convert matrix-variables into
       # regular data frames, then binding them together
       mf_matrix <- mf[, which(mc), drop = FALSE]
@@ -164,7 +161,6 @@
       mf_matrix <- do.call(cbind, mf_list)
       mf <- cbind(mf_nonmatrix, mf_matrix)
     } else {
-
       # fix NA in column names
       if (any(is.na(colnames(md)))) {
         colnames(md) <- make.names(colnames(md))
@@ -203,7 +199,6 @@
         # no further processing for survival models
         mf <- md
       } else {
-
         # get cleaned variable names for those variables
         # that we still need from the original model frame
         needed.vars <- compact_character(unique(clean_names(needed.vars)))
@@ -292,12 +287,13 @@
   }
 
 
-  # restore original data for factors -----------------------------------------
+  # restore original data for factors and logicals -----------------------------
 
   # are there any factor variables that have been coerced "on-the-fly",
   # using "factor()" or "as.factor()"? if so, get names and convert back
   # to numeric later
   factors <- colnames(mf)[grepl("^(as\\.factor|as_factor|factor|as\\.ordered|ordered)\\((.*)\\)", colnames(mf))]
+  logicals <- colnames(mf)[grepl("^(as\\.logical|as_logical|logical)\\((.*)\\)", colnames(mf))]
 
   ## TODO check! some lines above (see "mos_eisly"). monotonic terms are removed from the model frame
 
@@ -401,6 +397,7 @@
     effects,
     component = "all",
     factors = factors,
+    logicals = logicals,
     interactions = interactions,
     verbose = verbose
   )
@@ -413,8 +410,14 @@
 
 # add remainng variables with special pattern -------------------------------
 
-.add_remaining_missing_variables <- function(model, mf, effects, component, factors = NULL, interactions = NULL, verbose = TRUE) {
-
+.add_remaining_missing_variables <- function(model,
+                                             mf,
+                                             effects,
+                                             component,
+                                             factors = NULL,
+                                             logicals = NULL,
+                                             interactions = NULL,
+                                             verbose = TRUE) {
   # check if data argument was used
   model_call <- get_call(model)
   if (!is.null(model_call)) {
@@ -488,6 +491,16 @@
       }
     }
     attr(mf, "factors") <- factors
+  }
+
+  # add attributes for those that were logicals
+  if (length(logicals)) {
+    logicals <- gsub("^(as\\.logical|as_logical|logical)\\((.*)\\)", "\\2", logicals)
+    for (i in logicals) {
+      mf[[i]] <- as.numeric(mf[[i]])
+      attr(mf[[i]], "logical") <- TRUE
+    }
+    attr(mf, "logicals") <- logicals
   }
 
   # add attribute that subset is used
