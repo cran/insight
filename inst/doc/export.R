@@ -97,7 +97,7 @@ export_table(x, caption = list("Table 1", "Table 2", "Table 3"))
 
 # add attribute to *each* data frame
 out <- x
-for (i in 1:length(out)) {
+for (i in seq_along(out)) {
   attr(out[[i]], "table_caption") <- paste("Table", i)
 }
 export_table(out)
@@ -111,7 +111,7 @@ export_table(
 )
 
 out <- x
-for (i in 1:length(out)) {
+for (i in seq_along(out)) {
   attr(out[[i]], "table_caption") <- paste("Table", i)
   attr(out[[i]], "table_footer") <- paste("Footer", i, "\n\n")
 }

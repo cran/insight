@@ -1,7 +1,7 @@
 Type: Package
 Package: insight
 Title: Easy Access to Model Information for Various Model Objects
-Version: 0.18.0
+Version: 0.18.2
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -70,14 +70,14 @@ Suggests: AER, afex, aod, BayesFactor, bayestestR, bbmle, bdsmatrix,
         performance, plm, poorman, pscl, psych, quantreg, rmarkdown,
         rms, robustbase, robustlmm, rstanarm (>= 2.21.1), rstantools,
         rstudioapi, sandwich, speedglm, splines, statmod, survey,
-        survival, testthat, tripack, truncreg, tweedie, VGAM
+        survival, testthat, truncreg, tweedie, VGAM
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.1
 Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2022-07-05 12:07:53 UTC; Daniel
+Packaged: 2022-08-10 06:14:38 UTC; Daniel
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @strengejacke),
   Dominique Makowski [aut, ctb] (<https://orcid.org/0000-0001-5375-9967>,
@@ -93,4 +93,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     (<https://orcid.org/0000-0003-2042-7063>),
   Alex Hayes [rev] (<https://orcid.org/0000-0002-4985-5160>)
 Repository: CRAN
-Date/Publication: 2022-07-05 12:50:02 UTC
+Date/Publication: 2022-08-10 11:50:06 UTC
