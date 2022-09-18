@@ -120,13 +120,8 @@
   # proper column names and bind them back to the original model frame
   if (any(mc)) {
     # try to get model data from environment
-    md <- tryCatch(
-      {
-        eval(get_call(x)$data, environment(stats::formula(x)))
-      },
-      error = function(x) {
-        NULL
-      }
+    md <- tryCatch(eval(model_call$data, environment(stats::formula(x))),
+      error = function(x) NULL
     )
 
     # in case we have missing data, the data frame in the environment
@@ -245,13 +240,8 @@
     }
 
     # check if we really have all formula terms in our model frame now
-    pv <- tryCatch(
-      {
-        find_predictors(x, effects = effects, flatten = TRUE, verbose = verbose)
-      },
-      error = function(x) {
-        NULL
-      }
+    pv <- tryCatch(find_predictors(x, effects = effects, flatten = TRUE, verbose = verbose),
+      error = function(x) NULL
     )
 
     # still some undetected matrix-variables?
@@ -442,7 +432,7 @@
   )
 
   # include subset variables
-  subset_vars <- tryCatch(all.vars(get_call(model)$subset), error = function(e) NULL)
+  subset_vars <- tryCatch(all.vars(model_call$subset), error = function(e) NULL)
   missing_vars <- unique(c(setdiff(predictors, colnames(mf)), subset_vars))
 
   # check if missing variables can be recovered from the environment,
@@ -600,13 +590,17 @@
 
   if (is_empty_object(dat)) {
     if (isTRUE(verbose)) {
-      warning(format_message(sprintf("Data frame is empty, probably component '%s' does not exist in the %s-part of the model?", component, effects)), call. = FALSE)
+      warning(format_message(
+        sprintf("Data frame is empty, probably component `%s` does not exist in the %s-part of the model?", component, effects)
+      ), call. = FALSE)
     }
     return(NULL)
   }
 
   if (length(still_missing) && isTRUE(verbose)) {
-    warning(format_message(sprintf("Following potential variables could not be found in the data: %s", paste0(still_missing, collapse = " ,"))), call. = FALSE)
+    warning(format_message(
+      sprintf("Following potential variables could not be found in the data: %s", paste0(still_missing, collapse = " ,"))
+    ), call. = FALSE)
   }
 
   if ("(offset)" %in% colnames(mf) && !("(offset)" %in% colnames(dat))) {
@@ -965,7 +959,8 @@
         columns <- lapply(data_call, eval)
 
         # preserve table data for McNemar
-        if (!grepl(" (and|by) ", x$data.name) && (grepl("^McNemar", x$method) || (length(columns) == 1 && is.matrix(columns[[1]])))) {
+        if (!grepl(" (and|by) ", x$data.name) &&
+          (grepl("^McNemar", x$method) || (length(columns) == 1 && is.matrix(columns[[1]])))) {
           return(as.table(columns[[1]]))
           # check if data is a list for kruskal-wallis
         } else if (grepl("^Kruskal-Wallis", x$method) && length(columns) == 1 && is.list(columns[[1]])) {
@@ -985,7 +980,7 @@
         if (all(grepl("(.*)\\$(.*)", data_name)) && length(data_name) == length(colnames(d))) {
           colnames(d) <- gsub("(.*)\\$(.*)", "\\2", data_name)
         } else if (ncol(d) > 2) {
-          colnames(d) <- paste0("x", 1:ncol(d))
+          colnames(d) <- paste0("x", seq_len(ncol(d)))
         } else if (ncol(d) == 2) {
           colnames(d) <- c("x", "y")
         } else {

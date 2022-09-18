@@ -20,8 +20,8 @@ get_predicted.gam <- function(x,
       if (verbose) {
         warning(
           format_message(
-            "`predict='prediction'` is currently not available for GAM models.",
-            "Changing to `predict='expectation'`."
+            "`predict=\"prediction\"` is currently not available for GAM models.",
+            "Changing to `predict=\"expectation\"`."
           ),
           call. = FALSE
         )
@@ -108,11 +108,12 @@ get_predicted.gamlss <- function(x,
                                  verbose = TRUE,
                                  ...) {
   get_predicted.default(x,
-                        data = NULL,
-                        predict = "expectation",
-                        ci = NULL,
-                        include_smooth = include_smooth,
-                        iterations = iterations,
-                        verbose = FALSE,
-                        ...)
+    data = NULL,
+    predict = "expectation",
+    ci = NULL,
+    include_smooth = include_smooth,
+    iterations = iterations,
+    verbose = FALSE,
+    ...
+  )
 }

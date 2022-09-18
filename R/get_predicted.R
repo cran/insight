@@ -21,15 +21,32 @@
 #' @param x A statistical model (can also be a data.frame, in which case the
 #'   second argument has to be a model).
 #' @param data An optional data frame in which to look for variables with which
-#'   to predict. If omitted, the data used to fit the model is used. Visualization matrices can be generated using [get_datagrid()].
+#'   to predict. If omitted, the data used to fit the model is used. Visualization
+#'   matrices can be generated using [get_datagrid()].
 #' @param predict string or `NULL`
-#' * `"link"` returns predictions on the model's link-scale (for logistic models, that means the log-odds scale) with a confidence interval (CI).
-#' * `"expectation"` (default) also returns confidence intervals, but this time the output is on the response scale (for logistic models, that means probabilities).
-#' * `"prediction"` also gives an output on the response scale, but this time associated with a prediction interval (PI), which is larger than a confidence interval (though it mostly make sense for linear models).
-#' * `"classification"` only differs from `"prediction"` for binomial models where it additionally transforms the predictions into the original response's type (for instance, to a factor).
-#' * Other strings are passed directly to the `type` argument of the `predict()` method supplied by the modelling package.
-#' * When `predict = NULL`, alternative arguments such as `type` will be captured by the `...` ellipsis and passed directly to the `predict()` method supplied by the modelling package. Note that this might result in conflicts with multiple matching `type` arguments - thus, the recommendation is to use the `predict` argument for those values.
-#' * Notes: You can see the 4 options for predictions as on a gradient from "close to the model" to "close to the response data": "link", "expectation", "prediction", "classification". The `predict` argument modulates two things: the scale of the output and the type of certainty interval. Read more about in the **Details** section below.
+#' * `"link"` returns predictions on the model's link-scale (for logistic models,
+#'   that means the log-odds scale) with a confidence interval (CI).
+#' * `"expectation"` (default) also returns confidence intervals, but this time
+#'   the output is on the response scale (for logistic models, that means
+#'   probabilities).
+#' * `"prediction"` also gives an output on the response scale, but this time
+#'   associated with a prediction interval (PI), which is larger than a confidence
+#'   interval (though it mostly make sense for linear models).
+#' * `"classification"` only differs from `"prediction"` for binomial models
+#'   where it additionally transforms the predictions into the original response's
+#'   type (for instance, to a factor).
+#' * Other strings are passed directly to the `type` argument of the `predict()`
+#'   method supplied by the modelling package.
+#' * When `predict = NULL`, alternative arguments such as `type` will be captured
+#'   by the `...` ellipsis and passed directly to the `predict()` method supplied
+#'   by the modelling package. Note that this might result in conflicts with
+#'   multiple matching `type` arguments - thus, the recommendation is to use the
+#'   `predict` argument for those values.
+#' * Notes: You can see the 4 options for predictions as on a gradient from
+#'   "close to the model" to "close to the response data": "link", "expectation",
+#'   "prediction", "classification". The `predict` argument modulates two things:
+#'   the scale of the output and the type of certainty interval. Read more about
+#'   in the **Details** section below.
 #' @param iterations For Bayesian models, this corresponds to the number of
 #'   posterior draws. If `NULL`, will return all the draws (one for each
 #'   iteration of the model). For frequentist models, if not `NULL`, will
@@ -65,12 +82,15 @@
 #'   other models (e.g., `glm`), prediction intervals are somewhat useless
 #'   (for instance, for a binomial model for which the dependent variable is a
 #'   vector of 1s and 0s, the prediction interval is... `[0, 1]`).
-#' @param ci_method The method for computing p values and confidence intervals. Possible values depend on model type.
+#' @param ci_method The method for computing p values and confidence intervals.
+#'   Possible values depend on model type.
 #'   + `NULL` uses the default method, which varies based on the model type.
 #'   + Most frequentist models: `"normal"` (default).
 #'   + Bayesian models:  `"quantile"`  (default), `"hdi"`, `"eti"`, and `"spi"`.
-#'   + Mixed effects **lme4** models: `"normal"` (default), `"satterthwaite"`, and `"kenward"`.
-#' @param dispersion_method Bootstrap dispersion and Bayesian posterior summary: `"sd"` or `"mad"`.
+#'   + Mixed effects **lme4** models: `"normal"` (default), `"satterthwaite"`, and
+#'     `"kenward"`.
+#' @param dispersion_method Bootstrap dispersion and Bayesian posterior summary:
+#'   `"sd"` or `"mad"`.
 #' @param ... Other argument to be passed, for instance to `get_predicted_ci()`.
 #' @inheritParams get_varcov
 #' @inheritParams get_df
@@ -266,7 +286,7 @@ get_predicted.default <- function(x,
 get_predicted.data.frame <- function(x, data = NULL, verbose = TRUE, ...) {
   # This makes it pipe friendly; data %>% get_predicted(model)
   if (is.null(data)) {
-    stop("Please provide a model to base the estimations on.")
+    stop("Please provide a model to base the estimations on.", call. = FALSE)
   } else {
     get_predicted(data, x, verbose = verbose, ...)
   }
@@ -314,6 +334,7 @@ get_predicted.lm <- function(x,
     data = args$data,
     ci = ci,
     ci_type = args$ci_type,
+    verbose = verbose,
     ...
   )
 
@@ -544,7 +565,7 @@ get_predicted.afex_aov <- function(x, data = NULL, ...) {
           warning(format_message(
             "Could not apply Delta method to transform standard errors.",
             "You may be able to obtain standard errors by using the ",
-            '`predict="link"` argument value.'
+            "`predict=\"link\"` argument value."
           ), call. = FALSE)
         }
       } else {

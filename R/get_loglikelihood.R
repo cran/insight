@@ -98,6 +98,25 @@ get_loglikelihood.glmerMod <- function(x, check_response = FALSE, verbose = TRUE
 get_loglikelihood.glmmTMB <- get_loglikelihood.lmerMod
 
 #' @export
+get_loglikelihood.mblogit <- function(x, verbose = TRUE, ...) {
+  .loglikelihood_prep_output(
+    x,
+    lls = stats::logLik(x),
+    check_response = FALSE,
+    verbose = verbose,
+    REML = FALSE,
+    lls2 = .per_observation_ll(x),
+    ...
+  )
+}
+
+#' @export
+get_loglikelihood.mclogit <- get_loglikelihood.mblogit
+
+#' @export
+get_loglikelihood.mlogit <- get_loglikelihood.mblogit
+
+#' @export
 get_loglikelihood.model_fit <- function(x,
                                         estimator = "ML",
                                         REML = FALSE,
@@ -164,7 +183,7 @@ get_loglikelihood.afex_aov <- function(x, ...) {
   } else if (estimator == "ml") {
     s2 <- (s * sqrt(get_df(x, type = "residual") / n_obs(x)))^2
   } else {
-    stop("'estimator' should be one of 'ML', 'REML' or 'OLS'.")
+    stop("'estimator' should be one of 'ML', 'REML' or 'OLS'.", call. = FALSE)
   }
   # Get individual log-likelihoods
   lls <- 0.5 * (log(w) - (log(2 * pi) + log(s2) + (w * res^2) / s2))
@@ -196,7 +215,10 @@ get_loglikelihood.afex_aov <- function(x, ...) {
 
   # Calculate Log Likelihoods depending on the family
   lls <- switch(fam,
-    binomial = {
+    binomial = ,
+    categorical = ,
+    multinomial = ,
+    ordinal = {
       stats::dbinom(round(n * resp), round(n), predicted, log = TRUE) * w
     },
     quasibinomial = {
@@ -396,7 +418,7 @@ get_loglikelihood.cpglm <- get_loglikelihood.plm
       } else {
         out[1] <- out[1] + ll_adjustment
         if (isTRUE(list(...)$REML) && isTRUE(verbose)) {
-          warning(format_message("Log-likelihood is corrected for models with transformed response. However, this ignores 'REML=TRUE'. Log-likelihood value is probably inaccurate."), call. = FALSE)
+          warning(format_message("Log-likelihood is corrected for models with transformed response. However, this ignores `REML=TRUE`. Log-likelihood value is probably inaccurate."), call. = FALSE)
         }
       }
     }

@@ -21,8 +21,8 @@ get_predicted_se <- function(x,
       check_if_installed("pbkrtest")
       vcovmat <- as.matrix(pbkrtest::vcovAdj(x))
     } else {
-      msg <- 'The `vcov` argument cannot be used together with the `ci_method="kenward-roger"` argument.'
-      stop(format_message(msg))
+      msg <- "The `vcov` argument cannot be used together with the `ci_method=\"kenward-roger\"` argument."
+      stop(format_message(msg), call. = FALSE)
     }
 
     # all other varcov types can be supplied manually
@@ -47,10 +47,8 @@ get_predicted_se <- function(x,
     keep <- intersect(colnames(mm), colnames(vcovmat))
     vcovmat <- vcovmat[keep, keep, drop = FALSE]
     mm <- mm[, keep, drop = FALSE]
-
   } else if (inherits(x, c("multinom", "brmultinom", "bracl", "mixor", "fixest"))) {
-
-    ## TODO this currently doesn't work...
+    ## BUG this currently doesn't work...
 
     # models like multinom have "level:termname" as column name
     # remove response level to match column names of model matrix
@@ -59,7 +57,7 @@ get_predicted_se <- function(x,
     vcovmat <- vcovmat[colnames(vcovmat) %in% keep, colnames(vcovmat) %in% keep, drop = FALSE]
     mm <- mm[, keep, drop = FALSE]
 
-  # sometimes, model matrix and vcov won't match exactly, so try some hacks here
+    # sometimes, model matrix and vcov won't match exactly, so try some hacks here
   } else if (ncol(mm) != ncol(vcovmat)) {
     # last desperate try
     if (ncol(mm) == nrow(mm) && ncol(vcovmat) > ncol(mm) && all(colnames(mm) %in% colnames(vcovmat))) {
@@ -69,7 +67,6 @@ get_predicted_se <- function(x,
 
       matching_parameters <- stats::na.omit(match(colnames(vcovmat), colnames(mm)))
       vcovmat <- vcovmat[matching_parameters, matching_parameters, drop = FALSE]
-
     } else {
       # model matrix rows might mismatch. we need a larger model matrix and
       # then filter those rows that match the vcov matrix.
@@ -126,14 +123,14 @@ get_predicted_se <- function(x,
 # Get Model matrix ------------------------------------------------------------
 
 .get_predicted_ci_modelmatrix <- function(x, data = NULL, vcovmat = NULL, verbose = TRUE, ...) {
-  resp <- find_response(x)
+  resp <- find_response(x, combine = FALSE)
   if (is.null(vcovmat)) vcovmat <- get_varcov(x, ...)
 
 
   if (is.null(data)) {
     mm <- get_modelmatrix(x)
   } else {
-    if (!all(resp %in% colnames(data))) data[[resp]] <- 0 # fake response
+    if (!all(resp %in% colnames(data))) data[resp] <- 0 # fake response
     # else, model.matrix below fails, e.g. for log-terms
     attr(data, "terms") <- NULL
 
@@ -145,7 +142,8 @@ get_predicted_se <- function(x,
     if (inherits(x, c("zeroinfl", "hurdle", "zerotrunc", "MixMod"))) {
       # model terms, required for model matrix
       model_terms <- tryCatch(stats::terms(x),
-                              error = function(e) find_formula(x)$conditional)
+        error = function(e) find_formula(x)$conditional
+      )
 
       all_terms <- find_terms(x)$conditional
       off_terms <- grepl("^offset\\((.*)\\)", all_terms)
@@ -172,8 +170,9 @@ get_predicted_se <- function(x,
       }
       obj <- model_terms
 
-    # extra handling for polr
-    } else if (inherits(x, c("polr", "multinom", "brmultinom", "bracl"))) { # mixor, fixest?
+      # extra handling for polr
+    } else if (inherits(x, c("polr", "multinom", "brmultinom", "bracl"))) {
+      # mixor, fixest?
       # model terms, required for model matrix
       obj <- tryCatch(stats::terms(x), error = function(e) find_formula(x)$conditional)
     } else {

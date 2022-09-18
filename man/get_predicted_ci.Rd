@@ -33,7 +33,8 @@ second argument has to be a model).}
 \code{\link[=get_predicted]{get_predicted()}}).}
 
 \item{data}{An optional data frame in which to look for variables with which
-to predict. If omitted, the data used to fit the model is used. Visualization matrices can be generated using \code{\link[=get_datagrid]{get_datagrid()}}.}
+to predict. If omitted, the data used to fit the model is used. Visualization
+matrices can be generated using \code{\link[=get_datagrid]{get_datagrid()}}.}
 
 \item{se}{Numeric vector of standard error of predicted values. If \code{NULL},
 standard errors are calculated based on the variance-covariance matrix.}
@@ -57,15 +58,18 @@ other models (e.g., \code{glm}), prediction intervals are somewhat useless
 (for instance, for a binomial model for which the dependent variable is a
 vector of 1s and 0s, the prediction interval is... \verb{[0, 1]}).}
 
-\item{ci_method}{The method for computing p values and confidence intervals. Possible values depend on model type.
+\item{ci_method}{The method for computing p values and confidence intervals.
+Possible values depend on model type.
 \itemize{
 \item \code{NULL} uses the default method, which varies based on the model type.
 \item Most frequentist models: \code{"normal"} (default).
 \item Bayesian models:  \code{"quantile"}  (default), \code{"hdi"}, \code{"eti"}, and \code{"spi"}.
-\item Mixed effects \strong{lme4} models: \code{"normal"} (default), \code{"satterthwaite"}, and \code{"kenward"}.
+\item Mixed effects \strong{lme4} models: \code{"normal"} (default), \code{"satterthwaite"}, and
+\code{"kenward"}.
 }}
 
-\item{dispersion_method}{Bootstrap dispersion and Bayesian posterior summary: \code{"sd"} or \code{"mad"}.}
+\item{dispersion_method}{Bootstrap dispersion and Bayesian posterior summary:
+\code{"sd"} or \code{"mad"}.}
 
 \item{vcov}{Variance-covariance matrix used to compute uncertainty estimates (e.g., for robust standard errors). This argument accepts a covariance matrix, a function which returns a covariance matrix, or a string which identifies the function to be used to compute the covariance matrix.
 \itemize{

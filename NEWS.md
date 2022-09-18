@@ -1,4 +1,58 @@
-# insight 0.18.1
+# insight 0.18.3
+
+## New functions
+
+* `format_alert()`, `format_warning()` and `format_error()`, as convenient
+  wrappers around `message()`, `warning()` or `stop()` in combination with
+  `format_message()`. You can use these funcionts to format messages, warnings
+  or errors.
+
+## Changes to functions
+
+* `get_predicted()` for models of class `clm` now includes confidence intervals
+  of predictions.
+
+* `format_message()` gets some additional formatting features. See 'Details'
+  in `?format_message` for more information and some current limitations.
+
+* `format_message()` gets an `indent` argument, to specify indention string
+  for subsequent lines.
+
+* `format_table()` now merges IC and IC weights columns into one column (e.g.,
+  former columns `"AIC"` and `"AIC_wt"` will now be printed as one column, named
+  `"AIC (weights)"`). Furthermore, an `ic_digits` argument was added to control
+  the number of significant digits for the IC values.
+
+* `print_color()` and `color_text()` now support bright variants of colors and
+  background colors.
+
+* `get_datagrid()` gets more options for `at` and `range`, to provide more
+  control how to generate the reference grid.
+
+* `get_data()` for models of class `geeglm` and `fixest`now more reliably
+  retrieves the model data.
+
+## New supported models
+
+* Support for models of class `mblogit` and `mclogit`.
+
+## Bug fixes
+
+* Fixed issues with wrong attribute `adjusted_for` in `insight::get_datagrid()`.
+
+* Fixed issue (resp. implemented workaround) in `get_data.iv_robust()`, which
+  failed due to a bug in the _estimatr_ package.
+
+* Fixed issue where `get_predicted()` failed when data contains factors with 
+  only one or incomplete levels.
+
+* Fixed issue in `get_predicted()` for models of class `mlm`.
+
+* Fixed issue where `get_predicted()` failed to compute confidence intervals
+  of predictions when model contained matrix-alike response columns, e.g. a 
+  response variable created with `cbind()`.
+
+# insight 0.18.2
 
 ## New functions
 
