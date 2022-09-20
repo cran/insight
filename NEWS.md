@@ -1,3 +1,17 @@
+# insight 0.18.4
+
+## Changes to functions
+
+* `model_info()` now includes information for `htest` objects from
+  `shapiro.test()` and `bartlett.test()` (will return `$is_variancetest = TRUE`).
+
+## Bug fixes
+
+* Fixed issue in `get_data()` which did not correctly backtransform to original
+  data when terms had log-transformations such as `log(1 + x)` or `log(x + 1)`.
+
+* Fixed CRAN check issues.
+
 # insight 0.18.3
 
 ## New functions

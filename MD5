@@ -1,6 +1,6 @@
-4366888efa274285cd67f2e2b5f1fcaa *DESCRIPTION
+e6e086022f42aca9bc437c6a4321138a *DESCRIPTION
 cba76ae0bd2c828ff7403746f4c8fca2 *NAMESPACE
-a8e04c8019d6839db5acb198809078e3 *NEWS.md
+b29fadcb645af1625dea97e7d8f1aa22 *NEWS.md
 bba58453a87266ccea313f698e08396f *R/all_equal_models.R
 2f7ea7421031b712de63db4ea77e6e41 *R/backports.R
 7c229f552c3ca47441b045612715d09e *R/check_if_installed.R
@@ -32,7 +32,7 @@ d48200d6fd869bc7aa10f1e5a853aa30 *R/find_predictors.R
 9b5cf7fa10ec1eda61cedbffdb2776c0 *R/find_smooth.R
 3c1f793775f7aa427d304b4c7aa53581 *R/find_statistic.R
 706fb4b786f615c5548e8e35faa1985f *R/find_terms.R
-98f3c8066632ce8b18413cdc710f8217 *R/find_transformation.R
+fea8dad2788a04b085d3e58cdf841a37 *R/find_transformation.R
 137468949215482b8bc79f25f2679549 *R/find_variables.R
 32ae7808b32f170e780e973d9fc1bbe5 *R/find_weights.R
 d995cd8ab637e77c8ad33700054dc5ec *R/fish.R
@@ -105,7 +105,7 @@ cb9b5e5c88727048de49473d81cf8824 *R/is_model.R
 084cb9ae6ca15e1364f269f1349bfe8e *R/is_nullmodel.R
 6d69a65ff1ee1ae050ee23afd2bd24f1 *R/link_function.R
 bbaaf19147aa5b57b92c9b61f14b83c5 *R/link_inverse.R
-0681bc895e95463b9f0c4c60a9714d49 *R/model_info.R
+8f0e573450a88f81e2be6e8c636f3209 *R/model_info.R
 a41622d74678a9289a2eeeb1d02d3c4f *R/model_name.R
 61291381215bfb1a324860cd5b5e3b13 *R/n_obs.R
 d5af2bd56bfda2a50dd520a758ff79ec *R/n_parameters.R
@@ -118,17 +118,17 @@ e1c9a5889fdec6456bf259eca102873f *R/standardize_column_order.R
 b67a6ca5d89c73c02dd02c7946b61682 *R/text_remove_backticks.R
 7de665e33f38661112e6fd8b2e528918 *R/utilities.R
 c13eec7611b773f35088a9a329526320 *R/utils_compact.R
-bb6c9ba2777b815a2f7c4ef80441cbb9 *R/utils_get_data.R
-87c2a01ec3edfb2b1f163b920f85aee6 *R/utils_model_info.R
+56f6baea59ac079ab257720bc28ed114 *R/utils_get_data.R
+82bffa546044e6668fa7c0f069df9ff4 *R/utils_model_info.R
 e7b8816db7ba30641ba6bd2dbbf683a5 *R/utils_object.R
-6a43d2c4d107e6768e19eeb3348bf1cf *README.md
+4873ed338470faf52dd49aaa3ee5d8cf *README.md
 afbe4209b3bb961ba3e41cbfe79ea507 *build/partial.rdb
 a485ef460609c7cd25da64677275accb *build/vignette.rds
 fed293a745c7a75939e2f2156aaa9afe *data/fish.RData
 b2ef4148f3d981813f57432a2c54184d *inst/CITATION
 9ad82336089fd50a03f75cc71a2263e2 *inst/doc/display.R
 6cad3200353f47674c91bb012f07bbec *inst/doc/display.Rmd
-401517c42691ecea9461fdabcc4f2371 *inst/doc/display.html
+8b1155cf04d12787ac566bc69b681639 *inst/doc/display.html
 ae54307ad2e78972d7356c56f5cba13a *inst/doc/export.R
 b370275914b68836324f33f97059f4f7 *inst/doc/export.Rmd
 f30af7e7c3132038e5cead985ab33dd1 *inst/doc/export.html
@@ -226,7 +226,7 @@ d086dbb9e9bb49defd27aee58d168ccd *man/is_nested_models.Rd
 0659e8b49606883c9e1d8c25752f40a9 *man/is_nullmodel.Rd
 61ba3c5a235f160c86ccfe31f34b4cb5 *man/link_function.Rd
 f7ba7f9579be510fe2ed50310bbda223 *man/link_inverse.Rd
-0c8eea508c28c813e8c31b21677f3023 *man/model_info.Rd
+0640d81f65d93de901ad618b06bb1ee1 *man/model_info.Rd
 f201710f95fdb338bf3d45fab2068213 *man/model_name.Rd
 2c7dbcbbf74f5daa940d6045f38b5cfd *man/n_obs.Rd
 d7575e72e1e92a01059d20bca753d6d0 *man/n_parameters.Rd
@@ -284,7 +284,7 @@ aee230674045b9bbf62d538e831ab5bc *tests/testthat/test-find_random.R
 ff3bb4faa85f5b4007827f7d8cb0c9c7 *tests/testthat/test-find_response.R
 82611e39123e32fda6075673bedef4e9 *tests/testthat/test-find_smooth.R
 38f703a325ad10fe036202e6a53d73fb *tests/testthat/test-find_terms.R
-1434849fa1aa7bb496708003dcec3f46 *tests/testthat/test-find_transformation.R
+9122c7ff2a363487c6aa092d1146fbf7 *tests/testthat/test-find_transformation.R
 18415da30e51256974c869f38540cb30 *tests/testthat/test-fixest.R
 ccd704bc064a015b697f2478d7a91092 *tests/testthat/test-format.R
 e241acece6b749631e26d3fbcd331598 *tests/testthat/test-format_capitalize.R
@@ -298,7 +298,7 @@ a5cbb33a8ab29d9db5c7f3834720be8b *tests/testthat/test-gamm.R
 5ec2dc616a18ff27b6afa7c1d5edd571 *tests/testthat/test-gee.R
 3819c528203b0fa854b56860d958864d *tests/testthat/test-geeglm.R
 bf1764fa032892a0ce853365fe7f2ffc *tests/testthat/test-get_auxiliary.R
-51ada2d0517d9f26bc7e55e0a620dc68 *tests/testthat/test-get_data.R
+b0f829743e9b3961c58c3ef44adb382a *tests/testthat/test-get_data.R
 a77cc82e287ec4fd9f3a68d8ee153aab *tests/testthat/test-get_datagrid.R
 e9320a2c3ef2d347f3d880e7769e274d *tests/testthat/test-get_deviance.R
 d548bf532317b0ee3e75f2900e161f0f *tests/testthat/test-get_loglikelihood.R
@@ -317,7 +317,7 @@ fa06fd70e4b3061a741729fa015d1ea8 *tests/testthat/test-glmmTMB.R
 7b88409aa36f25c9fab9df4e6be06466 *tests/testthat/test-gls.R
 ed9fadc6cef6e6310d5fd62be9cafae5 *tests/testthat/test-gmnl.R
 c6d5a1fd6a15c45f0a4417af5fe2ae58 *tests/testthat/test-has_intercept.R
-e6d8a387767cb2cce34e7b4f371bf0f9 *tests/testthat/test-htest.R
+d87ef4d3ab0a8fcf5db5d7545d1f4445 *tests/testthat/test-htest.R
 965c174e75e132768cd385adeb5b79b4 *tests/testthat/test-hurdle.R
 3471968a2a04dd44d28dde4fc1e60f49 *tests/testthat/test-is-empty-object.R
 44760509beb61c0ed85dff7d1023c655 *tests/testthat/test-is_converged.R
@@ -337,7 +337,7 @@ ca01b4985eeac3eff9ad73ee95316bff *tests/testthat/test-logistf.R
 4c9f3c17590e4aec76f1712e68eb630e *tests/testthat/test-metaBMA.R
 cb5c0a50d7b1dc1eebf9cd089c653a7d *tests/testthat/test-mhurdle.R
 5d4e1641e850c9f6a44fbbedc5457705 *tests/testthat/test-mixed.R
-43de0afa8804821898bc141efa7b7558 *tests/testthat/test-mlogit.R
+2dd8ed7c69e57ffaad8fd28667b6c640 *tests/testthat/test-mlogit.R
 957bcd62d4b806071e498126eafc2ba9 *tests/testthat/test-model_data.R
 f58aa27914f6a0deac1799870bd6c6cd *tests/testthat/test-model_info.R
 830c3d7683dc92cbaf9e659a35744b74 *tests/testthat/test-multinom.R
@@ -362,7 +362,7 @@ c4a90cf9aeb062d22691f69050a8d854 *tests/testthat/test-rlm.R
 47aef691ba1247b0949e1b88209b6bf1 *tests/testthat/test-rms.R
 3c8896d29c24fc3d532c10dd598ce612 *tests/testthat/test-rq.R
 1a4be0ab468b4c5fd7e1d774802da7ce *tests/testthat/test-rqss.R
-270744db8dc1e29b876c9133724bfd92 *tests/testthat/test-rstanarm.R
+0fc4c8c52cfb029974f8e131c33b1a71 *tests/testthat/test-rstanarm.R
 ef7c6e6c54a8cdc5372872a34fe4a5bc *tests/testthat/test-spatial.R
 d6180896847b7b6b96328b7a7463db21 *tests/testthat/test-speedglm.R
 720097c1fe24899e3d401bf60dc85b36 *tests/testthat/test-speedlm.R
