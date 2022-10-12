@@ -41,7 +41,24 @@ df %>%
   format_table()
 
 ## -----------------------------------------------------------------------------
-cat(export_table(df))
+x <- data.frame(
+  phi_adjusted = .3,
+  Glass_delta = .4,
+  Epsilon2 = .7,
+  R2 = 0.4
+)
+
+# standard output
+format_table(x)
+
+# column names of effect sizes as symbols
+format_table(x, use_symbols = TRUE)
+
+## -----------------------------------------------------------------------------
+export_table(format_table(x, use_symbols = TRUE))
+
+## -----------------------------------------------------------------------------
+export_table(df)
 
 ## -----------------------------------------------------------------------------
 export_table(df, format = "md")

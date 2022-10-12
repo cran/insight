@@ -1,7 +1,7 @@
 Type: Package
 Package: insight
 Title: Easy Access to Model Information for Various Model Objects
-Version: 0.18.4
+Version: 0.18.5
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -42,7 +42,12 @@ Authors@R:
              family = "Hayes",
              role = c("rev"),
              email = "alexpghayes@gmail.com",
-             comment = c(ORCID = "0000-0002-4985-5160")))
+             comment = c(ORCID = "0000-0002-4985-5160")),
+      person(given = "Grant",
+             family = "McDermott",
+             role = c("ctb"),
+             email = "grantmcd@uoregon.edu",
+             comment = c(ORCID = "0000-0001-7883-8573")))
 Maintainer: Daniel Lüdecke <d.luedecke@uke.de>
 Description: A tool to provide an easy, intuitive and consistent
     access to information contained in various R models, like model
@@ -63,14 +68,15 @@ Suggests: AER, afex, aod, BayesFactor, bayestestR, bbmle, bdsmatrix,
         clubSandwich, coxme, cplm, crch, datawizard, effectsize,
         emmeans, epiR, estimatr, feisr, fixest, fungible, gam, gamlss,
         gamm4, gbm, gee, geepack, GLMMadaptive, glmmTMB, gmnl, gt,
-        httr, ivreg, JM, knitr, lavaan, lfe, lme4, lmerTest, lmtest,
-        logistf, MASS, marginaleffects, Matrix, mclogit, mclust,
-        MCMCglmm, merTools, metaBMA, mgcv, mice, mlogit, mhurdle,
-        multgee, nlme, nnet, nonnest2, ordinal, panelr, parameters,
-        parsnip, pbkrtest, performance, plm, poorman, pscl, psych,
-        quantreg, rmarkdown, rms, robustbase, robustlmm, rstanarm (>=
-        2.21.1), rstantools, rstudioapi, sandwich, speedglm, splines,
-        statmod, survey, survival, testthat, truncreg, tweedie, VGAM
+        httr, ivreg, JM, knitr, lavaan, lavaSearch2, lfe, lme4,
+        lmerTest, lmtest, logistf, MASS, marginaleffects, Matrix,
+        mclogit, mclust, MCMCglmm, merTools, metaBMA, mgcv, mice,
+        mlogit, mhurdle, multgee, nlme, nnet, nonnest2, ordinal,
+        panelr, parameters, parsnip, pbkrtest, performance, plm,
+        poorman, pscl, psych, quantreg, rmarkdown, rms, robustbase,
+        robustlmm, rstanarm (>= 2.21.1), rstantools, rstudioapi,
+        sandwich, speedglm, splines, statmod, survey, survival,
+        testthat, truncreg, tweedie, VGAM
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
@@ -79,7 +85,7 @@ Config/testthat/edition: 3
 Config/Needs/website: rstudio/bslib, r-lib/pkgdown,
         easystats/easystatstemplate
 NeedsCompilation: no
-Packaged: 2022-09-20 13:21:35 UTC; Daniel
+Packaged: 2022-10-12 10:31:09 UTC; Daniel
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @strengejacke),
   Dominique Makowski [aut, ctb] (<https://orcid.org/0000-0001-5375-9967>,
@@ -93,6 +99,7 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @bmwiernik),
   Vincent Arel-Bundock [aut, ctb]
     (<https://orcid.org/0000-0003-2042-7063>),
-  Alex Hayes [rev] (<https://orcid.org/0000-0002-4985-5160>)
+  Alex Hayes [rev] (<https://orcid.org/0000-0002-4985-5160>),
+  Grant McDermott [ctb] (<https://orcid.org/0000-0001-7883-8573>)
 Repository: CRAN
-Date/Publication: 2022-09-20 22:30:02 UTC
+Date/Publication: 2022-10-12 11:22:33 UTC
