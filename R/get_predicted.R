@@ -316,11 +316,29 @@ get_predicted.lm <- function(x,
                              iterations = NULL,
                              verbose = TRUE,
                              ...) {
-  args <- .get_predicted_args(x, data = data, predict = predict, verbose = verbose, ...)
 
   predict_function <- function(x, data, ...) {
-    stats::predict(x, newdata = data, interval = "none", type = args$type, se.fit = FALSE, ...)
+    stats::predict(x, newdata = data, interval = "none",
+                   type = args$type, se.fit = FALSE, ...)
   }
+
+  # 0. step: convert matrix variable types attributes to numeric, if necessary
+  dataClasses <- attributes(x[["terms"]])$dataClasses
+  # see https://github.com/easystats/insight/pull/671
+  if ("nmatrix.1" %in% dataClasses) {
+    dataClasses[dataClasses == "nmatrix.1"] <- "numeric"
+    attributes(x$terms)$dataClasses <- dataClasses
+    attributes(attributes(x$model)$terms)$dataClasses <- dataClasses
+    x$model[] <- lapply(x$model, function(x) {
+      if (all(class(x) == c("matrix", "array"))) {
+        as.numeric(x)
+      } else {
+        x
+      }
+    })
+  }
+
+  args <- .get_predicted_args(x, data = data, predict = predict, verbose = verbose, ...)
 
   # 1. step: predictions
   if (is.null(iterations)) {

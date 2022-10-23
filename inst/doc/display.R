@@ -40,7 +40,7 @@ df %>%
   mutate(p = format_p(p, stars = TRUE)) %>%
   format_table()
 
-## -----------------------------------------------------------------------------
+## ----eval=.Platform$OS.type == "windows"--------------------------------------
 x <- data.frame(
   phi_adjusted = .3,
   Glass_delta = .4,
@@ -54,7 +54,7 @@ format_table(x)
 # column names of effect sizes as symbols
 format_table(x, use_symbols = TRUE)
 
-## -----------------------------------------------------------------------------
+## ----eval=.Platform$OS.type == "windows"--------------------------------------
 export_table(format_table(x, use_symbols = TRUE))
 
 ## -----------------------------------------------------------------------------
