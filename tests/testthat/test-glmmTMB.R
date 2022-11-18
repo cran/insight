@@ -917,7 +917,7 @@ if (requiet("testthat") &&
     )
   })
 
-  if (!osx) {
+  if (!osx && packageVersion("glmmTMB") > "1.1.4") {
     test_that("get_predicted", {
       # response
       x <- get_predicted(m1, predict = "expectation", verbose = FALSE, include_random = TRUE)
@@ -926,7 +926,7 @@ if (requiet("testthat") &&
       expect_equal(x, y, ignore_attr = TRUE)
       expect_equal(x, z, ignore_attr = TRUE)
       expect_equal(y, z, ignore_attr = TRUE)
-      expect_error(get_predicted(m1, predict = NULL, type = "response"))
+      get_predicted(m1, predict = NULL, type = "response")
 
       # should be the same, when include_random = "default"
       x <- get_predicted(m1, predict = "expectation", verbose = FALSE)

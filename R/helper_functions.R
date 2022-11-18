@@ -352,18 +352,18 @@
 
 .grep_smoothers <- function(x) {
   startsWith(x, "s(") |
-  startsWith(x, "ti(") |
-  startsWith(x, "te(") |
-  startsWith(x, "t2(") |
-  startsWith(x, "gam::s(") |
-  startsWith(x, "VGAM::s(") |
-  startsWith(x, "mgcv::s(") |
-  startsWith(x, "mgcv::ti(") |
-  startsWith(x, "mgcv::t2(") |
-  startsWith(x, "mgcv::te(") |
-  startsWith(x, "brms::s(") |
-  startsWith(x, "brms::t2") |
-  startsWith(x, "smooth_sd[")
+    startsWith(x, "ti(") |
+    startsWith(x, "te(") |
+    startsWith(x, "t2(") |
+    startsWith(x, "gam::s(") |
+    startsWith(x, "VGAM::s(") |
+    startsWith(x, "mgcv::s(") |
+    startsWith(x, "mgcv::ti(") |
+    startsWith(x, "mgcv::t2(") |
+    startsWith(x, "mgcv::te(") |
+    startsWith(x, "brms::s(") |
+    startsWith(x, "brms::t2") |
+    startsWith(x, "smooth_sd[")
 }
 
 
@@ -539,7 +539,8 @@
     return(as.numeric(x))
   }
 
-  if (anyNA(suppressWarnings(as.numeric(as.character(stats::na.omit(x)))))) {
+  x_no_na <- x[!is.na(x)]
+  if (anyNA(suppressWarnings(as.numeric(as.character(x_no_na))))) {
     if (is.character(x)) {
       x <- as.factor(x)
     }

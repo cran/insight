@@ -1,8 +1,33 @@
-# insight 0.18.6
+# insight 0.18.7
+
+## General
+
+* Minor revisions to `get_predicted.glmmTMB()` due to changes in behaviour
+  of `predict.glmmTMB()` for truncated-family models since _glmmTMB_ 1.1.5.
+  
+* New function `has_single_value()` that is equivalent to `length(unique()) == 1`
+  (or `n_unique() == 1`) but faster.
+
+## Changes to functions
+
+* `ellipses_info()` now includes an attribute `$is_binomial`, which is `TRUE`
+  for each model from binomial family.
 
 ## Bug fixes
 
-* Better dectection of unicode-support, to avoid failures when building
+* Fixed behaviour of the `at` argument in `get_datagrid()`.
+
+* Fixed issue for accessing model data in `get_datagrid()` for some edge cases.
+
+# insight 0.18.6
+
+## New supported models
+
+* Support the *logitr* package: `get_data()`, `find_variables()` and more.
+
+## Bug fixes
+
+* Better detection of unicode-support, to avoid failures when building
   vignettes.
 
 * `get_predicted()` now correctly handles variables of class numeric matrix
@@ -11,8 +36,6 @@
 
 * Fixed issue with `iterations` argument in `get_predicted()` with _brms_
   models.
-
-* Support the *logitr* package: `get_data()`, `find_variables()` and more.
 
 # insight 0.18.5
 

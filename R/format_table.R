@@ -113,7 +113,8 @@ format_table <- function(x,
     # remove strings with NA names
     att$pretty_names <- att$pretty_names[!is.na(names(att$pretty_names))]
     if (length(att$pretty_names) != length(x$Parameter)) {
-      match_pretty_names <- stats::na.omit(match(names(att$pretty_names), x$Parameter))
+      match_pretty_names <- match(names(att$pretty_names), x$Parameter)
+      match_pretty_names <- match_pretty_names[!is.na(match_pretty_names)]
       if (length(match_pretty_names)) {
         x$Parameter[match_pretty_names] <- att$pretty_names[x$Parameter[match_pretty_names]]
       }
@@ -122,7 +123,8 @@ format_table <- function(x,
       if (!anyNA(match_pretty_names)) {
         x$Parameter <- att$pretty_names[x$Parameter]
       } else {
-        match_pretty_names <- stats::na.omit(match(names(att$pretty_names), x$Parameter))
+        match_pretty_names <- match(names(att$pretty_names), x$Parameter)
+        match_pretty_names <- match_pretty_names[!is.na(match_pretty_names)]
         if (length(match_pretty_names)) {
           x$Parameter[match_pretty_names] <- att$pretty_names[x$Parameter[match_pretty_names]]
         }
@@ -220,7 +222,8 @@ format_table <- function(x,
     x$Link <- paste(x$To, x$Operator, x$From)
 
     col_position <- which(names(x) == "To")
-    x <- x[c(names(x)[0:(col_position - 1)], "Link", names(x)[col_position:(length(names(x)) - 1)])] # Replace at initial position
+    # Replace at initial position
+    x <- x[c(names(x)[0:(col_position - 1)], "Link", names(x)[col_position:(length(names(x)) - 1)])]
     x$To <- x$Operator <- x$From <- NULL
   }
 
@@ -244,7 +247,6 @@ format_table <- function(x,
 # like bayestestR (p_ROPE, p_MAP) or performance (p_Chi2)
 
 .format_p_values <- function(x, stars = FALSE, p_digits) {
-
   # Specify stars for which column
   if (is.character(stars)) {
     starlist <- list("p" = FALSE)
@@ -275,8 +277,8 @@ format_table <- function(x,
   }
 
   for (stats in c(
-    "p_CochransQ", "p_Omnibus", "p_Chi2", "p_Baseline", "p_RMSEA",
-    "p_ROPE", "p_MAP", "Wu_Hausman_p", "Sargan_p", "p_Omega2", "p_LR"
+    "p_CochransQ", "p_Omnibus", "p_Chi2", "p_Baseline", "p_RMSEA", "p_ROPE",
+    "p_MAP", "Wu_Hausman_p", "Sargan_p", "p_Omega2", "p_LR", "p_calibrated"
   )) {
     if (stats %in% names(x)) {
       x[[stats]] <- format_p(
@@ -409,7 +411,8 @@ format_table <- function(x,
       if (is.character(x$df)) {
         x$df[x$df == ""] <- NA_character_
       }
-      df <- stats::na.omit(unique(x$df))
+      df <- unique(x$df)
+      df <- df[!is.na(df)]
       if (length(df) == 1 && !all(is.infinite(df))) {
         names(x)[names(x) == stats] <- paste0(stats, "(", df, ")")
         x$df <- NULL
@@ -418,7 +421,8 @@ format_table <- function(x,
       if (is.character(x$df_error)) {
         x$df_error[x$df_error == ""] <- NA_character_
       }
-      df <- stats::na.omit(unique(x$df_error))
+      df <- unique(x$df_error)
+      df <- df[!is.na(df)]
       if (length(df) == 1 && !all(is.infinite(df))) {
         names(x)[names(x) == stats] <- paste0(stats, "(", df, ")")
         x$df_error <- NULL
@@ -429,7 +433,8 @@ format_table <- function(x,
   for (stats in c("Baseline", "Chi2")) {
     df_col <- paste0(stats, "_df")
     if (stats %in% names(x) && df_col %in% names(x)) {
-      df <- stats::na.omit(unique(x[[df_col]]))
+      df <- unique(x[[df_col]])
+      df <- df[!is.na(df)]
       if (length(df) == 1 && !all(is.infinite(df))) {
         names(x)[names(x) == stats] <- paste0(stats, "(", df, ")")
         x[[df_col]] <- NULL
@@ -462,13 +467,14 @@ format_table <- function(x,
 
   if (length(ci_low) >= 1 && length(ci_low) == length(ci_high)) {
     if (!is.null(ci_value)) {
-      if (length(unique(stats::na.omit(ci_value))) > 1) {
-        ci_value <- unique(stats::na.omit(ci_value))
+      ci_value <- ci_value[!is.na(ci_value)]
+      if (n_unique(ci_value) > 1) {
+        ci_value <- unique(ci_value)
       } else {
-        ci_value <- unique(stats::na.omit(ci_value))[1]
+        ci_value <- unique(ci_value)[1]
       }
     } else if (!is.null(x$CI)) {
-      ci_value <- unique(stats::na.omit(x$CI))[1]
+      ci_value <- unique(x$CI[!is.na(x$CI)])[1]
     } else {
       # all these edge cases... for some objects in "parameters::model_parameters()",
       # when we have multiple ci-levels, column names can be "CI_low_0.8" or
@@ -558,7 +564,7 @@ format_table <- function(x,
       x[[paste0(i, "_CI")]] <- NULL
     }
   } else {
-    other_ci_colname <- c()
+    other_ci_colname <- NULL
   }
 
   list(x = x, other_ci_colname = other_ci_colname)
@@ -658,7 +664,6 @@ format_table <- function(x,
                                   ci_width = "auto",
                                   ci_brackets = TRUE,
                                   exact = TRUE) {
-
   # Specify stars for which column
   if (is.character(stars)) {
     starlist <- list("BF" = FALSE, "pd" = FALSE)
@@ -707,7 +712,8 @@ format_table <- function(x,
     x$Prior <- trim_ws(gsub("( +- )", "", x$Prior, fixed = TRUE))
 
     col_position <- which(names(x) == "Prior_Distribution")
-    x <- x[c(names(x)[0:(col_position - 1)], "Prior", names(x)[col_position:(length(names(x)) - 1)])] # Replace at initial position
+    # Replace at initial position
+    x <- x[c(names(x)[0:(col_position - 1)], "Prior", names(x)[col_position:(length(names(x)) - 1)])]
     x$Prior_Distribution <- x$Prior_Location <- x$Prior_Scale <- x$Prior_df <- NULL
   }
 

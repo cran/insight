@@ -2,7 +2,7 @@
                                      newdata,
                                      predictions,
                                      nsim = NULL,
-                                     ci = .95) {
+                                     ci = 0.95) {
   # Since the zero inflation and the conditional model are working in "opposite
   # directions", confidence intervals can not be derived directly  from the
   # "predict()"-function. Thus, confidence intervals are based on quantiles
@@ -34,6 +34,7 @@
     return(NULL)
   }
 
+  ## FIXME: Need to check whether this also works for truncated families, see #681
   sims <- link_inverse(model)(out$cond) * (1 - stats::plogis(out$zi))
   ci <- (1 + ci) / 2
 

@@ -159,18 +159,27 @@
 
     # type = "response" always on link-scale - for later back-transformation
   } else if (predict %in% c("expectation", "response", "prediction", "classification")) {
-    if (inherits(x, c("hurdle", "zeroinfl", "zerotrunc"))) {
-      # pscl: hurdle/zeroinfl and countreg
-      type_arg <- "count"
-    } else if (inherits(x, "coxph")) {
-      # survival: coxph
-      type_arg <- "lp"
+    # exception for glmmTMB with truncated family - behaviour changed to
+    # correct conditional and response predictions for truncated distributions
+    # https://github.com/glmmTMB/glmmTMB/issues/634
+    if (inherits(x, "glmmTMB") && isTRUE(info$is_hurdle)) {
+      type_arg <- "response"
+      scale_arg <- "response"
+      transform <- FALSE
     } else {
-      # default behaviour for "response"
-      type_arg <- "link"
+      if (inherits(x, c("hurdle", "zeroinfl", "zerotrunc"))) {
+        # pscl: hurdle/zeroinfl and countreg
+        type_arg <- "count"
+      } else if (inherits(x, "coxph")) {
+        # survival: coxph
+        type_arg <- "lp"
+      } else {
+        # default behaviour for "response"
+        type_arg <- "link"
+      }
+      scale_arg <- "response"
+      transform <- TRUE
     }
-    scale_arg <- "response"
-    transform <- TRUE
 
     # link-scale
   } else if (predict == "link") {
@@ -230,7 +239,7 @@
   if (!is.null(smooths)) {
     for (smooth in smooths) {
       # Fix smooth to average value
-      if (!smooth %in% names(data) || include_smooth == FALSE) {
+      if (!smooth %in% names(data) || !include_smooth) {
         include_smooth <- FALSE
         data[[smooth]] <- mean(get_data(x)[[smooth]], na.rm = TRUE)
       }

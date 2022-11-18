@@ -76,6 +76,17 @@ if (requiet("testthat") && requiet("insight") && getRversion() >= "4.0.0") {
     dg <- insight::get_datagrid(m, c("Species", "Petal.Width"))
     expect_equal(colnames(dg), c("Species", "Petal.Width", "Petal.Length"))
   })
+
+
+  # list-argument
+  test_that("get_datagrid - list-argument", {
+    at <- list(Sepal.Length = c(3, 5), Species = c("versicolor", "virginica"))
+    dg1 <- get_datagrid(iris, at = at)
+    at <- c("Sepal.Length = c(3, 5)", "Species = c('versicolor', 'virginica')")
+    dg2 <- get_datagrid(iris, at = at)
+
+    expect_equal(dg1, dg2, tolerance = 1e-4)
+  })
 }
 
 
@@ -171,6 +182,15 @@ if (requiet("testthat") && requiet("insight") && requiet("gamm4") && getRversion
     expect_equal(dim(get_datagrid(mod, include_random = FALSE, include_smooth = "fixed")), c(10, 2))
     expect_equal(dim(get_datagrid(mod, include_random = FALSE, include_smooth = FALSE)), c(10, 1))
 
+    # MGCV, splines with variables, see #678
+    data(mtcars)
+    mod <- mgcv::gam(mpg ~ s(wt, k = 3), data = mtcars)
+    out1 <- insight::get_datagrid(mod)
+    k <- 3
+    mod <- mgcv::gam(mpg ~ s(wt, k = k), data = mtcars)
+    out2 <- insight::get_datagrid(mod)
+    expect_equal(out1, out2, ignore_attr = TRUE, tolerance = 1e-4)
+
 
     # STAN_GAMM4
     mod <- suppressWarnings(rstanarm::stan_gamm4(Petal.Length ~ Petal.Width + s(Sepal.Length), random = ~ (1 | Species), data = iris, iter = 100, chains = 2, refresh = 0))
@@ -230,7 +250,7 @@ if (requiet("testthat") && requiet("insight") && requiet("gamm4") && getRversion
       "504", "505", "506", "507", "508", "509", "510"
     ), class = "data.frame")
 
-    model <- glm(lfp ~ k618 + wc + hc + inc, data = d, family = binomial(link = "logit"))
+    model <- suppressWarnings(glm(lfp ~ k618 + wc + hc + inc, data = d, family = binomial(link = "logit")))
 
     expect_warning(
       insight::get_datagrid(
