@@ -1,9 +1,9 @@
-64a9a3606bb43a935e7cff8efa3f0b95 *DESCRIPTION
+822bba96d1a72ca890dcea3a2a2b231d *DESCRIPTION
 ee1a21514e4d28a1a30dcbeea2a37034 *NAMESPACE
-52c3666a897a13eb9f97ed1904724b69 *NEWS.md
+340321119f152975b3b0b3166ab0b35f *NEWS.md
 bba58453a87266ccea313f698e08396f *R/all_equal_models.R
 2f7ea7421031b712de63db4ea77e6e41 *R/backports.R
-7c229f552c3ca47441b045612715d09e *R/check_if_installed.R
+d33432600769c6d03763d9fc3eb629ad *R/check_if_installed.R
 eac8170a3f8d7f5077dd03c12fb76776 *R/clean_names.R
 a5705a4d61e00075f02ec7de49e4d45a *R/clean_parameters.R
 23f2381e719d4f40e51b62ea916c7f44 *R/color_if.R
@@ -39,7 +39,7 @@ d995cd8ab637e77c8ad33700054dc5ec *R/fish.R
 3b25a3a5ee667b90f5397dcbc2802779 *R/format_bf.R
 bbab85ec6f9a8e39f99ce1ae40eb1437 *R/format_capitalize.R
 2f8d619bb201117281203f9a6ce320d2 *R/format_ci.R
-fdc16c9a3bed9e0e2c5ee21851418ba4 *R/format_message.R
+8f14836b65c1efbc87417f248dc91aed *R/format_message.R
 9eee96cb863034de74756713fbe46939 *R/format_number.R
 d14788bdb5279b9e278f149bb4377368 *R/format_p.R
 0579f533cd2b139a14673044968e1915 *R/format_pd.R
@@ -134,7 +134,7 @@ fed293a745c7a75939e2f2156aaa9afe *data/fish.RData
 b2ef4148f3d981813f57432a2c54184d *inst/CITATION
 a718984a946e382f6f03bb710827a44f *inst/doc/display.R
 1c68b79dfd7c8c20031355862ee68385 *inst/doc/display.Rmd
-55e64a8e483a6f67f0882921add22df2 *inst/doc/display.html
+f1aa768d230b03507e5db1b462e7b51a *inst/doc/display.html
 ae54307ad2e78972d7356c56f5cba13a *inst/doc/export.R
 b370275914b68836324f33f97059f4f7 *inst/doc/export.Rmd
 5c1b030d9005f1edf1f5411eb95aecd5 *inst/doc/export.html
@@ -142,7 +142,7 @@ b270fa47f367482b29dde30d92b14fd7 *inst/doc/insight.R
 976936676903ef305d970b8e9123b0e2 *inst/doc/insight.Rmd
 4d8aad62c2152654187b4141d0cdc89b *inst/doc/insight.html
 61eaa8a8c2509464110ef21cbfdd65b3 *man/all_models_equal.Rd
-c678a718b714b3ab8e20496d994b5173 *man/check_if_installed.Rd
+63386103f6f575582d689922810d12c7 *man/check_if_installed.Rd
 221a202698d6f970085bce1cbb83569d *man/clean_names.Rd
 8c1099e016a22be08d6449eba1dea882 *man/clean_parameters.Rd
 b497ced68eb5aa48eb0fbffeee7f369a *man/color_if.Rd
@@ -180,7 +180,7 @@ bd48f922d2f2806c5abdaa3c69aa8aca *man/find_weights.Rd
 2d9d8fb1370201f2b810501a71fc3cc8 *man/format_bf.Rd
 23617790af76d86fd21339bcf3c43938 *man/format_capitalize.Rd
 e9615bc34f3cd1050fcfe6eb0cd7db10 *man/format_ci.Rd
-2f81ffa404c7ede9bb2dfb450299cf7f *man/format_message.Rd
+15abf5ce0236a29164597e3d651ad161 *man/format_message.Rd
 c334dd8ed14592171ca5ba82b75ed3b5 *man/format_number.Rd
 7f9d445463171a5f4df9547586a46464 *man/format_p.Rd
 3f1879c42983eb7fa48cccb05df6bdb3 *man/format_pd.Rd
@@ -378,7 +378,7 @@ ef7c6e6c54a8cdc5372872a34fe4a5bc *tests/testthat/test-spatial.R
 d6180896847b7b6b96328b7a7463db21 *tests/testthat/test-speedglm.R
 720097c1fe24899e3d401bf60dc85b36 *tests/testthat/test-speedlm.R
 57e6518bbf56839f57b05c6467480f15 *tests/testthat/test-standardize_column_order.R
-9a56653b639da4424b79433e034dbf74 *tests/testthat/test-standardize_names.R
+88e9a06b7e370a220a4a8c9efd1d87f8 *tests/testthat/test-standardize_names.R
 f47d5392fc98c6cb3c264dd47695264b *tests/testthat/test-survey.R
 8c1868dbcc523354280e8503ff7ca012 *tests/testthat/test-survfit.R
 080b0bac37ab1a120ed199a23cd7ef6c *tests/testthat/test-survreg.R
