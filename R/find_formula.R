@@ -104,7 +104,7 @@ find_formula.list <- function(x, verbose = TRUE, ...) {
   if (object_has_names(x, "gam")) {
     if ("mer" %in% names(x)) {
       f.random <- .fix_gamm4_random_effect(find_formula(x$mer)$random)
-      if (length(f.random) == 1) {
+      if (length(f.random) == 1L) {
         f.random <- f.random[[1]]
       } else if (length(f.random) == 0) {
         f.random <- NULL
@@ -190,7 +190,7 @@ find_formula.gamlss <- function(x, verbose = TRUE, ...) {
         stats::as.formula(paste0("~", f))
       })
 
-      if (length(f.random) == 1) {
+      if (length(f.random) == 1L) {
         f.random <- f.random[[1]]
       } else if (grepl("random\\((.*)\\)", safe_deparse(f.cond))) {
         re <- gsub("(.*)random\\((.*)\\)", "\\2", safe_deparse(f.cond))
@@ -350,14 +350,14 @@ find_formula.mjoint <- function(x, verbose = TRUE, ...) {
   s <- summary(x)
 
   f.cond <- s$formLongFixed
-  if (length(s$formLongFixed) == 1) {
+  if (length(s$formLongFixed) == 1L) {
     names(f.cond) <- "conditional"
   } else {
     names(f.cond) <- paste0("conditional", seq_along(f.cond))
   }
 
   f.rand <- s$formLongRandom
-  if (length(s$formLongRandom) == 1) {
+  if (length(s$formLongRandom) == 1L) {
     names(f.rand) <- "random"
   } else {
     names(f.rand) <- paste0("random", seq_along(f.rand))
@@ -664,8 +664,8 @@ find_formula.ivreg <- function(x, verbose = TRUE, ...) {
   f <- tryCatch(
     {
       f <- safe_deparse(stats::formula(x))
-      cond <- trim_ws(substr(f, start = 0, stop = regexpr(pattern = "\\|", f) - 1))
-      instr <- trim_ws(substr(f, regexpr(pattern = "\\|", f) + 1, stop = 10000L))
+      cond <- trim_ws(substr(f, start = 0, stop = regexpr("|", f, fixed = TRUE) - 1))
+      instr <- trim_ws(substr(f, regexpr("|", f, fixed = TRUE) + 1, stop = 10000L))
 
       list(
         conditional = stats::as.formula(cond),
@@ -693,7 +693,7 @@ find_formula.plm <- function(x, verbose = TRUE, ...) {
   f <- tryCatch(
     {
       f <- safe_deparse(stats::formula(x))
-      bar_pos <- regexpr(pattern = "\\|", f)
+      bar_pos <- regexpr("|", f, fixed = TRUE)
 
       if (bar_pos == -1) {
         stop_pos <- nchar(f) + 1
@@ -734,19 +734,19 @@ find_formula.felm <- function(x, verbose = TRUE, ...) {
 
   f.cond <- f_parts[1]
 
-  if (length(f_parts) > 1) {
+  if (length(f_parts) > 1L) {
     f.rand <- paste0("~", f_parts[2])
   } else {
     f.rand <- NULL
   }
 
-  if (length(f_parts) > 2) {
+  if (length(f_parts) > 2L) {
     f.instr <- paste0("~", f_parts[3])
   } else {
     f.instr <- NULL
   }
 
-  if (length(f_parts) > 3) {
+  if (length(f_parts) > 3L) {
     f.clus <- paste0("~", f_parts[4])
   } else {
     f.clus <- NULL
@@ -929,7 +929,7 @@ find_formula.wbm <- function(x, verbose = TRUE, ...) {
     if (grepl("\\((.+)\\|(.+)\\)", f_parts[3])) {
       # we have multiple random effects, which we can better extract
       # via ".findbars()"
-      if (length(gregexpr("\\|", f_parts[3])[[1]]) > 1) {
+      if (length(gregexpr("|", f_parts[3], fixed = TRUE)[[1]]) > 1) {
         f.rand <- .findbars(stats::as.formula(paste("~", f_parts[3])))
       } else {
         f.rand <- gsub("(\\(|\\))", "", f_parts[3])
@@ -1052,8 +1052,8 @@ find_formula.DirichletRegModel <- function(x, verbose = TRUE, ...) {
     conditional3 = stats::as.formula(f.cond3)
   ))
 
-  if (x$parametrization == "alternative") {
-    if (length(out) == 2) names(out)[2] <- "precision"
+  if (x$parametrization == "alternative" && length(out) == 2L) {
+    names(out)[2] <- "precision"
   }
 
   .find_formula_return(out)
@@ -1069,13 +1069,11 @@ find_formula.glmmTMB <- function(x, verbose = TRUE, ...) {
   f.zi <- stats::formula(x, component = "zi")
   f.disp <- stats::formula(x, component = "disp")
 
-  if (identical(safe_deparse(f.zi), "~0") ||
-    identical(safe_deparse(f.zi), "~1")) {
+  if (identical(safe_deparse(f.zi), "~0") || identical(safe_deparse(f.zi), "~1")) {
     f.zi <- NULL
   }
 
-  if (identical(safe_deparse(f.disp), "~0") ||
-    identical(safe_deparse(f.disp), "~1")) {
+  if (identical(safe_deparse(f.disp), "~0") || identical(safe_deparse(f.disp), "~1")) {
     f.disp <- NULL
   }
 
@@ -1085,7 +1083,7 @@ find_formula.glmmTMB <- function(x, verbose = TRUE, ...) {
     stats::as.formula(paste0("~", f))
   })
 
-  if (length(f.random) == 1) {
+  if (length(f.random) == 1L) {
     f.random <- f.random[[1]]
   }
 
@@ -1097,7 +1095,7 @@ find_formula.glmmTMB <- function(x, verbose = TRUE, ...) {
     stats::as.formula(paste0("~", f))
   })
 
-  if (length(f.zirandom) == 1) {
+  if (length(f.zirandom) == 1L) {
     f.zirandom <- f.zirandom[[1]]
   }
 
@@ -1124,7 +1122,7 @@ find_formula.nlmerMod <- function(x, verbose = TRUE, ...) {
     stats::as.formula(paste0("~", f))
   })
 
-  if (length(f.random) == 1) {
+  if (length(f.random) == 1L) {
     f.random <- f.random[[1]]
   }
 
@@ -1149,7 +1147,7 @@ find_formula.merMod <- function(x, verbose = TRUE, ...) {
     stats::as.formula(paste0("~", f))
   })
 
-  if (length(f.random) == 1) {
+  if (length(f.random) == 1L) {
     f.random <- f.random[[1]]
   }
 
@@ -1160,6 +1158,15 @@ find_formula.merMod <- function(x, verbose = TRUE, ...) {
 
 #' @export
 find_formula.rlmerMod <- find_formula.merMod
+
+#' @export
+find_formula.mmrm <- find_formula.merMod
+
+#' @export
+find_formula.mmrm_fit <- find_formula.merMod
+
+#' @export
+find_formula.mmrm_tmb <- find_formula.merMod
 
 #' @export
 find_formula.cpglmm <- find_formula.merMod
@@ -1201,7 +1208,7 @@ find_formula.sem <- function(x, verbose = TRUE, ...) {
     stats::as.formula(paste0("~", f))
   })
 
-  if (length(f.random) == 1) {
+  if (length(f.random) == 1L) {
     f.random <- f.random[[1]]
   }
 
@@ -1259,7 +1266,7 @@ find_formula.mixor <- function(x, verbose = TRUE, ...) {
   f_rs <- x$call$which.random.slope
 
   if (!is.null(f_rs)) {
-    f_rs <- trim_ws(unlist(strsplit(safe_deparse(x$call$formula[[3]]), "\\+")))[f_rs]
+    f_rs <- trim_ws(unlist(strsplit(safe_deparse(x$call$formula[[3]]), "+", fixed = TRUE)))[f_rs]
     fmr <- paste(f_rs, "|", f_id)
   } else {
     fmr <- f_id
@@ -1333,7 +1340,7 @@ find_formula.glmm <- function(x, verbose = TRUE, ...) {
     stats::as.formula(paste0("~1|", av[length(av)]))
   })
 
-  if (length(f.random) == 1) {
+  if (length(f.random) == 1L) {
     f.random <- f.random[[1]]
   }
 
@@ -1382,7 +1389,7 @@ find_formula.stanreg <- function(x, verbose = TRUE, ...) {
       })
     }
 
-    if (length(f.random) == 1) {
+    if (length(f.random) == 1L) {
       f.random <- f.random[[1]]
     }
 
@@ -1489,7 +1496,7 @@ find_formula.model_fit <- function(x, verbose = TRUE, ...) {
     stats::as.formula(paste0("~", fm))
   })
 
-  if (length(f_random) == 1) {
+  if (length(f_random) == 1L) {
     f_random <- f_random[[1]]
   }
 
@@ -1525,7 +1532,7 @@ find_formula.model_fit <- function(x, verbose = TRUE, ...) {
       stats::as.formula(paste0("~", f))
     })
 
-    if (length(f_zirandom) == 1) {
+    if (length(f_zirandom) == 1L) {
       f_zirandom <- f_zirandom[[1]]
     }
 
@@ -1542,7 +1549,7 @@ find_formula.model_fit <- function(x, verbose = TRUE, ...) {
       stats::as.formula(paste0("~", f))
     })
 
-    if (length(f_sigmarandom) == 1) {
+    if (length(f_sigmarandom) == 1L) {
       f_sigmarandom <- f_sigmarandom[[1]]
     }
 
@@ -1559,7 +1566,7 @@ find_formula.model_fit <- function(x, verbose = TRUE, ...) {
       stats::as.formula(paste0("~", f))
     })
 
-    if (length(f_betarandom) == 1) {
+    if (length(f_betarandom) == 1L) {
       f_betarandom <- f_betarandom[[1]]
     }
 
@@ -1599,7 +1606,7 @@ find_formula.model_fit <- function(x, verbose = TRUE, ...) {
     stats::as.formula(paste0("~", fm))
   })
 
-  if (length(f_random) == 1) {
+  if (length(f_random) == 1L) {
     f_random <- f_random[[1]]
   }
 
@@ -1698,10 +1705,10 @@ find_formula.model_fit <- function(x, verbose = TRUE, ...) {
     f <- list(f)
   }
   len <- length(f)
-  keep <- sapply(f, function(i) {
+  keep <- vapply(f, function(i) {
     i <- gsub("(~1| | \\|)", "", deparse(i))
     !any(grepl("(Xr\\.\\d|g\\.\\d)", i) | i %in% c("Xr", "g"))
-  })
+  }, TRUE)
   f <- compact_list(f[keep])
   # exceptions, if random effect is named Xr
   if (!length(f) && len > 1) {
@@ -1787,10 +1794,10 @@ find_formula.model_fit <- function(x, verbose = TRUE, ...) {
   pattern <- "[\\s*+:()|^,\\-\\/]" # was: "[\\s\\*\\+:\\-\\|/\\(\\)\\^,]"
 
   parts <- trim_ws(unlist(strsplit(split = pattern, x = LHS, perl = TRUE)))
-  d_LHS <- unique(gsub("(.*)\\$(.*)", "\\1", parts[grepl("(.*)\\$(.*)", parts)]))
+  d_LHS <- unique(gsub("(.*)\\$(.*)", "\\1", grep("(.*)\\$(.*)", parts, value = TRUE)))
 
   parts <- trim_ws(unlist(strsplit(split = pattern, x = RHS, perl = TRUE)))
-  d_RHS <- unique(gsub("(.*)\\$(.*)", "\\1", parts[grepl("(.*)\\$(.*)", parts)]))
+  d_RHS <- unique(gsub("(.*)\\$(.*)", "\\1", grep("(.*)\\$(.*)", parts, value = TRUE)))
 
   if (n_unique(c(d_LHS, d_RHS)) > 1) {
     format_error("Multiple data objects present in formula. Specify your model using the `data` argument instead.")

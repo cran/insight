@@ -67,7 +67,7 @@
   # detect matrix columns ----------------------------------------------------
 
   # check if we have any matrix columns, e.g. from splines
-  mc <- sapply(mf, is.matrix)
+  mc <- vapply(mf, is.matrix, TRUE)
 
   # save original response value and the respective single variable names of
   # the response for later. we don't want to change the response value,
@@ -89,7 +89,7 @@
     if (inherits(x, c("coxph", "flexsurvreg", "coxme", "survreg", "survfit", "crq", "psm", "coxr"))) {
       n_of_responses <- ncol(mf[[1]])
       mf <- cbind(as.data.frame(as.matrix(mf[[1]])), mf)
-      colnames(mf)[1:n_of_responses] <- rn_not_combined
+      colnames(mf)[1:n_of_responses] <- rn_not_combined[1:n_of_responses]
     } else {
       tryCatch(
         {
@@ -157,7 +157,7 @@
       mf <- cbind(mf_nonmatrix, mf_matrix)
     } else {
       # fix NA in column names
-      if (any(is.na(colnames(md)))) {
+      if (anyNA(colnames(md))) {
         colnames(md) <- make.names(colnames(md))
       }
 
@@ -190,7 +190,7 @@
         }
       }
 
-      if (inherits(x, c("coxph", "coxme", "coxr")) || any(grepl("^Surv\\(", spline.term))) {
+      if (inherits(x, c("coxph", "coxme", "coxr")) || any(startsWith(spline.term, "Surv("))) {
         # no further processing for survival models
         mf <- md
       } else {
@@ -216,22 +216,22 @@
           mf <- md[, needed.vars, drop = FALSE]
 
           # we need this hack to save variable and value label attributes, if any
-          value_labels <- lapply(mf, function(.l) attr(.l, "labels", exact = TRUE))
-          variable_labels <- lapply(mf, function(.l) attr(.l, "label", exact = TRUE))
+          value_labels <- lapply(mf, attr, which = "labels", exact = TRUE)
+          variable_labels <- lapply(mf, attr, which = "label", exact = TRUE)
 
           # removing NAs drops all label-attributes
           mf <- stats::na.omit(mf)
 
           # then set back attributes
-          mf <- as.data.frame(mapply(function(.d, .l) {
+          mf <- as.data.frame(Map(function(.d, .l) {
             attr(.d, "labels") <- .l
             .d
-          }, mf, value_labels, SIMPLIFY = FALSE), stringsAsFactors = FALSE)
+          }, mf, value_labels), stringsAsFactors = FALSE)
 
-          mf <- as.data.frame(mapply(function(.d, .l) {
+          mf <- as.data.frame(Map(function(.d, .l) {
             attr(.d, "label") <- .l
             .d
-          }, mf, variable_labels, SIMPLIFY = FALSE), stringsAsFactors = FALSE)
+          }, mf, variable_labels), stringsAsFactors = FALSE)
         }
       }
 
@@ -458,8 +458,16 @@
     } else {
       for (i in seq_along(interactions)) {
         int <- interactions[i]
-        mf[[names(int)]] <- as.factor(substr(as.character(mf[[int]]), regexpr("\\.[^\\.]*$", as.character(mf[[int]])) + 1, nchar(as.character(mf[[int]]))))
-        mf[[int]] <- as.factor(substr(as.character(mf[[int]]), 0, regexpr("\\.[^\\.]*$", as.character(mf[[int]])) - 1))
+        mf[[names(int)]] <- as.factor(substr(
+          as.character(mf[[int]]),
+          regexpr("\\.[^\\.]*$", as.character(mf[[int]])) + 1,
+          nchar(as.character(mf[[int]]))
+        ))
+        mf[[int]] <- as.factor(substr(
+          as.character(mf[[int]]),
+          0,
+          regexpr("\\.[^\\.]*$", as.character(mf[[int]])) - 1
+        ))
       }
       if (isTRUE(verbose)) {
         format_warning(
@@ -600,7 +608,7 @@
 
   if (length(still_missing) && isTRUE(verbose)) {
     format_warning(
-      sprintf("Following potential variables could not be found in the data: %s", paste0(still_missing, collapse = " ,"))
+      sprintf("Following potential variables could not be found in the data: %s", toString(still_missing))
     )
   }
 
@@ -696,49 +704,6 @@
 
 
 
-# find data from the environment -----------------------------------
-
-# return data from a data frame that is in the environment,
-# and subset the data, if necessary
-.recover_data_from_environment <- function(x) {
-  model_call <- get_call(x)
-
-  # first, try environment of formula, see #666
-  dat <- tryCatch(eval(model_call$data, envir = environment(model_call$formula)),
-    error = function(e) NULL
-  )
-
-  # next try, parent frame
-  if (is.null(dat)) {
-    dat <- tryCatch(eval(model_call$data, envir = parent.frame()),
-      error = function(e) NULL
-    )
-  }
-
-  # sanity check- if data frame is named like a function, e.g.
-  # rep <- data.frame(...), we now have a function instead of the data
-  # we then need to reset "dat" to NULL and search in the global env
-
-  if (!is.null(dat) && !is.data.frame(dat)) {
-    dat <- tryCatch(as.data.frame(dat), error = function(e) NULL)
-  }
-
-  # thirs try, global env
-  if (is.null(dat)) {
-    dat <- tryCatch(eval(model_call$data, envir = globalenv()),
-      error = function(e) NULL
-    )
-  }
-
-  if (!is.null(dat) && object_has_names(model_call, "subset")) {
-    dat <- subset(dat, subset = eval(model_call$subset))
-  }
-
-  dat
-}
-
-
-
 # find start vector of nlmer-models from the environment -----------------------------------
 
 # return data from a data frame that is in the environment,
@@ -802,17 +767,21 @@
         mf[[i]] <- exp(exp(mf[[i]]))
       } else if (type == "log") {
         # exceptions: log(x+1) or log(1+x)
-        # 1. try: log(x + number)
-        plus_minus <- tryCatch(
-          eval(parse(text = gsub("log\\(([^,\\+)]*)(.*)\\)", "\\2", cn))),
-          error = function(e) NULL
-        )
-        # 2. try: log(number + x)
-        if (is.null(plus_minus)) {
+        plus_minus <- NULL
+        # no plus-minus?
+        if (grepl("log\\((.*)\\+(.*)\\)", i)) {
+          # 1. try: log(x + number)
           plus_minus <- tryCatch(
-            eval(parse(text = gsub("log\\(([^,\\+)]*)(.*)\\)", "\\1", cn))),
+            eval(parse(text = gsub("log\\(([^,\\+)]+)(.*)\\)", "\\2", i))),
             error = function(e) NULL
           )
+          # 2. try: log(number + x)
+          if (is.null(plus_minus)) {
+            plus_minus <- tryCatch(
+              eval(parse(text = gsub("log\\(([^,\\+)]+)(.*)\\)", "\\1", i))),
+              error = function(e) NULL
+            )
+          }
         }
         if (is.null(plus_minus)) {
           mf[[i]] <- exp(mf[[i]])
@@ -866,11 +835,11 @@
     x <- find_terms(model, flatten = TRUE)
   }
   pattern <- sprintf("%s\\(([^,\\+)]*).*", type)
-  out <- trim_ws(gsub(pattern, "\\1", x[grepl(pattern, x)]))
+  out <- trim_ws(gsub(pattern, "\\1", grep(pattern, x, value = TRUE)))
   # sanity check - when we have something like "log(1+x)" instead "log(x+1)",
   # the regex pattern returns "1" instead of "x3"
   if (!is.na(suppressWarnings(as.numeric(out)))) {
-    out <- trim_ws(gsub(pattern, "\\2", x[grepl(pattern, x)]))
+    out <- trim_ws(gsub(pattern, "\\2", grep(pattern, x, value = TRUE)))
   }
   out
 }
@@ -879,7 +848,7 @@
 # get column names of transformed terms
 .get_transformed_names <- function(x, type = "all") {
   pattern <- sprintf("%s\\(([^,)]*).*", type)
-  x[grepl(pattern, x)]
+  grep(pattern, x, value = TRUE)
 }
 
 
@@ -911,7 +880,7 @@
         }
 
         # exeception: list for kruskal-wallis
-        if (grepl("Kruskal-Wallis", x$method, fixed = TRUE) && grepl("^list\\(", data_name)) {
+        if (grepl("Kruskal-Wallis", x$method, fixed = TRUE) && startsWith(data_name, "list(")) {
           l <- eval(.str2lang(x$data.name))
           names(l) <- paste0("x", seq_along(l))
           return(l)
@@ -922,15 +891,15 @@
 
         # preserve table data for McNemar
         if (!grepl(" (and|by) ", x$data.name) &&
-          (grepl("^McNemar", x$method) || (length(columns) == 1 && is.matrix(columns[[1]])))) {
+          (startsWith(x$method, "McNemar") || (length(columns) == 1 && is.matrix(columns[[1]])))) {
           return(as.table(columns[[1]]))
           # check if data is a list for kruskal-wallis
-        } else if (grepl("^Kruskal-Wallis", x$method) && length(columns) == 1 && is.list(columns[[1]])) {
+        } else if (startsWith(x$method, "Kruskal-Wallis") && length(columns) == 1 && is.list(columns[[1]])) {
           l <- columns[[1]]
           names(l) <- paste0("x", seq_along(l))
           return(l)
         } else {
-          max_len <- max(sapply(columns, length))
+          max_len <- max(lengths(columns))
           for (i in seq_along(columns)) {
             if (length(columns[[i]]) < max_len) {
               columns[[i]] <- c(columns[[i]], rep(NA, max_len - length(columns[[i]])))
