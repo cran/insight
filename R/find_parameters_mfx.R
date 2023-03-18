@@ -36,7 +36,10 @@
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' find_parameters(m)
 #' @export
-find_parameters.betamfx <- function(x, component = c("all", "conditional", "precision", "marginal", "location", "distributional", "auxiliary"), flatten = FALSE, ...) {
+find_parameters.betamfx <- function(x,
+                                    component = c("all", "conditional", "precision", "marginal", "location", "distributional", "auxiliary"),
+                                    flatten = FALSE,
+                                    ...) {
   pars <- list(
     marginal = text_remove_backticks(rownames(x$mfxest)),
     conditional = text_remove_backticks(names(x$fit$coefficients$mean)),
@@ -48,7 +51,7 @@ find_parameters.betamfx <- function(x, component = c("all", "conditional", "prec
   pars <- compact_list(pars[elements])
 
   if (flatten) {
-    unique(unlist(pars))
+    unique(unlist(pars, use.names = FALSE))
   } else {
     pars
   }
@@ -57,7 +60,10 @@ find_parameters.betamfx <- function(x, component = c("all", "conditional", "prec
 
 
 #' @export
-find_parameters.betaor <- function(x, component = c("all", "conditional", "precision", "location", "distributional", "auxiliary"), flatten = FALSE, ...) {
+find_parameters.betaor <- function(x,
+                                   component = c("all", "conditional", "precision", "location", "distributional", "auxiliary"),
+                                   flatten = FALSE,
+                                   ...) {
   pars <- list(
     conditional = text_remove_backticks(names(x$fit$coefficients$mean)),
     precision = text_remove_backticks(names(x$fit$coefficients$precision))
@@ -68,7 +74,7 @@ find_parameters.betaor <- function(x, component = c("all", "conditional", "preci
   pars <- compact_list(pars[elements])
 
   if (flatten) {
-    unique(unlist(pars))
+    unique(unlist(pars, use.names = FALSE))
   } else {
     pars
   }
@@ -77,7 +83,10 @@ find_parameters.betaor <- function(x, component = c("all", "conditional", "preci
 
 #' @rdname find_parameters.betamfx
 #' @export
-find_parameters.logitmfx <- function(x, component = c("all", "conditional", "marginal", "location"), flatten = FALSE, ...) {
+find_parameters.logitmfx <- function(x,
+                                     component = c("all", "conditional", "marginal", "location"),
+                                     flatten = FALSE,
+                                     ...) {
   p <- text_remove_backticks(names(stats::coef(x$fit)))
   pars <- list(marginal = text_remove_backticks(rownames(x$mfxest)), conditional = p)
 
@@ -86,7 +95,7 @@ find_parameters.logitmfx <- function(x, component = c("all", "conditional", "mar
   pars <- compact_list(pars[elements])
 
   if (flatten) {
-    unique(unlist(pars))
+    unique(unlist(pars, use.names = FALSE))
   } else {
     pars
   }
@@ -106,7 +115,7 @@ find_parameters.logitor <- function(x, flatten = FALSE, ...) {
   pars <- list(conditional = text_remove_backticks(names(stats::coef(x$fit))))
 
   if (flatten) {
-    unique(unlist(pars))
+    unique(unlist(pars, use.names = FALSE))
   } else {
     pars
   }

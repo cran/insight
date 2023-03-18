@@ -273,11 +273,12 @@ get_datagrid.data.frame <- function(x,
     numvars <- specs[!specs$is_factor, "varname"]
     if (length(numvars)) {
       # Sanitize 'length' argument
-      if (length(length) == 1) {
+      if (length(length) == 1L) {
         length <- rep(length, length(numvars))
       } else if (length(length) != length(numvars)) {
         format_error(
-          "The number of elements in `length` must match the number of numeric target variables (n = ", length(numvars), ")."
+          "The number of elements in `length` must match the number of numeric target variables (n = ",
+          length(numvars), ")."
         )
       }
       # Sanitize 'range' argument
@@ -285,7 +286,8 @@ get_datagrid.data.frame <- function(x,
         range <- rep(range, length(numvars))
       } else if (length(range) != length(numvars)) {
         format_error(
-          "The number of elements in `range` must match the number of numeric target variables (n = ", length(numvars), ")."
+          "The number of elements in `range` must match the number of numeric target variables (n = ",
+          length(numvars), ")."
         )
       }
 
@@ -309,10 +311,10 @@ get_datagrid.data.frame <- function(x,
     targets <- expand.grid(c(nums, facs))
 
     # sort targets data frame according to order specified in "at"
-    targets <- tryCatch(targets[specs$varname], error = function(e) targets)
+    targets <- .safe(targets[specs$varname], targets)
 
     # Preserve range ---------------------------------------------------------
-    if (preserve_range && length(facs) > 0 && length(nums) > 0) {
+    if (preserve_range && length(facs) > 0 && length(nums) > 0L) {
       # Loop through the combinations of factors
       facs_combinations <- expand.grid(facs)
       for (i in seq_len(nrow(facs_combinations))) {
@@ -524,13 +526,13 @@ get_datagrid.double <- get_datagrid.numeric
       disp <- stats::sd(x, na.rm = TRUE)
       center <- mean(x, na.rm = TRUE)
       labs <- ifelse(sign(spread) == -1, paste(spread, "SD"),
-        ifelse(sign(spread) == 1, paste0("+", spread, " SD"), "Mean")
+        ifelse(sign(spread) == 1, paste0("+", spread, " SD"), "Mean") # nolint
       )
     } else {
       disp <- stats::mad(x, na.rm = TRUE)
       center <- stats::median(x, na.rm = TRUE)
       labs <- ifelse(sign(spread) == -1, paste(spread, "MAD"),
-        ifelse(sign(spread) == 1, paste0("+", spread, " MAD"), "Median")
+        ifelse(sign(spread) == 1, paste0("+", spread, " MAD"), "Median") # nolint
       )
     }
     out <- center + spread * disp
@@ -612,7 +614,7 @@ get_datagrid.logical <- get_datagrid.character
     if (grepl("length.out =", at, fixed = TRUE)) {
       expression <- at # This is an edgecase
     } else if (grepl("=", at, fixed = TRUE)) {
-      parts <- trim_ws(unlist(strsplit(at, "=", fixed = TRUE))) # Split and clean
+      parts <- trim_ws(unlist(strsplit(at, "=", fixed = TRUE), use.names = FALSE)) # Split and clean
       varname <- parts[1] # left-hand part is probably the name of the variable
       at <- parts[2] # right-hand part is the real target
     }
@@ -631,11 +633,11 @@ get_datagrid.logical <- get_datagrid.character
     if (is.na(expression) && grepl("\\[.*\\]", at)) {
       # Clean --------------------
       # Keep the content
-      parts <- trim_ws(unlist(regmatches(at, gregexpr("\\[.+?\\]", at))))
+      parts <- trim_ws(unlist(regmatches(at, gregexpr("\\[.+?\\]", at)), use.names = FALSE))
       # Drop the brackets
       parts <- gsub("\\[|\\]", "", parts)
       # Split by a separator like ','
-      parts <- trim_ws(unlist(strsplit(parts, ",", fixed = TRUE)))
+      parts <- trim_ws(unlist(strsplit(parts, ",", fixed = TRUE), use.names = FALSE))
       # If the elements have quotes around them, drop them
       if (all(grepl("\\'.*\\'", parts))) parts <- gsub("'", "", parts, fixed = TRUE)
       if (all(grepl('\\".*\\"', parts))) parts <- gsub('"', "", parts, fixed = TRUE)
@@ -916,7 +918,7 @@ get_datagrid.datagrid <- get_datagrid.visualisation_matrix
     # make sure we only have variables from original data
     all_vars <- find_variables(x, effects = "all", component = "all", flatten = TRUE)
     if (!is.null(all_vars)) {
-      data <- tryCatch(data[intersect(all_vars, colnames(data))], error = function(e) data)
+      data <- .safe(data[intersect(all_vars, colnames(data))], data)
     }
   }
 

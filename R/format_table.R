@@ -92,7 +92,7 @@ format_table <- function(x,
   # sanity check
   if (is.null(x) || (is.data.frame(x) && nrow(x) == 0)) {
     if (isTRUE(verbose)) {
-      message("Can't format table, data frame is empty.")
+      format_alert("Can't format table, data frame is empty.")
     }
     return(NULL)
   }
@@ -109,6 +109,14 @@ format_table <- function(x,
 
 
   # Format parameters names ----
+
+  ## TODO: check if this simplification works
+  # I'm not sure, but I think the following three code lines should work, too
+  #
+  # shared <- intersect(x$Parameter, names(att$pretty_names))
+  # index <- match(shared, x$Parameter)
+  # x$Parameter[index] <- as.vector(att$pretty_names[x$Parameter[index]])
+
   if (pretty_names && !is.null(att$pretty_names)) {
     # remove strings with NA names
     att$pretty_names <- att$pretty_names[!is.na(names(att$pretty_names))]
@@ -255,25 +263,17 @@ format_table <- function(x,
     starlist <- list("p" = stars)
   }
 
-  if ("p" %in% names(x)) {
-    x$p <- format_p(
-      x$p,
-      stars = starlist[["p"]],
-      name = NULL,
-      missing = "",
-      digits = p_digits
-    )
-    x$p <- format(x$p, justify = "left")
-  }
-  if ("p.value" %in% names(x)) {
-    x$p.value <- format_p(
-      x$p.value,
-      stars = starlist[["p"]],
-      name = NULL,
-      missing = "",
-      digits = p_digits
-    )
-    x$p.value <- format(x$p.value, justify = "left")
+  for (pv in c("p", "p.value", "SGPV")) {
+    if (pv %in% names(x)) {
+      x[[pv]] <- format_p(
+        x[[pv]],
+        stars = starlist[["p"]],
+        name = NULL,
+        missing = "",
+        digits = p_digits
+      )
+      x[[pv]] <- format(x[[pv]], justify = "left")
+    }
   }
 
   for (stats in c(
@@ -528,7 +528,7 @@ format_table <- function(x,
   other_ci_low <- names(x)[endsWith(names(x), "_CI_low")]
   other_ci_high <- names(x)[endsWith(names(x), "_CI_high")]
   if (length(other_ci_low) >= 1 && length(other_ci_low) == length(other_ci_high)) {
-    other <- unlist(strsplit(other_ci_low, "_CI_low$"))
+    other <- unlist(strsplit(other_ci_low, "_CI_low$"), use.names = FALSE)
 
     # CI percentage
     if (length(other) == 1 && !is.null(att[[paste0("ci_", other)]])) {
@@ -628,7 +628,7 @@ format_table <- function(x,
 
 
 .format_std_columns <- function(x, other_ci_colname, digits, zap_small) {
-  std_cols <- names(x)[grepl("Std_", names(x))]
+  std_cols <- names(x)[grepl("Std_", names(x), fixed = TRUE)]
   if (length(std_cols) == 0) {
     return(x)
   }

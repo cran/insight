@@ -202,7 +202,7 @@ get_parameters.stanmvreg <- function(x,
     parms[[i]]$sigma <- NULL
   }
 
-  out <- as.data.frame(x)[unlist(lapply(compact_list(parms), function(i) i[elements]))]
+  out <- as.data.frame(x)[unlist(lapply(compact_list(parms), function(i) i[elements]), use.names = FALSE)]
 
   if (isTRUE(summary)) {
     out <- .summary_of_posteriors(out, centrality = centrality)
@@ -222,12 +222,12 @@ get_parameters.brmsfit <- function(x,
                                    centrality = "mean",
                                    ...) {
   effects <- match.arg(effects, choices = c("all", "fixed", "random"))
-  component <- match.arg(component, choices = c("all", .all_elements()))
+  component <- match.arg(component, choices = c("all", .all_elements(), "location", "distributional"))
 
   if (is_multivariate(x)) {
     parms <- find_parameters(x, flatten = FALSE, parameters = parameters)
     elements <- .get_elements(effects, component)
-    out <- as.data.frame(x)[unlist(lapply(parms, function(i) i[elements]))]
+    out <- as.data.frame(x)[unlist(lapply(parms, function(i) i[elements]), use.names = FALSE)]
   } else {
     out <- as.data.frame(x)[.get_parms_data(x, effects, component, parameters)]
   }
@@ -352,7 +352,7 @@ get_parameters.bamlss <- function(x,
   elements <- .get_elements(effects = "all", component)
 
   parms <- find_parameters(x, flatten = FALSE, parameters = parameters)
-  out <- as.data.frame(unclass(x$samples))[unname(unlist(parms[elements]))]
+  out <- as.data.frame(unclass(x$samples))[unlist(parms[elements], use.names = FALSE)]
   if (isTRUE(summary)) {
     out <- .summary_of_posteriors(out, centrality = centrality)
   }
@@ -546,7 +546,7 @@ get_parameters.sim <- function(x,
     }
   } else if (methods::is(object, "var_estimate")) {
     if (!methods::is(object, "default")) {
-      stop("Object must be from 'var_estimate'.", call. = FALSE)
+      format_error("Object must be from 'var_estimate'.")
     }
     p <- object$p
     pcors_total <- p * (p - 1) * 0.5
@@ -586,7 +586,7 @@ get_parameters.sim <- function(x,
     }
     posterior_samples <- cbind(posterior_samples, beta_start)
   } else {
-    stop("Object class not currently supported.", call. = FALSE)
+    format_error("Object class not currently supported.")
   }
 
   posterior_samples

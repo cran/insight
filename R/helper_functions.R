@@ -1,3 +1,9 @@
+# small wrapper around this commonly used try-catch
+.safe <- function(code, on_error = NULL) {
+  tryCatch(code, error = function(e) on_error)
+}
+
+
 # remove values from vector
 .remove_values <- function(x, values) {
   remove <- x %in% values
@@ -97,7 +103,7 @@
 # if there are any chars left, these come from further terms that come after
 # random effects...
 .formula_empty_after_random_effect <- function(f) {
-  nchar(gsub("(~|\\+|\\*|-|/|:)", "", gsub(" ", "", gsub("\\((.*)\\)", "", f)))) == 0
+  nchar(gsub("(~|\\+|\\*|-|/|:)", "", gsub(" ", "", gsub("\\((.*)\\)", "", f), fixed = TRUE))) == 0
 }
 
 
@@ -125,19 +131,17 @@
       split_nested <- FALSE
     }
   } else {
-    re <- trim_ws(substring(re, max(gregexpr(pattern = "\\|", re)[[1]]) + 1))
+    re <- trim_ws(substring(re, max(gregexpr(pattern = "|", re, fixed = TRUE)[[1]]) + 1))
   }
 
   # check for multi-membership models
-  if (inherits(model, "brmsfit")) {
-    if (grepl("mm\\((.*)\\)", re)) {
-      re <- trim_ws(unlist(strsplit(gsub("mm\\((.*)\\)", "\\1", re), ",")))
-    }
+  if (inherits(model, "brmsfit") && grepl("mm\\((.*)\\)", re)) {
+    re <- trim_ws(unlist(strsplit(gsub("mm\\((.*)\\)", "\\1", re), ",", fixed = TRUE)))
   }
 
   if (split_nested) {
     # remove parenthesis for nested models
-    re <- unique(unlist(strsplit(re, "\\:")))
+    re <- unique(unlist(strsplit(re, ":", fixed = TRUE)))
 
     # nested random effects, e.g. g1 / g2 / g3, deparse to "g0:(g1:g2)".
     # when we split at ":", we have "g0", "(g1" and "g2)". In such cases,
@@ -173,9 +177,7 @@
 # .get_model_random()
 .get_group_factor <- function(x, f) {
   if (is.list(f)) {
-    f <- lapply(f, function(.x) {
-      .get_model_random(.x, split_nested = TRUE, x)
-    })
+    f <- lapply(f, .get_model_random, split_nested = TRUE, model = x)
   } else {
     f <- .get_model_random(f, split_nested = TRUE, x)
   }
@@ -185,7 +187,7 @@
   }
 
   if (is.list(f)) {
-    f <- lapply(f, function(i) sapply(i, as.symbol))
+    f <- lapply(f, sapply, as.symbol)
   } else {
     f <- sapply(f, as.symbol)
   }
@@ -206,7 +208,8 @@
     "sigma", "nu", "tau", "correlation", "slopes", "cluster", "extra", "scale",
     "marginal", "alpha", "beta", "survival", "infrequent_purchase", "auxiliary",
     "mix", "shiftprop", "phi", "ndt", "hu", "xi", "coi", "zoi", "aux", "dist",
-    "selection", "outcome", "time_dummies", "sigma_random", "beta_random", "car"
+    "selection", "outcome", "time_dummies", "sigma_random", "beta_random", "car",
+    "nominal"
   )
 }
 
@@ -235,7 +238,10 @@
   random_parameters <- c("random", "zero_inflated_random", "sigma_random", "beta_random", "car")
 
   # conditional component
-  conditional_component <- setdiff(elements, c(auxiliary_parameters, zero_inflated_component, "smooth_terms", "nonlinear"))
+  conditional_component <- setdiff(
+    elements,
+    c(auxiliary_parameters, zero_inflated_component, "smooth_terms", "nonlinear")
+  )
 
   # location parameters
   location_parameters <- switch(effects,
@@ -331,13 +337,13 @@
 
 .filter_pars_univariate <- function(l, parameters) {
   lapply(l, function(component) {
-    unlist(unname(sapply(
+    unlist(sapply(
       parameters,
       function(pattern) {
-        component[grepl(pattern = pattern, x = component, perl = TRUE)]
+        grep(pattern = pattern, x = component, perl = TRUE, value = TRUE)
       },
       simplify = FALSE
-    )))
+    ), use.names = FALSE)
   })
 }
 
@@ -423,25 +429,11 @@
 
 
 .gam_family <- function(x) {
-  faminfo <- tryCatch(
-    {
-      stats::family(x)
-    },
-    error = function(e) {
-      NULL
-    }
-  )
+  faminfo <- .safe(stats::family(x))
 
   # try to set manually, if not found otherwise
   if (is.null(faminfo)) {
-    faminfo <- tryCatch(
-      {
-        x$family
-      },
-      error = function(e) {
-        NULL
-      }
-    )
+    faminfo <- .safe(x$family)
   }
 
   faminfo
@@ -571,7 +563,7 @@
   if (attr(stats::terms(frml), "intercept") != 0) {
     newtrms <- c("1", newtrms)
   }
-  stats::as.formula(paste("~(", paste(vapply(newtrms, function(trm) {
+  stats::as.formula(paste("~(", paste(vapply(newtrms, function(trm) { # nolint
     paste0(trm, "|", deparse(term[[3]]))
   }, ""), collapse = ")+("), ")"))[[2]]
 }
@@ -633,7 +625,7 @@
         return(x)
       }
       if (x[[1]] != as.name("/")) {
-        stop("unparseable formula for grouping factor", call. = FALSE)
+        format_error("unparseable formula for grouping factor")
       }
       list(slashTerms(x[[2]]), slashTerms(x[[3]]))
     }
@@ -641,7 +633,8 @@
       expandSlash(list(bb))
     } else {
       unlist(lapply(bb, function(x) {
-        if (length(x) > 2 && is.list(trms <- slashTerms(x[[3]]))) {
+        trms <- slashTerms(x[[3]])
+        if (length(x) > 2 && is.list(trms)) {
           lapply(unlist(makeInteraction(trms)), function(trm) {
             substitute(foo | bar, list(foo = x[[2]], bar = trm))
           })
@@ -723,10 +716,8 @@
 
 
 .isBar <- function(term) {
-  if (is.call(term)) {
-    if ((term[[1]] == as.name("|")) || (term[[1]] == as.name("||"))) {
-      return(TRUE)
-    }
+  if (is.call(term) && ((term[[1]] == as.name("|") || term[[1]] == as.name("||")))) {
+    return(TRUE)
   }
   FALSE
 }
@@ -784,7 +775,11 @@ is.emmean <- function(x) {
   c_ <- is.emmeans.contrast(x)
   t_ <- is.emmeans.trend(x)
 
-  ifelse(c_, "contrasts",
-    ifelse(t_, "emtrends", "emmeans")
-  )
+  if (isTRUE(c_)) {
+    "contrasts"
+  } else if (isTRUE(t_)) {
+    "emtrends"
+  } else {
+    "emmeans"
+  }
 }

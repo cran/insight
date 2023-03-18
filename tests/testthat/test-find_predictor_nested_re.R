@@ -1,4 +1,4 @@
-if (requiet("lme4")) {
+if (skip_if_not_or_load_if_installed("lme4")) {
   set.seed(1984)
   dat <- data.frame(
     y = rnorm(1000 * 5, sd = 1 - 0.20),
@@ -10,7 +10,11 @@ if (requiet("lme4")) {
   dat$time1 <- dat$time - 8
   dat$post <- 0
   dat$post[dat$time >= 8] <- 1
-  m <- suppressMessages(lmer(y ~ post + time1 + (1 | g2 / g1 / g0) + (post + time1 - 1 | g2), data = dat))
+  m <- suppressWarnings(suppressMessages(
+    lmer(y ~ post + time1 + (1 | g2 / g1 / g0) + (post + time1 - 1 | g2),
+      data = dat
+    )
+  ))
 
   test_that("clean_names", {
     expect_equal(

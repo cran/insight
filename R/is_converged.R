@@ -61,6 +61,7 @@
 #'   is_converged(model)
 #' }
 #'
+#' @examplesIf getOption("warn") < 2L
 #' \dontrun{
 #' if (require("glmmTMB")) {
 #'   model <- glmmTMB(Sepal.Length ~ poly(Petal.Width, 4) * poly(Petal.Length, 4) +
@@ -77,7 +78,7 @@ is_converged <- function(x, tolerance = 0.001, ...) {
 
 #' @export
 is_converged.default <- function(x, tolerance = 0.001, ...) {
-  message(sprintf("`is_converged()` does not work for models of class '%s'.", class(x)[1]))
+  format_alert(sprintf("`is_converged()` does not work for models of class '%s'.", class(x)[1]))
 }
 
 

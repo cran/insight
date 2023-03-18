@@ -162,11 +162,25 @@ get_predicted.glmmTMB <- function(x,
     }
 
     # 2. and 3. step: confidence intervals and back-transform
-    ci_data <- .simulate_zi_predictions(model = x, newdata = data, predictions = predictions, nsim = iterations, ci = ci)
+    ci_data <- .simulate_zi_predictions(
+      model = x,
+      newdata = data,
+      predictions = predictions,
+      nsim = iterations,
+      ci = ci
+    )
+
     out <- list(predictions = predictions, ci_data = ci_data)
   } else {
     # 2. step: confidence intervals
-    ci_data <- .get_predicted_se_to_ci(x, predictions = predictions, se = rez$se.fit, ci = ci, verbose = verbose, ...)
+    ci_data <- .get_predicted_se_to_ci(
+      x,
+      predictions = predictions,
+      se = rez$se.fit,
+      ci = ci,
+      verbose = verbose,
+      ...
+    )
 
     # 3. step: back-transform
     out <- .get_predicted_transform(x, predictions, args, ci_data, verbose = verbose)
@@ -264,4 +278,15 @@ get_predicted.MixMod <- function(x,
 
   # 4. step: final preparation
   .get_predicted_out(out$predictions, args = args, ci_data = out$ci_data)
+}
+
+
+
+# HGLM: mixed_model (class hglm) ------------------------------
+# =============================================================
+
+#' @export
+get_predicted.hglm <- function(x, verbose = TRUE, ...) {
+  # hglm only provide fitted values
+  x$fv
 }

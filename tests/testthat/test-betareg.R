@@ -1,6 +1,6 @@
 if (
 
-  requiet("betareg")) {
+  skip_if_not_or_load_if_installed("betareg")) {
   data("GasolineYield")
   data("FoodExpenditure")
 
@@ -96,7 +96,19 @@ if (
     expect_equal(
       find_parameters(m1),
       list(
-        conditional = c("(Intercept)", "batch1", "batch2", "batch3", "batch4", "batch5", "batch6", "batch7", "batch8", "batch9", "temp"),
+        conditional = c(
+          "(Intercept)",
+          "batch1",
+          "batch2",
+          "batch3",
+          "batch4",
+          "batch5",
+          "batch6",
+          "batch7",
+          "batch8",
+          "batch9",
+          "temp"
+        ),
         precision = "(phi)"
       )
     )

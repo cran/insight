@@ -1,3 +1,32 @@
+# insight 0.19.1
+
+## New supported models
+
+* `hglm` (package *hglm*).
+
+## Changes to functions
+
+* Minor improvements to `get_data()` for `t.test()`.
+
+* `format_value()` gets a `lead_zero` argument, to keep or drop the leading
+  zero of a formatted value, as well as arguments `style_positive` and
+  `style_negative` to style positive or negative numbers.
+
+* `format_table()` now also formats columns named `SGPV` (second generation
+  p-values) as p-values.
+
+* Functions for models of class `clm` (like `find_formula()`, `find_variables()`,
+  `get_data()` etc.) now also include variables that were defined as `scale` or
+  `nominal` component.
+
+## Bug fixes
+
+* Fixed issue in `get_data()` for results from `kruskal.test()`.
+
+* Fixed issue in `find_weights()` for models of class `lme` and `gls`.
+
+* Fixed issue in `get_datagrid()` for models with multiple weight variables.
+
 # insight 0.19.0
 
 ## New supported models

@@ -102,7 +102,7 @@ find_parameters.MixMod <- function(x,
 
   l <- compact_list(list(
     conditional = names(lme4::fixef(x, sub_model = "main")),
-    random = re.names[grepl("^(?!zi_)", re.names, perl = TRUE)],
+    random = grep("^(?!zi_)", re.names, perl = TRUE, value = TRUE),
     zero_inflated = z_inflated,
     zero_inflated_random = z_inflated_random
   ))
@@ -115,7 +115,7 @@ find_parameters.MixMod <- function(x,
   l <- compact_list(l[elements])
 
   if (flatten) {
-    unique(unlist(l))
+    unique(unlist(l, use.names = FALSE))
   } else {
     l
   }
@@ -153,6 +153,33 @@ find_parameters.nlmerMod <- function(x,
   .filter_parameters(l, effects = effects, component = component, flatten = flatten)
 }
 
+
+#' @export
+find_parameters.hglm <- function(x,
+                                 effects = c("all", "fixed", "random"),
+                                 component = c("all", "conditional", "dispersion"),
+                                 flatten = FALSE,
+                                 ...) {
+  effects <- match.arg(effects)
+  fe <- x$fixef
+  re <- x$ranef
+
+  f <- find_formula(x)
+  if (!is.null(f$dispersion)) {
+    disp <- summary(x)$SummVC1
+    disp_name <- rownames(disp)
+  } else {
+    disp_name <- NULL
+  }
+
+  l <- compact_list(list(
+    conditional = names(fe),
+    random = names(re),
+    dispersion = disp_name
+  ))
+
+  .filter_parameters(l, effects = effects, component = component, flatten = flatten)
+}
 
 
 #' @rdname find_parameters.glmmTMB
@@ -214,7 +241,7 @@ find_parameters.HLfit <- function(x,
   if (effects == "fixed") {
     l <- list(conditional = names(lme4::fixef(x)))
   } else {
-    utils::capture.output(s <- summary(x))
+    utils::capture.output(s <- summary(x)) # nolint
     l <- compact_list(list(
       conditional = names(lme4::fixef(x)),
       random = s$lambda_table$Term

@@ -1,6 +1,6 @@
 .runThisTest <- Sys.getenv("RunAllinsightTests") == "yes"
 
-if (.runThisTest && requiet("metaBMA")) {
+if (.runThisTest && skip_if_not_or_load_if_installed("metaBMA")) {
   data(towels)
   set.seed(123)
   mf <- meta_fixed(logOR,
@@ -12,7 +12,7 @@ if (.runThisTest && requiet("metaBMA")) {
 
   test_that("get_priors-metaBMA", {
     priors <- get_priors(mf)
-    expect_equal(priors$Distribution, "Normal")
+    expect_identical(priors$Distribution, "Normal")
     expect_equal(priors$Scale, 0.3, tolerance = 1e-2)
   })
 
@@ -28,7 +28,7 @@ if (.runThisTest && requiet("metaBMA")) {
 
   test_that("get_priors-metaBMA", {
     priors <- get_priors(mr)
-    expect_equal(priors$Distribution, c("Student's t", "Inverse gamma"))
+    expect_identical(priors$Distribution, c("Student's t", "Inverse gamma"))
     expect_equal(priors$Scale, c(0.707, 0.15), tolerance = 1e-2)
   })
 }

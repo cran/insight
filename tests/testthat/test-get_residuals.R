@@ -1,4 +1,4 @@
-if (requiet("lme4")) {
+if (skip_if_not_or_load_if_installed("lme4")) {
   data(mtcars)
   data(sleepstudy)
   data(cbpp)
@@ -92,7 +92,14 @@ if (requiet("lme4")) {
   })
 
   test_that("get_residuals - glmer", {
-    m <- glmer(cbind(incidence, size - incidence) ~ period + (1 | herd), weights = w, data = cbpp, family = binomial, nAGQ = 0)
+    m <- glmer(
+      cbind(incidence, size - incidence) ~ period + (1 | herd),
+      weights = w,
+      data = cbpp,
+      family = binomial,
+      nAGQ = 0
+    )
+
     expect_equal(
       as.vector(get_residuals(m, weighted = FALSE, type = "response")),
       as.vector(residuals(m, type = "response"))

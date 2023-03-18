@@ -7,7 +7,7 @@
   # check if we have any data yet
   if (is_empty_object(mf)) {
     if (isTRUE(verbose)) {
-      warning("Could not get model data.", call. = FALSE)
+      format_warning("Could not get model data.")
     }
     return(NULL)
   }
@@ -19,13 +19,13 @@
   # make sure it's a data frame -----------------------------------------------
 
   if (!is.data.frame(mf)) {
-    mf <- tryCatch(as.data.frame(mf), error = function(e) NULL)
+    mf <- .safe(as.data.frame(mf))
     if (is.null(mf)) {
       if (isTRUE(verbose)) {
-        warning(format_message(
+        format_warning(
           "Cannot coerce data into a data frame.",
           "No data will be returned."
-        ), call. = FALSE)
+        )
       }
       return(NULL)
     }
@@ -120,22 +120,18 @@
   # proper column names and bind them back to the original model frame
   if (any(mc)) {
     # try to get model data from environment
-    md <- tryCatch(eval(model_call$data, environment(stats::formula(x))),
-      error = function(x) NULL
-    )
+    md <- .safe(eval(model_call$data, environment(stats::formula(x))))
 
     # in case we have missing data, the data frame in the environment
     # has more rows than the model frame
     if (isTRUE(!is.null(md) && nrow(md) != nrow(mf))) {
-      md <- tryCatch(
-        {
-          md <- .recover_data_from_environment(x)
-          md <- stats::na.omit(md[intersect(colnames(md), find_variables(x, effects = "all", component = "all", flatten = TRUE))])
-        },
-        error = function(e) {
-          NULL
-        }
-      )
+      md <- .safe({
+        md <- .recover_data_from_environment(x)
+        md <- stats::na.omit(md[intersect(
+          colnames(md),
+          find_variables(x, effects = "all", component = "all", flatten = TRUE)
+        )])
+      })
     }
 
     # if data not found in environment,
@@ -147,7 +143,7 @@
       mf_nonmatrix <- mf[, -which(mc), drop = FALSE]
 
       # fix for rms::rcs() functions
-      if (any(class(mf_matrix[[1]]) == "rms")) {
+      if (any(inherits(mf_matrix[[1]], "rms"))) {
         class(mf_matrix[[1]]) <- "matrix"
       }
 
@@ -185,7 +181,7 @@
         needed.vars <- needed.vars[-which(needed.vars == "(weights)")]
         mw <- mf[["(weights)"]]
         fw <- find_weights(x)
-        if (!is.null(fw) && fw %in% colnames(md)) {
+        if (!is.null(fw) && all(fw %in% colnames(md))) {
           needed.vars <- c(needed.vars, fw)
         }
       }
@@ -207,10 +203,10 @@
         # model frame, tell user and skip this step
         if (!length(needed.vars) || nrow(md) != nrow(mf)) {
           if (isTRUE(verbose)) {
-            warning(format_message(
+            format_warning(
               "Could not find all model variables in the data.",
               "Maybe the original data frame used to fit the model was modified?"
-            ), call. = FALSE)
+            )
           }
         } else {
           mf <- md[, needed.vars, drop = FALSE]
@@ -240,10 +236,7 @@
     }
 
     # check if we really have all formula terms in our model frame now
-    pv <- tryCatch(
-      find_predictors(x, effects = effects, flatten = TRUE, verbose = verbose),
-      error = function(x) NULL
-    )
+    pv <- .safe(find_predictors(x, effects = effects, flatten = TRUE, verbose = verbose))
 
     # still some undetected matrix-variables?
     if (!is.null(pv) && !all(pv %in% colnames(mf)) && isTRUE(verbose)) {
@@ -325,15 +318,10 @@
 
   # keep "as is" variable for response variables in data frame
   if (colnames(mf)[1] == rn[1] && grepl("I(", rn[1], fixed = TRUE, ignore.case = FALSE)) {
-    md <- tryCatch(
-      {
-        tmp <- .recover_data_from_environment(x)[, unique(c(rn_not_combined, cvn)), drop = FALSE]
-        tmp[, rn_not_combined, drop = FALSE]
-      },
-      error = function(x) {
-        NULL
-      }
-    )
+    md <- .safe({
+      tmp <- .recover_data_from_environment(x)[, unique(c(rn_not_combined, cvn)), drop = FALSE]
+      tmp[, rn_not_combined, drop = FALSE]
+    })
 
     if (!is.null(md)) {
       mf <- cbind(mf, md)
@@ -355,7 +343,7 @@
   # add weighting variable ----------------------------------------------------
 
   weighting_var <- find_weights(x)
-  if (!is.null(weighting_var) && !weighting_var %in% colnames(mf) && length(weighting_var) == 1) {
+  if (!is.null(weighting_var) && !all(weighting_var %in% colnames(mf))) {
     mf <- tryCatch(
       {
         tmp <- suppressWarnings(cbind(mf, get_weights(x)))
@@ -412,9 +400,7 @@
   # check if data argument was used
   model_call <- get_call(model)
   if (!is.null(model_call)) {
-    data_arg <- tryCatch(parse(text = safe_deparse(model_call))[[1]]$data,
-      error = function(e) NULL
-    )
+    data_arg <- .safe(parse(text = safe_deparse(model_call))[[1]]$data)
   } else {
     data_arg <- NULL
   }
@@ -433,7 +419,7 @@
   )
 
   # include subset variables
-  subset_vars <- tryCatch(all.vars(model_call$subset), error = function(e) NULL)
+  subset_vars <- .safe(all.vars(model_call$subset))
   missing_vars <- unique(c(setdiff(predictors, colnames(mf)), subset_vars))
 
   # check if missing variables can be recovered from the environment,
@@ -451,7 +437,7 @@
 
   # fix interaction terms
   if (!is.null(interactions)) {
-    full_data <- tryCatch(.recover_data_from_environment(model), error = function(e) NULL)
+    full_data <- .safe(.recover_data_from_environment(model))
     if (!is.null(full_data) && nrow(full_data) == nrow(mf)) {
       mf[c(interactions, names(interactions))] <- NULL
       mf <- cbind(mf, full_data[c(interactions, names(interactions))])
@@ -519,7 +505,7 @@
 # are included in the returned data frame
 #
 .return_combined_data <- function(x, mf, effects, component, model.terms, is_mv = FALSE, verbose = TRUE) {
-  response <- unlist(model.terms$response)
+  response <- unlist(model.terms$response, use.names = FALSE)
 
   # save factors attribute
   factors <- attr(mf, "factors", exact = TRUE)
@@ -547,12 +533,12 @@
       zero_inflated = sapply(model.terms[-1], function(i) i$zero_inflated_random)
     )
 
-    fixed.component.data <- unlist(fixed.component.data)
-    random.component.data <- unlist(random.component.data)
+    fixed.component.data <- unlist(fixed.component.data, use.names = FALSE)
+    random.component.data <- unlist(random.component.data, use.names = FALSE)
   } else {
     all_elements <- intersect(names(model.terms), .get_elements("fixed", "all"))
     fixed.component.data <- switch(component,
-      all = unlist(model.terms[all_elements]),
+      all = unlist(model.terms[all_elements], use.names = FALSE),
       conditional = model.terms$conditional,
       zi = ,
       zero_inflated = model.terms$zero_inflated,
@@ -661,7 +647,7 @@
   model.terms <- find_variables(x, effects = "all", component = "all", flatten = FALSE, verbose = FALSE)
   model.terms$offset <- find_offset(x)
 
-  mf <- tryCatch(stats::model.frame(x), error = function(x) NULL)
+  mf <- .safe(stats::model.frame(x))
   mf <- .prepare_get_data(x, mf, verbose = verbose)
   # add variables from other model components
   mf <- .add_zeroinf_data(x, mf, model.terms$zero_inflated)
@@ -685,7 +671,7 @@
 #
 .get_data_from_modelframe <- function(x, dat, effects, verbose = TRUE) {
   if (is_empty_object(dat)) {
-    warning("Could not get model data.", call. = FALSE)
+    format_warning("Could not get model data.")
     return(NULL)
   }
   cn <- clean_names(colnames(dat))
@@ -697,7 +683,7 @@
   )
   remain <- intersect(c(ft, find_weights(x)), cn)
 
-  mf <- tryCatch(dat[, remain, drop = FALSE], error = function(x) dat)
+  mf <- .safe(dat[, remain, drop = FALSE], dat)
   .prepare_get_data(x, mf, effects, verbose = verbose)
 }
 
@@ -709,16 +695,11 @@
 # return data from a data frame that is in the environment,
 # and subset the data, if necessary
 .get_startvector_from_env <- function(x) {
-  tryCatch(
-    {
-      sv <- eval(parse(text = safe_deparse(x@call))[[1]]$start)
-      if (is.list(sv)) sv <- sv[["nlpars"]]
-      names(sv)
-    },
-    error = function(e) {
-      NULL
-    }
-  )
+  .safe({
+    sv <- eval(parse(text = safe_deparse(x@call))[[1]]$start)
+    if (is.list(sv)) sv <- sv[["nlpars"]]
+    names(sv)
+  })
 }
 
 
@@ -771,16 +752,10 @@
         # no plus-minus?
         if (grepl("log\\((.*)\\+(.*)\\)", i)) {
           # 1. try: log(x + number)
-          plus_minus <- tryCatch(
-            eval(parse(text = gsub("log\\(([^,\\+)]+)(.*)\\)", "\\2", i))),
-            error = function(e) NULL
-          )
+          plus_minus <- .safe(eval(parse(text = gsub("log\\(([^,\\+)]+)(.*)\\)", "\\2", i))))
           # 2. try: log(number + x)
           if (is.null(plus_minus)) {
-            plus_minus <- tryCatch(
-              eval(parse(text = gsub("log\\(([^,\\+)]+)(.*)\\)", "\\1", i))),
-              error = function(e) NULL
-            )
+            plus_minus <- .safe(eval(parse(text = gsub("log\\(([^,\\+)]+)(.*)\\)", "\\1", i))))
           }
         }
         if (is.null(plus_minus)) {
@@ -865,14 +840,14 @@
       } else {
         # split by "and" and "by". E.g., for t.test(1:3, c(1,1:3)), we have
         # x$data.name = "1:3 and c(1, 1:3)"
-        data_name <- trim_ws(unlist(strsplit(x$data.name, "(and|by)")))
+        data_name <- trim_ws(unlist(strsplit(x$data.name, "(and|by)"), use.names = FALSE))
 
         # now we may have exceptions, e.g. for friedman.test(wb$x, wb$w, wb$t)
         # x$data.name is "wb$x, wb$w and wb$t" and we now have "wb$x, wb$w" and
         # "wb$t", so we need to split at comma as well. However, the above t-test
         # example returns "1:3" and "c(1, 1:3)", so we only must split at comma
         # when it is not inside parentheses.
-        data_comma <- unlist(strsplit(data_name, "(\\([^)]*\\))"))
+        data_comma <- unlist(strsplit(data_name, "(\\([^)]*\\))"), use.names = FALSE)
 
         # any comma not inside parentheses?
         if (any(grepl(",", data_comma, fixed = TRUE))) {
@@ -880,7 +855,8 @@
         }
 
         # exeception: list for kruskal-wallis
-        if (grepl("Kruskal-Wallis", x$method, fixed = TRUE) && startsWith(data_name, "list(")) {
+        if (grepl("Kruskal-Wallis", x$method, fixed = TRUE) &&
+          (length(data_name) == 1 && startsWith(data_name, "list("))) {
           l <- eval(.str2lang(x$data.name))
           names(l) <- paste0("x", seq_along(l))
           return(l)
@@ -889,25 +865,79 @@
         data_call <- lapply(data_name, .str2lang)
         columns <- lapply(data_call, eval)
 
-        # preserve table data for McNemar
-        if (!grepl(" (and|by) ", x$data.name) &&
+        # detect which kind of tests we have -----------------
+
+        # McNemar ============================================================
+
+        if (!grepl(" (and|by) ", x$data.name) && !grepl(x$method, "Paired t-test", fixed = TRUE) &&
+          !startsWith(x$method, "Wilcoxon") &&
           (startsWith(x$method, "McNemar") || (length(columns) == 1 && is.matrix(columns[[1]])))) {
+          # McNemar: preserve table data for McNemar ----
           return(as.table(columns[[1]]))
-          # check if data is a list for kruskal-wallis
+
+          # Kruskal Wallis ====================================================
         } else if (startsWith(x$method, "Kruskal-Wallis") && length(columns) == 1 && is.list(columns[[1]])) {
+          # Kruskal-Wallis: check if data is a list for kruskal-wallis ----
           l <- columns[[1]]
           names(l) <- paste0("x", seq_along(l))
           return(l)
-        } else {
-          max_len <- max(lengths(columns))
-          for (i in seq_along(columns)) {
-            if (length(columns[[i]]) < max_len) {
-              columns[[i]] <- c(columns[[i]], rep(NA, max_len - length(columns[[i]])))
+
+          # t-tests ===========================================================
+        } else if (grepl("t-test", x$method, fixed = TRUE)) {
+          # t-Test: (Welch) Two Sample t-test ----
+          if (grepl("Two", x$method, fixed = TRUE)) {
+            if (grepl(" and ", x$data.name, fixed = TRUE)) {
+              return(.htest_reshape_long(columns))
+            } else if (grepl(" by ", x$data.name, fixed = TRUE)) {
+              return(.htest_no_reshape(columns))
             }
+
+            # t-Test: Paired t-test
+          } else if (startsWith(x$method, "Paired")) {
+            if (grepl(" and ", x$data.name, fixed = TRUE)) {
+              # t-Test: Paired t-test, two vectors ----
+              return(.htest_reshape_long(columns))
+            } else if (grepl(" by ", x$data.name, fixed = TRUE)) {
+              # t-Test: Paired t-test, formula (no reshape required) ----
+              return(.htest_no_reshape(columns))
+            } else if (startsWith(x$data.name, "Pair(")) {
+              # t-Test: Paired t-test ----
+              return(.htest_reshape_matrix(columns))
+            }
+
+            # t-Test: One Sample
+          } else {
+            d <- .htest_other_format(columns)
           }
-          d <- as.data.frame(columns)
+
+          # Wilcoxon ========================================================
+        } else if (startsWith(x$method, "Wilcoxon rank sum")) {
+          if (grepl(" by ", x$data.name, fixed = TRUE)) {
+            # Wilcoxon: Paired Wilcoxon, formula (no reshape required) ----
+            return(.htest_no_reshape(columns))
+          } else {
+            return(.htest_reshape_long(columns))
+          }
+        } else if (startsWith(x$method, "Wilcoxon signed rank")) {
+          if (startsWith(x$data.name, "Pair(")) {
+            return(.htest_reshape_matrix(columns))
+          } else if (grepl(" and ", x$data.name, fixed = TRUE)) {
+            # Wilcoxon: Paired Wilcoxon, two vectors ----
+            return(.htest_reshape_long(columns))
+          } else if (grepl(" by ", x$data.name, fixed = TRUE)) {
+            # Wilcoxon: Paired Wilcoxon, formula (no reshape required) ----
+            return(.htest_no_reshape(columns))
+          } else {
+            # Wilcoxon: One sample ----
+            d <- .htest_other_format(columns)
+          }
+        } else {
+          # Other htests ======================================================
+
+          d <- .htest_other_format(columns)
         }
 
+        # fix column names
         if (all(grepl("(.*)\\$(.*)", data_name)) && length(data_name) == length(colnames(d))) {
           colnames(d) <- gsub("(.*)\\$(.*)", "\\2", data_name)
         } else if (ncol(d) > 2) {
@@ -929,18 +959,57 @@
   # 2nd try
   if (is.null(out)) {
     for (parent_level in 1:5) {
-      out <- tryCatch(
-        {
-          data_name <- trim_ws(unlist(strsplit(x$data.name, "(and|,|by)")))
-          as.table(get(data_name, envir = parent.frame(n = parent_level)))
-        },
-        error = function(e) {
-          NULL
-        }
-      )
+      out <- .safe({
+        data_name <- trim_ws(unlist(strsplit(x$data.name, "(and|,|by)"), use.names = FALSE))
+        as.table(get(data_name, envir = parent.frame(n = parent_level)))
+      })
       if (!is.null(out)) break
     }
   }
 
   out
+}
+
+
+# reshape helpers -------------------
+
+.htest_reshape_long <- function(columns) {
+  data.frame(
+    x = unlist(columns),
+    y = c(
+      rep("1", length(columns[[1]])),
+      rep("2", length(columns[[2]]))
+    ),
+    stringsAsFactors = TRUE
+  )
+}
+
+.htest_no_reshape <- function(columns) {
+  data.frame(
+    x = columns[[1]],
+    y = as.factor(columns[[2]])
+  )
+}
+
+
+.htest_reshape_matrix <- function(columns) {
+  data.frame(
+    x = c(columns[[1]][, 1, drop = TRUE], columns[[1]][, 2, drop = TRUE]),
+    y = c(
+      rep("1", nrow(columns[[1]])),
+      rep("2", nrow(columns[[1]]))
+    ),
+    stringsAsFactors = TRUE
+  )
+}
+
+
+.htest_other_format <- function(columns) {
+  max_len <- max(lengths(columns))
+  for (i in seq_along(columns)) {
+    if (length(columns[[i]]) < max_len) {
+      columns[[i]] <- c(columns[[i]], rep(NA, max_len - length(columns[[i]])))
+    }
+  }
+  as.data.frame(columns)
 }

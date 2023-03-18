@@ -1,4 +1,4 @@
-if (requiet("aod")) {
+if (skip_if_not_or_load_if_installed("aod")) {
   data(dja)
   m1 <- suppressWarnings(betabin(cbind(y, n - y) ~ group * trisk, ~village, data = dja))
 
@@ -74,7 +74,14 @@ if (requiet("aod")) {
   })
 
   test_that("find_variables", {
-    expect_equal(find_variables(m1), list(response = c("y", "n"), conditional = c("group", "trisk"), random = "village"))
+    expect_equal(
+      find_variables(m1),
+      list(
+        response = c("y", "n"),
+        conditional = c("group", "trisk"),
+        random = "village"
+      )
+    )
     expect_equal(find_variables(m1, flatten = TRUE), c("y", "n", "group", "trisk", "village"))
   })
 
