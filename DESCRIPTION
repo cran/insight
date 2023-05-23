@@ -1,7 +1,7 @@
 Type: Package
 Package: insight
 Title: Easy Access to Model Information for Various Model Objects
-Version: 0.19.1
+Version: 0.19.2
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -30,7 +30,7 @@ Authors@R:
              comment = c(ORCID = "0000-0002-4287-4801")),
       person(given = "Brenton M.",
              family = "Wiernik",
-             role = c("aut"),
+             role = c("aut", "ctb"),
              email = "brenton@wiernik.org",
              comment = c(ORCID = "0000-0001-9560-6336", Twitter = "@bmwiernik")),
       person(given = "Vincent", 
@@ -38,6 +38,11 @@ Authors@R:
              email = "vincent.arel-bundock@umontreal.ca", 
              role = c("aut", "ctb"),
              comment = c(ORCID = "0000-0003-2042-7063")),
+      person(given = "Etienne", 
+             family = "Bacher",
+             email = "etienne.bacher@protonmail.com", 
+             role = c("aut", "ctb"),
+             comment = c(ORCID = "0000-0002-9271-5075")),
       person(given = "Alex",
              family = "Hayes",
              role = c("rev"),
@@ -52,7 +57,12 @@ Authors@R:
              family = "Thériault",
              role = "ctb",
              email = "remi.theriault@mail.mcgill.ca",
-             comment = c(ORCID = "0000-0003-4315-6788", Twitter = "@rempsyc")))
+             comment = c(ORCID = "0000-0003-4315-6788", Twitter = "@rempsyc")),
+      person(given = "Alex",
+             family = "Reinhart",
+             role = "ctb",
+             email = "areinhar@stat.cmu.edu",
+             comment = c(ORCID = "0000-0002-6658-514X")))
 Maintainer: Daniel Lüdecke <d.luedecke@uke.de>
 Description: A tool to provide an easy, intuitive and consistent
     access to information contained in various R models, like model
@@ -66,31 +76,34 @@ Description: A tool to provide an easy, intuitive and consistent
 License: GPL-3
 URL: https://easystats.github.io/insight/
 BugReports: https://github.com/easystats/insight/issues
-Depends: R (>= 3.5)
+Depends: R (>= 3.6)
 Imports: methods, stats, utils
 Suggests: AER, afex, aod, BayesFactor, bayestestR, bbmle, bdsmatrix,
-        betareg, bife, biglm, blavaan, blme, boot, brms, censReg, cgam,
-        clubSandwich, coxme, cplm, crch, datawizard, effectsize,
-        emmeans, epiR, estimatr, feisr, fixest, fungible, gam, gamlss,
-        gamm4, gbm, gee, geepack, geoR, GLMMadaptive, glmmTMB, gmnl,
-        gt, httr, ivreg, JM, knitr, lavaan, lavaSearch2, lfe, lme4,
-        lmerTest, lmtest, logistf, logitr, MASS, marginaleffects,
-        Matrix, mclogit, mclust, MCMCglmm, merTools, metaBMA, metafor,
-        metaplus, mgcv, mice, mlogit, mhurdle, mmrm, multgee, nlme,
-        nnet, nonnest2, ordinal, panelr, parameters, parsnip, pbkrtest,
-        performance, plm, poorman, pscl, psych, quantreg, rmarkdown,
-        rms, robustbase, robustlmm, rstanarm (>= 2.21.1), rstantools,
-        rstudioapi, sandwich, speedglm, splines, statmod, survey,
-        survival, testthat, truncreg, tweedie, TMB, VGAM
+        betareg, bife, biglm, blavaan, blme, boot, brms, broom, car,
+        carData, censReg, cgam, clubSandwich, coxme, cplm, crch, curl,
+        datawizard, effectsize, emmeans, epiR, estimatr, feisr, fixest,
+        fungible, gam, gamlss, gamlss.data, gamm4, gbm, gee, geepack,
+        geoR, GLMMadaptive, glmmTMB, gmnl, grDevices, gt, httr, interp,
+        ivreg, JM, knitr, lavaan, lavaSearch2, lfe, lme4, lmerTest,
+        lmtest, logistf, logitr, MASS, marginaleffects, Matrix,
+        mclogit, mclust, MCMCglmm, merTools, metaBMA, metadat, metafor,
+        metaplus, mgcv, mice, mlogit, mhurdle, mmrm, multgee,
+        nestedLogit, nlme, nnet, nonnest2, ordinal, panelr, parameters,
+        parsnip, pbkrtest, performance, plm, poorman, pscl, psych,
+        quantreg, rmarkdown, rms, rpart, robustbase, robustlmm,
+        rstanarm (>= 2.21.1), rstantools, rstudioapi, sandwich,
+        speedglm, splines, statmod, survey, survival, testthat,
+        truncreg, tweedie, TMB, VGAM
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
-RoxygenNote: 7.2.3.9000
+RoxygenNote: 7.2.3
 Config/testthat/edition: 3
+Config/testthat/parallel: true
 Config/Needs/website: rstudio/bslib, r-lib/pkgdown,
         easystats/easystatstemplate
 NeedsCompilation: no
-Packaged: 2023-03-18 17:27:01 UTC; Daniel
+Packaged: 2023-05-23 15:28:57 UTC; mail
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @strengejacke),
   Dominique Makowski [aut, ctb] (<https://orcid.org/0000-0001-5375-9967>,
@@ -100,13 +113,15 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
   Philip Waggoner [aut, ctb] (<https://orcid.org/0000-0002-7825-7573>),
   Mattan S. Ben-Shachar [aut, ctb]
     (<https://orcid.org/0000-0002-4287-4801>),
-  Brenton M. Wiernik [aut] (<https://orcid.org/0000-0001-9560-6336>,
+  Brenton M. Wiernik [aut, ctb] (<https://orcid.org/0000-0001-9560-6336>,
     @bmwiernik),
   Vincent Arel-Bundock [aut, ctb]
     (<https://orcid.org/0000-0003-2042-7063>),
+  Etienne Bacher [aut, ctb] (<https://orcid.org/0000-0002-9271-5075>),
   Alex Hayes [rev] (<https://orcid.org/0000-0002-4985-5160>),
   Grant McDermott [ctb] (<https://orcid.org/0000-0001-7883-8573>),
   Rémi Thériault [ctb] (<https://orcid.org/0000-0003-4315-6788>,
-    @rempsyc)
+    @rempsyc),
+  Alex Reinhart [ctb] (<https://orcid.org/0000-0002-6658-514X>)
 Repository: CRAN
-Date/Publication: 2023-03-18 18:10:02 UTC
+Date/Publication: 2023-05-23 16:22:07 UTC

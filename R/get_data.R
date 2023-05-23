@@ -209,17 +209,27 @@ get_data <- function(x, ...) {
     model_call[["data"]] <- as.name(data_name)
   }
 
-  # first, try environment of formula, see #666
-  dat <- .safe(eval(model_call$data, envir = environment(model_call$formula)))
+  # special handling for fixest, see #767
+  if (inherits(x, "fixest")) {
+    # when called from inside function, fixest seems to have a different
+    # environment that requires recovering from parent-environment
+    dat <- .safe(eval(model_call$data, envir = parent.env(x$call_env)))
+  } else {
+    # first, try environment of formula, see #666. set enclos = NULL so eval()
+    # does not fall back to parent frame when the environment is NULL, since we
+    # want to try that after checking the formula
+    dat <- .safe(eval(model_call$data,
+      envir = environment(model_call$formula),
+      enclos = NULL
+    ))
+  }
 
   # second, try to extract formula directly
   if (is.null(dat)) {
-    dat <- .safe(eval(model_call$data, envir = environment(find_formula(x))))
-  }
-
-  # next try, parent frame
-  if (is.null(dat)) {
-    dat <- .safe(eval(model_call$data, envir = parent.frame()))
+    dat <- .safe(eval(model_call$data,
+      envir = environment(find_formula(x)$conditional),
+      enclos = NULL
+    ))
   }
 
   # sanity check- if data frame is named like a function, e.g.
@@ -1749,6 +1759,15 @@ get_data.mle2 <- function(x, ...) {
 get_data.mle <- get_data.mle2
 
 
+#' @export
+get_data.nestedLogit <- function(x, ...) {
+  d <- x$data
+  if (!is.null(x$subset)) {
+    d <- subset(d, eval(parse(text = x$subset), envir = d))
+  }
+  d
+}
+
 
 #' @export
 get_data.glht <- function(x, source = "environment", verbose = TRUE, ...) {
@@ -2075,6 +2094,20 @@ get_data.mlogit <- function(x, source = "environment", verbose = TRUE, ...) {
   mf <- tryCatch(as.data.frame(stats::model.frame(x)), error = function(x) NULL)
   .prepare_get_data(x, mf, verbose = verbose)
 }
+
+
+#' @export
+get_data.phylolm <- function(x, source = "environment", verbose = TRUE, ...) {
+  # DO NOT TOUCH THE SOURCE ARGUMENT!
+  # phylo models have no model.frame() method, so we can only recover from
+  # environment. We still need the "source" argument, even if it's not used here,
+  #  to avoid the "multiple argument match" error for those instances, where
+  # `get_data()` is called # with `source = "frame"`.
+  .get_data_from_environment(x, source = "environment", verbose = verbose, ...)
+}
+
+#' @export
+get_data.phyloglm <- get_data.phylolm
 
 
 #' @export

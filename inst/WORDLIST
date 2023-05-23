@@ -111,6 +111,9 @@ logitr
 logloss
 lqmm
 marginaleffects
+mblogit
+mclogit
+mlogit
 md
 merMod
 merTools
@@ -124,9 +127,11 @@ modelling
 multcomp
 mvord
 nd
+nestedLogit
 occurence
 optimizers
 patilindrajeets
+phylolm
 plm
 poisson
 pre
@@ -166,3 +171,4 @@ visualisation
 warmup
 warmups
 ’s
+speedglm

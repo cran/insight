@@ -1,3 +1,43 @@
+# insight 0.19.2
+
+## Breaking changes
+
+* The minimum needed R version has been bumped to `3.6`.
+
+* `download_model()` no longer errors when a model object could not be downloaded,
+  but instead returns `NULL`. This prevents test failures, and allows to skip
+  tests when the return value of `download_model()` is `NULL`.
+
+## General
+
+* Improved support for `mclogit` models (package *mclogit*) and `mipo` objects
+  (package *mice*) for models with ordinal or categorical response.
+
+## New supported models
+
+* `phylolm` and `phyloglm` (package *phylolm*), `nestedLogit` (package *nestedLogit*).
+
+## Bug fixes
+
+* Fixed issue in `get_variance()` for *glmmTMB* models with rank deficient
+  coefficients.
+
+* Fixed issues in `get_weights()` for `glm` models without weights and `na.action`
+  not set to default in the model call.
+
+* `clean_names()` now also removes the `relevel()` pattern.
+
+* Fixed issue in `model_info()` for models of class `gamlss`.
+
+* Fixed problems preventing `get_data()` from locating data defined in
+  non-global environments.
+
+* Fixed issue in `get_predicted()` for variables of class numeric matrix created
+  by `scale()`, which were correctly handled only when `get_data()` failed to
+  find the data in the appropriate environment.
+
+* Fixed issue in `model_info()` for `gee` models from `binomial` families.
+
 # insight 0.19.1
 
 ## New supported models
