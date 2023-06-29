@@ -1,3 +1,33 @@
+# insight 0.19.3
+
+## Breaking changes
+
+* `standardize_column_order()` has changed the position when re-ordering Bayes
+  factors, ROPEs and ESS / Rhat (mainly relevant for Bayesian models).
+
+## Changes to functions
+
+* `standardize_names()` and `standardize_column_order()` now also recognize the
+  `"response.level"` column name.
+
+* `get_data()` for _lavaan_ models is now more stable at retrieving model data
+  when this is not available in the environment.
+
+* `find_terms()` gets an `as_term_labels` argument, to extract model terms
+  from the formula's `"term.labels"` attribute. This is closer to the behaviour
+  of `stats::terms()`, but may be insufficient, e.g. for mixed models.
+
+## Bug fixes
+
+* `get_random()` now returns the same observations as `get_data()` and correctly
+  removes missing values from the data before returning it.
+
+* `find_parameters()` for marginal effects ignores the `"s.value"` column (which
+  was added in a recent update).
+
+* Fixed issue in `get_response()` for _brms_ models with `trunc()` function in
+  the response variable.
+
 # insight 0.19.2
 
 ## Breaking changes
@@ -78,7 +108,7 @@
 * `get_data()` was revised and now always tries to recover the data that was
   used to fit a model from the environment. If this fails, it falls back to
   recovering data from the model frame (the former default behaviour).
-  Futrhermore, the `source` argument can be used to explicitly force the old
+  Furthermore, the `source` argument can be used to explicitly force the old
   behaviour: `source = "mf"` will try to recover data from the model frame first,
   then possibly falling back to look in the environment.
 
