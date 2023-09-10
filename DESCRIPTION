@@ -1,7 +1,7 @@
 Type: Package
 Package: insight
 Title: Easy Access to Model Information for Various Model Objects
-Version: 0.19.3
+Version: 0.19.4
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -87,13 +87,13 @@ Suggests: AER, afex, aod, BayesFactor, bayestestR, bbmle, bdsmatrix,
         ivreg, JM, knitr, lavaan, lavaSearch2, lfe, lme4, lmerTest,
         lmtest, logistf, logitr, MASS, marginaleffects, Matrix,
         mclogit, mclust, MCMCglmm, merTools, metaBMA, metadat, metafor,
-        metaplus, mgcv, mice, mlogit, mhurdle, mmrm, multgee,
-        nestedLogit, nlme, nnet, nonnest2, ordinal, parameters,
-        parsnip, pbkrtest, performance, plm, poorman, pscl, psych,
-        quantreg, rmarkdown, rms, rpart, robustbase, robustlmm,
-        rstanarm (>= 2.21.1), rstantools, rstudioapi, sandwich,
-        speedglm, splines, statmod, survey, survival, testthat,
-        truncreg, tweedie, TMB, VGAM
+        metaplus, mgcv, mice, mlogit, mhurdle, mmrm, modelbased,
+        multgee, nestedLogit, nlme, nnet, nonnest2, ordinal, panelr,
+        parameters, parsnip, pbkrtest, performance, plm, poorman, pscl,
+        psych, quantreg, rmarkdown, rms, rpart, robustbase, robustlmm,
+        rstanarm (>= 2.21.1), rstantools (>= 2.1.0), rstudioapi,
+        sandwich, speedglm, splines, statmod, survey, survival,
+        testthat, truncreg, tweedie, TMB, VGAM
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
@@ -103,7 +103,7 @@ Config/testthat/parallel: true
 Config/Needs/website: rstudio/bslib, r-lib/pkgdown,
         easystats/easystatstemplate
 NeedsCompilation: no
-Packaged: 2023-06-27 17:03:14 UTC; DL
+Packaged: 2023-09-10 18:00:16 UTC; Daniel
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @strengejacke),
   Dominique Makowski [aut, ctb] (<https://orcid.org/0000-0001-5375-9967>,
@@ -124,4 +124,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @rempsyc),
   Alex Reinhart [ctb] (<https://orcid.org/0000-0002-6658-514X>)
 Repository: CRAN
-Date/Publication: 2023-06-29 13:30:02 UTC
+Date/Publication: 2023-09-10 19:00:02 UTC
