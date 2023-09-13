@@ -50,7 +50,12 @@ check_if_installed <- function(package,
   what_is_wrong <- what_you_can_do <- NULL
 
   if (is.null(minimum_version)) {
-    minimum_version <- .get_dep_version(dep = package)
+    minimum_version <- .safe(.get_dep_version(dep = package))
+  }
+
+  # sanity check for equal length of package and minimum_version
+  if (!is.null(minimum_version) && length(package) != length(minimum_version)) {
+    minimum_version <- NULL
   }
 
   ## Test
@@ -160,8 +165,9 @@ print.check_if_installed <- function(x, ...) {
     dep_string <- unlist(strsplit(dep_string, ">", fixed = TRUE))
     gsub("[^0-9.]+", "", dep_string[2])
   })
-  if (all(is.na(out))) {
+  out <- unlist(compact_list(out))
+  if (all(is.na(out)) || !length(out)) {
     out <- NULL
   }
-  unlist(out)
+  out
 }

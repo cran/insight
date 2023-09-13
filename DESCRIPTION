@@ -1,7 +1,7 @@
 Type: Package
 Package: insight
 Title: Easy Access to Model Information for Various Model Objects
-Version: 0.19.4
+Version: 0.19.5
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -103,7 +103,7 @@ Config/testthat/parallel: true
 Config/Needs/website: rstudio/bslib, r-lib/pkgdown,
         easystats/easystatstemplate
 NeedsCompilation: no
-Packaged: 2023-09-10 18:00:16 UTC; Daniel
+Packaged: 2023-09-13 07:09:05 UTC; Daniel
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @strengejacke),
   Dominique Makowski [aut, ctb] (<https://orcid.org/0000-0001-5375-9967>,
@@ -124,4 +124,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @rempsyc),
   Alex Reinhart [ctb] (<https://orcid.org/0000-0002-6658-514X>)
 Repository: CRAN
-Date/Publication: 2023-09-10 19:00:02 UTC
+Date/Publication: 2023-09-13 13:20:02 UTC

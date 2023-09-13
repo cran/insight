@@ -1,8 +1,8 @@
-d2486bb94c7517d4481201d0a672682a *DESCRIPTION
+b9fdb568fa0615c8636fa31b98396e77 *DESCRIPTION
 1becf9e16217720b5e7cdefc0d6d67ff *NAMESPACE
-806126087b0df317861dc88b3ae4ce93 *NEWS.md
+138ee84be0c64924955a91c5d5b679b2 *NEWS.md
 52e0aec86a3c617046d2cc7f3ca3c540 *R/all_equal_models.R
-feb3f2544ccfcbf0b9c8ff314244e0e4 *R/check_if_installed.R
+0dc8749833cd9fbafb5cc423c9680b2d *R/check_if_installed.R
 36ecb8d35e342f0537c4bb7866459a20 *R/clean_names.R
 e329afcbd74fb7bf4b4772e4c43160bf *R/clean_parameters.R
 23f2381e719d4f40e51b62ea916c7f44 *R/color_if.R
@@ -135,7 +135,7 @@ b2ef4148f3d981813f57432a2c54184d *inst/CITATION
 dcdc2bfbcef45803c1869506057a9fb6 *inst/WORDLIST
 06d9910efe37c5cd69c6c7f05c37decf *inst/doc/display.R
 63ef6cb69ca80b0c0e61c2c5b888cf57 *inst/doc/display.Rmd
-26acd9519b3e906eb66720b3e6599601 *inst/doc/display.html
+f729d134cbaf49973a19651591992b9a *inst/doc/display.html
 ae54307ad2e78972d7356c56f5cba13a *inst/doc/export.R
 b370275914b68836324f33f97059f4f7 *inst/doc/export.Rmd
 21193c0eab6213ae2dead5587c84e2b5 *inst/doc/export.html
