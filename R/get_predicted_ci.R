@@ -2,13 +2,40 @@
 #'
 #' @inheritParams get_predicted
 #' @param predictions A vector of predicted values (as obtained by
-#'   `stats::fitted()`, `stats::predict()` or
-#'   [get_predicted()]).
+#'   `stats::fitted()`, `stats::predict()` or [get_predicted()]).
 #' @param se Numeric vector of standard error of predicted values. If `NULL`,
 #'   standard errors are calculated based on the variance-covariance matrix.
 #' @inheritParams get_predicted
 #'
-#' @examples
+#' @details
+#' Typically, `get_predicted()` returns confidence intervals based on the standard
+#' errors as returned by the `predict()`-function, assuming normal distribution
+#' (`+/- 1.96 * SE`) resp. a Student's t-distribution (if degrees of freedom are
+#' available). If `predict()` for a certain class does _not_ return standard
+#' errors (for example, *merMod*-objects), these are calculated manually, based
+#' on following steps: matrix-multiply `X` by the parameter vector `B` to get the
+#' predictions, then extract the variance-covariance matrix `V` of the parameters
+#' and compute `XVX'` to get the variance-covariance matrix of the predictions.
+#' The square-root of the diagonal of this matrix represent the standard errors
+#' of the predictions, which are then multiplied by the critical test-statistic
+#' value (e.g., ~1.96 for normal distribution) for the confidence intervals.
+#'
+#' If `ci_type = "prediction"`, prediction intervals are calculated. These are
+#' wider than confidence intervals, because they also take into account the
+#' uncertainty of the model itself. Before taking the square-root of the
+#' diagonal of the variance-covariance matrix, `get_predicted_ci()` adds the
+#' residual variance to these values. For mixed models, `get_variance_residual()`
+#' is used, while `get_sigma()^2` is used for non-mixed models.
+#'
+#' It is preferred to rely on standard errors returned by `get_predicted()` (i.e.
+#' returned by the `predict()`-function), because these are more accurate than
+#' manually calculated standard errors. Use `get_predicted_ci()` only if standard
+#' errors are not available otherwise. An exception are Bayesian models or
+#' bootstrapped predictions, where `get_predicted_ci()` returns quantiles of the
+#' posterior distribution or bootstrapped samples of the predictions. These are
+#' actually accurate standard errors resp. confidence (or uncertainty) intervals.
+#'
+#' @examplesIf require("boot") && require("datawizard") && require("bayestestR")
 #' # Confidence Intervals for Model Predictions
 #' # ------------------------------------------
 #'
@@ -27,23 +54,19 @@
 #'
 #' # Bootstrapped
 #' # ------------
-#' if (require("boot")) {
-#'   predictions <- get_predicted(x, iterations = 500)
-#'   get_predicted_ci(x, predictions)
-#' }
+#' predictions <- get_predicted(x, iterations = 500)
+#' get_predicted_ci(x, predictions)
 #'
-#' if (require("datawizard") && require("bayestestR")) {
-#'   ci_vals <- get_predicted_ci(x, predictions, ci = c(0.80, 0.95))
-#'   head(ci_vals)
-#'   datawizard::reshape_ci(ci_vals)
+#' ci_vals <- get_predicted_ci(x, predictions, ci = c(0.80, 0.95))
+#' head(ci_vals)
+#' datawizard::reshape_ci(ci_vals)
 #'
-#'   ci_vals <- get_predicted_ci(x,
-#'     predictions,
-#'     dispersion_method = "MAD",
-#'     ci_method = "HDI"
-#'   )
-#'   head(ci_vals)
-#' }
+#' ci_vals <- get_predicted_ci(x,
+#'   predictions,
+#'   dispersion_method = "MAD",
+#'   ci_method = "HDI"
+#' )
+#' head(ci_vals)
 #'
 #'
 #' # Logistic model
@@ -78,7 +101,7 @@ get_predicted_ci.default <- function(x,
                                      vcov_args = NULL,
                                      verbose = TRUE,
                                      ...) {
-  # sanity check, if CI should be skipped
+  # validation check, if CI should be skipped
   if (is.null(ci)) {
     return(ci)
   }
@@ -236,7 +259,7 @@ get_predicted_ci.bracl <- get_predicted_ci.mlm
 
   dots <- list(...)
 
-  # Sanity checks
+  # validation checks
   if (!is.null(se)) {
     se <- as.numeric(se)
   }
@@ -278,7 +301,7 @@ get_predicted_ci.bracl <- get_predicted_ci.mlm
         # for multiple length, SE and predictions may match, could be intended?
         # could there be any cases where we have twice or x times the length of
         # predictions as standard errors?
-        format_warning("Predictions and standard errors are not of the same length. Please check if you need the `data` argument.")
+        format_warning("Predictions and standard errors are not of the same length. Please check if you need the `data` argument.") # nolint
       } else {
         format_error("Predictions and standard errors are not of the same length. Please specify the `data` argument.")
       }
@@ -302,7 +325,7 @@ get_predicted_ci.bracl <- get_predicted_ci.mlm
     format_error("The `data` argument should be a data frame.")
   }
   mm <- get_modelmatrix(x, data = data)
-  out <- sapply(
+  out <- sapply( # nolint
     seq_len(nrow(mm)), function(i) {
       suppressMessages(
         lmerTest::contestMD(x, mm[i, , drop = FALSE], ddf = type)[["DenDF"]]
@@ -319,7 +342,7 @@ get_predicted_ci.bracl <- get_predicted_ci.mlm
                                              ci = 0.95,
                                              link_inv = NULL,
                                              ...) {
-  # Sanity checks
+  # validation checks
   if (is.null(predictions)) {
     return(data.frame(SE = se))
   }
@@ -343,7 +366,7 @@ get_predicted_ci.bracl <- get_predicted_ci.mlm
         # for multiple length, SE and predictions may match, could be intended?
         # could there be any cases where we have twice or x times the length of
         # predictions as standard errors?
-        format_warning("Predictions and standard errors are not of the same length. Please check if you need the `data` argument.")
+        format_warning("Predictions and standard errors are not of the same length. Please check if you need the `data` argument.") # nolint
       } else {
         format_error("Predictions and standard errors are not of the same length. Please specify the `data` argument.")
       }
@@ -433,7 +456,7 @@ get_predicted_ci.bracl <- get_predicted_ci.mlm
     # installed?
     check_if_installed(c("bayestestR", "datawizard"))
     out <- as.data.frame(bayestestR::ci(as.data.frame(t(iter)), ci = ci, method = ci_method))
-    if (length(ci) > 1) out <- datawizard::reshape_ci(out)
+    if (length(ci) > 1L) out <- datawizard::reshape_ci(out)
   }
   out$Parameter <- out$CI <- NULL
   row.names(out) <- NULL

@@ -2,7 +2,6 @@
 # to ensure we have a "clean" data frame from the data that was used to fit
 # the model. This also means that, unless necessary for further processing,
 # variables transformed during model fitting are not included in this data frame
-#
 .prepare_get_data <- function(x, mf, effects = "fixed", verbose = TRUE) {
   # check if we have any data yet
   if (is_empty_object(mf)) {
@@ -811,7 +810,7 @@
   }
   pattern <- sprintf("%s\\(([^,\\+)]*).*", type)
   out <- trim_ws(gsub(pattern, "\\1", grep(pattern, x, value = TRUE)))
-  # sanity check - when we have something like "log(1+x)" instead "log(x+1)",
+  # validation check - when we have something like "log(1+x)" instead "log(x+1)",
   # the regex pattern returns "1" instead of "x3"
   if (!is.na(suppressWarnings(as.numeric(out)))) {
     out <- trim_ws(gsub(pattern, "\\2", grep(pattern, x, value = TRUE)))
@@ -940,7 +939,7 @@
         # fix column names
         if (all(grepl("(.*)\\$(.*)", data_name)) && length(data_name) == length(colnames(d))) {
           colnames(d) <- gsub("(.*)\\$(.*)", "\\2", data_name)
-        } else if (ncol(d) > 2) {
+        } else if (ncol(d) > 2L) {
           colnames(d) <- paste0("x", seq_len(ncol(d)))
         } else if (ncol(d) == 2) {
           colnames(d) <- c("x", "y")

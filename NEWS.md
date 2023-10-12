@@ -1,3 +1,29 @@
+# insight 0.19.6
+
+## General
+
+* Improved documentation for `get_predicted_ci()`.
+
+## Changes to functions
+
+* `model_info()` now recognized ordered beta families.
+
+* `find_formula` and `get_response` for `nestedLogit` models gain a `dichotomies`
+  argument, to return values for the dichotomies used to fit the model.
+
+## Bug fixes
+
+* `find_transformation()` better detects power-transformation of the response
+  variable.
+
+* Corrected return value from `find_statistic` for `nnet::multinom()` models.
+
+* `clean_parameters()` did not return the `"clean_parameters"` class attributes
+  for some object. This caused issued in upstream packages.
+
+* Fixed issue in `model_info()`, which did not correctly detect "Bernoulli"
+  property for some models classes (like `glmmTMB` or `glmerMod`).
+
 # insight 0.19.5
 
 ## Bug fixes

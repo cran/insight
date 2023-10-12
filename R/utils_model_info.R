@@ -49,23 +49,34 @@
 
   is_bernoulli <- FALSE
 
-  if (binom_fam && inherits(x, "glm") && !neg_bin_fam && !poisson_fam) {
+  # These models can be logistic regresion models with bernoulli outcome
+  potential_bernoulli <- inherits(
+    x,
+    c(
+      "glm", "gee", "glmmTMB", "glmerMod", "merMod", "stanreg", "MixMod",
+      "logistf", "bigglm", "brglm", "feglm", "geeglm", "glmm", "glmmadmb",
+      "glmmPQL", "glmrob", "glmRob", "logitmfx", "logitor", "logitr",
+      "mixed", "mixor", "svyglm"
+    )
+  )
+
+  if (binom_fam && potential_bernoulli && !neg_bin_fam && !poisson_fam) {
     if (inherits(x, "gee")) {
       resp <- .safe(get_response(x))
     } else {
       resp <- .safe(stats::model.response(stats::model.frame(x)))
     }
-    if (!is.null(resp)) {
+    if (is.null(resp)) {
+      is_bernoulli <- TRUE
+    } else {
       if ((is.data.frame(resp) || is.matrix(resp)) && ncol(resp) == 1) {
         resp <- as.vector(resp[[1]])
       }
       if (!is.data.frame(resp) && !is.matrix(resp) && all(.is.int(.factor_to_numeric(resp[[1]])))) {
         is_bernoulli <- TRUE
       }
-    } else {
-      is_bernoulli <- TRUE
     }
-  } else if (fitfam %in% "bernoulli") {
+  } else if (all(fitfam == "bernoulli")) {
     is_bernoulli <- TRUE
   }
 
@@ -73,7 +84,7 @@
   # beta family --------
 
   beta_fam <-
-    inherits(x, c("betareg", "betamfx")) |
+    inherits(x, c("betareg", "betamfx", "ordbetareg")) |
       fitfam %in% c(
         "beta",
         "Beta",
@@ -81,14 +92,16 @@
         "Beta Inflated",
         "Zero Inflated Beta",
         "Beta Inflated zero",
-        "Beta Inflated one"
+        "Beta Inflated one",
+        "ordbeta"
       )
 
 
-  # special families (beta-binomial, dirichlet) --------
+  # special families (beta-binomial, dirichlet, ordered beta) --------
 
-  betabin_fam <- inherits(x, "BBreg") | fitfam %in% "betabinomial"
-  dirichlet_fam <- inherits(x, "DirichletRegModel") | fitfam %in% "dirichlet"
+  betabin_fam <- inherits(x, "BBreg") | any(fitfam == "betabinomial")
+  orderedbeta_fam <- any(fitfam == "ordbeta") | inherits(x, "ordbetareg")
+  dirichlet_fam <- inherits(x, "DirichletRegModel") | any(fitfam == "dirichlet")
 
   ## TODO beta-binomial = binomial?
   if (betabin_fam) binom_fam <- TRUE
@@ -393,6 +406,7 @@
     is_negbin = neg_bin_fam,
     is_beta = beta_fam,
     is_betabinomial = betabin_fam,
+    is_orderedbeta = orderedbeta_fam,
     is_dirichlet = dirichlet_fam,
     is_exponential = exponential_fam,
     is_logit = logit.link,
@@ -435,6 +449,7 @@
     n_grouplevels = n.grp.lvl
   )
 }
+
 
 .get_ordinal_link <- function(x) {
   switch(x$link,
@@ -497,7 +512,6 @@
     class(x@denominator)
   }
 }
-
 
 
 .is_semLme <- function(x) {

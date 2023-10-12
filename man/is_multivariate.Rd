@@ -12,7 +12,7 @@ package.}
 }
 \value{
 A logical, \code{TRUE} if either \code{x} is a model object and is a multivariate
-response model, or \code{TRUE} if a return value from a function of \pkg{insight}
+response model, or \code{TRUE} if a return value from a function of \strong{insight}
 is from a multivariate response model.
 }
 \description{
@@ -20,7 +20,8 @@ Small helper that checks if a model is a multivariate response
 model, i.e. a model with multiple outcomes.
 }
 \examples{
-\dontrun{
+\dontshow{if (require("rstanarm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\donttest{
 library(rstanarm)
 data("pbcLong")
 model <- suppressWarnings(stan_mvmer(
@@ -37,4 +38,5 @@ f <- find_formula(model)
 is_multivariate(model)
 is_multivariate(f)
 }
+\dontshow{\}) # examplesIf}
 }

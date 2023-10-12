@@ -23,16 +23,16 @@
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' n_obs(m)
 #'
-#' if (require("lme4")) {
-#'   data(cbpp, package = "lme4")
-#'   m <- glm(
-#'     cbind(incidence, size - incidence) ~ period,
-#'     data = cbpp,
-#'     family = binomial(link = "logit")
-#'   )
-#'   n_obs(m)
-#'   n_obs(m, disaggregate = TRUE)
-#' }
+#' @examplesIf require("lme4", quietly = TRUE)
+#' data(cbpp, package = "lme4")
+#' m <- glm(
+#'   cbind(incidence, size - incidence) ~ period,
+#'   data = cbpp,
+#'   family = binomial(link = "logit")
+#' )
+#' n_obs(m)
+#' n_obs(m, disaggregate = TRUE)
+#'
 #' @export
 n_obs <- function(x, ...) {
   UseMethod("n_obs")
@@ -91,6 +91,7 @@ n_obs.glm <- function(x, disaggregate = FALSE, ...) {
     } else if (!is.data.frame(resp_data) && .is.fraction(resp_data)) {
       .nobs <- sum(get_weights(x))
     }
+    .nobs <- as.integer(.nobs)
   }
 
   .nobs
@@ -164,8 +165,8 @@ n_obs.selection <- function(x, type = c("all", "observed", "censored"), ...) {
   type <- match.arg(type)
   s <- summary(x)
   switch(type,
-    "all" = s$param$nObs,
-    "observed" = s$param$N1,
+    all = s$param$nObs,
+    observed = s$param$N1,
     s$param$N0
   )
 }

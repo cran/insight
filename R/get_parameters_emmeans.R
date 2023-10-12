@@ -3,36 +3,34 @@
 #'
 #' @description Returns the coefficients from a model.
 #'
-#' @param merge_parameters Logical, if `TRUE` and `x` has multiple
-#'   columns for parameter names (like `emmGrid` objects may have), these
-#'   are merged into a single parameter column, with parameters names and values
-#'   as values.
+#' @param merge_parameters Logical, if `TRUE` and `x` has multiple columns for
+#' parameter names (like `emmGrid` objects may have), these are merged into a
+#' single parameter column, with parameters names and values as values.
 #' @param ... Currently not used.
 #'
 #' @inheritParams find_parameters
 #' @inheritParams find_predictors
 #' @inheritParams get_parameters.BGGM
 #'
-#' @note Note that `emmGrid` or `emm_list` objects returned by
-#'   functions from \pkg{emmeans} have a different structure compared to
-#'   usual regression models. Hence, the `Parameter` column does not
-#'   always contain names of *variables*, but may rather contain
-#'   *values*, e.g. for contrasts. See an example for pairwise
-#'   comparisons below.
+#' @note
+#' Note that `emmGrid` or `emm_list` objects returned by functions from
+#' **emmeans** have a different structure compared to usual regression models.
+#' Hence, the `Parameter` column does not always contain names of *variables*,
+#' but may rather contain *values*, e.g. for contrasts. See an example for
+#' pairwise comparisons below.
 #'
 #' @return A data frame with two columns: the parameter names and the related
-#'   point estimates.
+#' point estimates.
 #'
-#' @examples
+#' @examplesIf require("emmeans", quietly = TRUE)
 #' data(mtcars)
 #' model <- lm(mpg ~ wt * factor(cyl), data = mtcars)
-#' if (require("emmeans", quietly = TRUE)) {
-#'   emm <- emmeans(model, "cyl")
-#'   get_parameters(emm)
 #'
-#'   emm <- emmeans(model, pairwise ~ cyl)
-#'   get_parameters(emm)
-#' }
+#' emm <- emmeans(model, "cyl")
+#' get_parameters(emm)
+#'
+#' emm <- emmeans(model, pairwise ~ cyl)
+#' get_parameters(emm)
 #' @export
 get_parameters.emmGrid <- function(x, summary = FALSE, merge_parameters = FALSE, ...) {
   # check if we have a Bayesian model here
@@ -40,10 +38,10 @@ get_parameters.emmGrid <- function(x, summary = FALSE, merge_parameters = FALSE,
     s <- summary(x)
     estimate_pos <- which(colnames(s) == attr(s, "estName"))
     params <- s[, seq_len(estimate_pos - 1), drop = FALSE]
-    if (isTRUE(merge_parameters) && ncol(params) > 1) {
+    if (isTRUE(merge_parameters) && ncol(params) > 1L) {
       r <- apply(params, 1, function(i) paste0(colnames(params), " [", i, "]"))
       out <- data.frame(
-        Parameter = unname(sapply(as.data.frame(r), paste, collapse = ", ")),
+        Parameter = unname(vapply(as.data.frame(r), toString, character(1))),
         Estimate = s[[estimate_pos]],
         stringsAsFactors = FALSE,
         row.names = NULL
@@ -72,12 +70,12 @@ get_parameters.emm_list <- function(x, summary = FALSE, ...) {
   if (!.is_baysian_emmeans(x) || isTRUE(summary)) {
     do.call(rbind, lapply(names(x), function(i) {
       out <- get_parameters(x[[i]], summary = summary)
-      if (ncol(out) > 2) {
+      if (ncol(out) > 2L) {
         est <- out$Estimate
         out$Estimate <- NULL
         r <- apply(out, 1, function(i) paste0(colnames(out), " [", i, "]"))
         out <- data.frame(
-          Parameter = unname(sapply(as.data.frame(r), paste, collapse = ", ")),
+          Parameter = unname(vapply(as.data.frame(r), toString, character(1))),
           Estimate = unname(est),
           stringsAsFactors = FALSE
         )

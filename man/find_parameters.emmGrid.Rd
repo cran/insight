@@ -12,10 +12,9 @@
 \item{flatten}{Logical, if \code{TRUE}, the values are returned
 as character vector, not as list. Duplicated values are removed.}
 
-\item{merge_parameters}{Logical, if \code{TRUE} and \code{x} has multiple
-columns for parameter names (like \code{emmGrid} objects may have), these
-are merged into a single parameter column, with parameters names and values
-as values.}
+\item{merge_parameters}{Logical, if \code{TRUE} and \code{x} has multiple columns for
+parameter names (like \code{emmGrid} objects may have), these are merged into a
+single parameter column, with parameters names and values as values.}
 
 \item{...}{Currently not used.}
 }
@@ -27,10 +26,10 @@ A list of parameter names. For simple models, only one list-element,
 Returns the parameter names from a model.
 }
 \examples{
+\dontshow{if (require("emmeans", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 data(mtcars)
 model <- lm(mpg ~ wt * factor(cyl), data = mtcars)
-if (require("emmeans", quietly = TRUE)) {
-  emm <- emmeans(model, c("wt", "cyl"))
-  find_parameters(emm)
-}
+emm <- emmeans(model, c("wt", "cyl"))
+find_parameters(emm)
+\dontshow{\}) # examplesIf}
 }

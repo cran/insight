@@ -2,71 +2,71 @@
 #' @name find_formula
 #'
 #' @description Returns the formula(s) for the different parts of a model
-#'    (like fixed or random effects, zero-inflated component, ...).
-#'    `formula_ok()` checks if a model formula has valid syntax
-#'    regarding writing `TRUE` instead of `T` inside `poly()`
-#'    and that no data names are used (i.e. no `data$variable`, but rather
-#'    `variable`).
+#'  (like fixed or random effects, zero-inflated component, ...).
+#'  `formula_ok()` checks if a model formula has valid syntax
+#'  regarding writing `TRUE` instead of `T` inside `poly()`
+#'  and that no data names are used (i.e. no `data$variable`, but rather
+#'  `variable`).
 #'
 #' @param verbose Toggle warnings.
+#' @param dichotomies Logical, if model is a `nestedLogit` objects, returns
+#' the formulas for the dichotomies.
 #' @param ... Currently not used.
 #' @inheritParams find_predictors
 #'
 #' @return A list of formulas that describe the model. For simple models,
-#'    only one list-element, `conditional`, is returned. For more complex
-#'    models, the returned list may have following elements:
+#'  only one list-element, `conditional`, is returned. For more complex
+#'  models, the returned list may have following elements:
 #'
-#'    - `conditional`, the "fixed effects" part from the model (in the
-#'      context of fixed-effects or instrumental variable regression, also
-#'      called *regressors*) . One exception are `DirichletRegModel` models
-#'      from \pkg{DirichletReg}, which has two or three components,
-#'      depending on `model`.
+#'  - `conditional`, the "fixed effects" part from the model (in the
+#'    context of fixed-effects or instrumental variable regression, also
+#'    called *regressors*) . One exception are `DirichletRegModel` models
+#'    from **DirichletReg**, which has two or three components,
+#'    depending on `model`.
 #'
-#'    - `random`, the "random effects" part from the model (or the
-#'      `id` for gee-models and similar)
+#'  - `random`, the "random effects" part from the model (or the
+#'    `id` for gee-models and similar)
 #'
-#'    - `zero_inflated`, the "fixed effects" part from the
-#'      zero-inflation component of the model
+#'  - `zero_inflated`, the "fixed effects" part from the
+#'    zero-inflation component of the model
 #'
-#'    - `zero_inflated_random`, the "random effects" part from the
-#'      zero-inflation component of the model
+#'  - `zero_inflated_random`, the "random effects" part from the
+#'    zero-inflation component of the model
 #'
-#'    - `dispersion`, the dispersion formula
+#'  - `dispersion`, the dispersion formula
 #'
-#'    - `instruments`, for fixed-effects or instrumental variable
-#'      regressions like `ivreg::ivreg()`, `lfe::felm()` or `plm::plm()`,
-#'      the instrumental variables
+#'  - `instruments`, for fixed-effects or instrumental variable
+#'    regressions like `ivreg::ivreg()`, `lfe::felm()` or `plm::plm()`,
+#'    the instrumental variables
 #'
-#'    - `cluster`, for fixed-effects regressions like
-#'      `lfe::felm()`, the cluster specification
+#'  - `cluster`, for fixed-effects regressions like
+#'    `lfe::felm()`, the cluster specification
 #'
-#'    - `correlation`, for models with correlation-component like
-#'      `nlme::gls()`, the formula that describes the correlation structure
+#'  - `correlation`, for models with correlation-component like
+#'    `nlme::gls()`, the formula that describes the correlation structure
 #'
-#'    - `slopes`, for fixed-effects individual-slope models like
-#'      `feisr::feis()`, the formula for the slope parameters
+#'  - `slopes`, for fixed-effects individual-slope models like
+#'    `feisr::feis()`, the formula for the slope parameters
 #'
-#'    - `precision`, for `DirichletRegModel` models from
-#'      \pkg{DirichletReg}, when parametrization (i.e. `model`) is
-#'      `"alternative"`.
+#'  - `precision`, for `DirichletRegModel` models from
+#'    **DirichletReg**, when parametrization (i.e. `model`) is
+#'    `"alternative"`.
 #'
 #' @note For models of class `lme` or `gls` the correlation-component
 #'   is only returned, when it is explicitly defined as named argument
 #'   (`form`), e.g. `corAR1(form = ~1 | Mare)`
 #'
-#' @examples
+#' @examplesIf require("lme4", quietly = TRUE)
 #' data(mtcars)
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' find_formula(m)
 #'
-#' if (require("lme4")) {
-#'   m <- lmer(Sepal.Length ~ Sepal.Width + (1 | Species), data = iris)
-#'   f <- find_formula(m)
-#'   f
-#'   format(f)
-#' }
+#' m <- lme4::lmer(Sepal.Length ~ Sepal.Width + (1 | Species), data = iris)
+#' f <- find_formula(m)
+#' f
+#' format(f)
 #' @export
-find_formula <- function(x, verbose = TRUE, ...) {
+find_formula <- function(x, ...) {
   UseMethod("find_formula")
 }
 
@@ -92,6 +92,7 @@ formula_ok <- function(x, verbose = TRUE, ...) {
 
 # Default method -----------------------------------
 
+#' @rdname find_formula
 #' @export
 find_formula.default <- function(x, verbose = TRUE, ...) {
   f <- .safe(list(conditional = stats::formula(x)))
@@ -118,7 +119,6 @@ find_formula.list <- function(x, verbose = TRUE, ...) {
   }
   .find_formula_return(f, verbose = verbose)
 }
-
 
 
 #' @export
@@ -178,7 +178,6 @@ find_formula.gam <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.gamlss <- function(x, verbose = TRUE, ...) {
   f <- tryCatch(
@@ -214,7 +213,6 @@ find_formula.gamlss <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.bamlss <- function(x, verbose = TRUE, ...) {
   f <- stats::formula(x)
@@ -239,7 +237,6 @@ find_formula.bamlss <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.gamm <- function(x, verbose = TRUE, ...) {
   f <- compact_list(find_formula(x$gam))
@@ -247,7 +244,7 @@ find_formula.gamm <- function(x, verbose = TRUE, ...) {
 
   if (length(random) == 0) {
     f.random <- NULL
-  } else if (length(random) > 1) {
+  } else if (length(random) > 1L) {
     f.random <- lapply(random, function(r) stats::as.formula(paste0("~1|", r)))
   } else {
     f.random <- stats::as.formula(paste0("~1|", random))
@@ -320,6 +317,23 @@ find_formula.maxLik <- find_formula.default
 find_formula.maxim <- find_formula.default
 
 
+#' @rdname find_formula
+#' @export
+find_formula.nestedLogit <- function(x, dichotomies = FALSE, verbose = TRUE, ...) {
+  if (isTRUE(dichotomies)) {
+    stats::setNames(
+      lapply(x$models, function(m) {
+        f <- list(conditional = get_call(m)$formula)
+        .find_formula_return(f, verbose = verbose)
+      }),
+      names(x$models)
+    )
+  } else {
+    find_formula.default(x, verbose = verbose, ...)
+  }
+}
+
+
 #' @export
 find_formula.systemfit <- function(x, verbose = TRUE, ...) {
   f <- stats::formula(x)
@@ -328,7 +342,7 @@ find_formula.systemfit <- function(x, verbose = TRUE, ...) {
   })
   f <- compact_list(l)
 
-  if (length(f) > 1) {
+  if (length(f) > 1L) {
     attr(f, "is_mv") <- "1"
   }
   .find_formula_return(f)
@@ -547,7 +561,6 @@ find_formula.gee <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.MANOVA <- function(x, verbose = TRUE, ...) {
   f <- compact_list(list(
@@ -561,19 +574,18 @@ find_formula.MANOVA <- function(x, verbose = TRUE, ...) {
 find_formula.RM <- find_formula.MANOVA
 
 
-
 #' @export
 find_formula.gls <- function(x, verbose = TRUE, ...) {
   ## TODO this is an intermediate fix to return the correlation variables from gls-objects
   fcorr <- x$call$correlation
-  if (!is.null(fcorr)) {
+  if (is.null(fcorr)) {
+    f_corr <- NULL
+  } else {
     if (inherits(fcorr, "name")) {
       f_corr <- attributes(eval(fcorr))$formula
     } else {
       f_corr <- parse(text = safe_deparse(fcorr))[[1]]
     }
-  } else {
-    f_corr <- NULL
   }
   if (is.symbol(f_corr)) {
     f_corr <- paste("~", safe_deparse(f_corr))
@@ -597,7 +609,6 @@ find_formula.gls <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.LORgee <- function(x, verbose = TRUE, ...) {
   f <- tryCatch(
@@ -619,7 +630,6 @@ find_formula.LORgee <- function(x, verbose = TRUE, ...) {
   )
   .find_formula_return(f, verbose = verbose)
 }
-
 
 
 #' @export
@@ -647,7 +657,6 @@ find_formula.cglm <- function(x, verbose = TRUE, ...) {
 
 
 # mfx models ---------------------------------------
-
 
 #' @export
 find_formula.betamfx <- find_formula.betareg
@@ -682,7 +691,6 @@ find_formula.probitmfx <- find_formula.logitmfx
 
 # Panel data models ---------------------------------------
 
-
 #' @export
 find_formula.ivreg <- function(x, verbose = TRUE, ...) {
   f <- tryCatch(
@@ -703,10 +711,8 @@ find_formula.ivreg <- function(x, verbose = TRUE, ...) {
   .find_formula_return(f, verbose = verbose)
 }
 
-
 #' @export
 find_formula.iv_robust <- find_formula.ivreg
-
 
 #' @export
 find_formula.ivFixed <- find_formula.ivreg
@@ -745,7 +751,6 @@ find_formula.plm <- function(x, verbose = TRUE, ...) {
   )
   .find_formula_return(f, verbose = verbose)
 }
-
 
 #' @export
 find_formula.pgmm <- find_formula.plm
@@ -786,7 +791,6 @@ find_formula.felm <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.mhurdle <- function(x, verbose = TRUE, ...) {
   f <- safe_deparse(stats::formula(x)[[3]])
@@ -794,13 +798,13 @@ find_formula.mhurdle <- function(x, verbose = TRUE, ...) {
 
   f.zi <- paste0("~", f_parts[1])
 
-  if (length(f_parts) > 1) {
+  if (length(f_parts) > 1L) {
     f.cond <- paste0(safe_deparse(stats::formula(x)[[2]]), "~", f_parts[2])
   } else {
     f.cond <- NULL
   }
 
-  if (length(f_parts) > 2) {
+  if (length(f_parts) > 2L) {
     f.ip <- paste0("~", f_parts[3])
   } else {
     f.ip <- NULL
@@ -823,7 +827,6 @@ find_formula.mhurdle <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.feglm <- function(x, verbose = TRUE, ...) {
   f <- safe_deparse(stats::formula(x))
@@ -831,13 +834,13 @@ find_formula.feglm <- function(x, verbose = TRUE, ...) {
 
   f.cond <- trim_ws(f_parts[1])
 
-  if (length(f_parts) > 1) {
+  if (length(f_parts) > 1L) {
     f.instr <- paste0("~", trim_ws(f_parts[2]))
   } else {
     f.instr <- NULL
   }
 
-  if (length(f_parts) > 2) {
+  if (length(f_parts) > 2L) {
     f.clus <- paste0("~", trim_ws(f_parts[3]))
   } else {
     f.clus <- NULL
@@ -852,7 +855,6 @@ find_formula.feglm <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.fixest <- function(x, verbose = TRUE, ...) {
   f <- safe_deparse(stats::formula(x))
@@ -860,7 +862,7 @@ find_formula.fixest <- function(x, verbose = TRUE, ...) {
 
   f.cond <- trim_ws(f_parts[1])
 
-  if (length(f_parts) > 1) {
+  if (length(f_parts) > 1L) {
     f.clus <- paste0("~", trim_ws(f_parts[2]))
   } else {
     f.clus <- parse(text = deparse(x$call))[[1]]$fixef
@@ -877,7 +879,6 @@ find_formula.fixest <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.feis <- function(x, verbose = TRUE, ...) {
   f <- safe_deparse(stats::formula(x))
@@ -890,7 +891,7 @@ find_formula.feis <- function(x, verbose = TRUE, ...) {
   # sub(".*id ?= ?(.*?),.*", "\\1", safe_deparse(x$call), perl = TRUE)
   # sub(".*\\bid\\s*=\\s*([^,]+).*", "\\1", safe_deparse(x$call), perl = TRUE)
 
-  if (length(f_parts) > 1) {
+  if (length(f_parts) > 1L) {
     f.slopes <- paste0("~", trim_ws(f_parts[2]))
   } else {
     f.slopes <- NULL
@@ -905,7 +906,6 @@ find_formula.feis <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.bife <- function(x, verbose = TRUE, ...) {
   f <- safe_deparse(stats::formula(x))
@@ -913,7 +913,7 @@ find_formula.bife <- function(x, verbose = TRUE, ...) {
 
   f.cond <- trim_ws(f_parts[1])
 
-  if (length(f_parts) > 1) {
+  if (length(f_parts) > 1L) {
     f.rand <- paste0("~", trim_ws(f_parts[2]))
   } else {
     f.rand <- NULL
@@ -927,12 +927,10 @@ find_formula.bife <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.ivprobit <- function(x, verbose = TRUE, ...) {
   NULL
 }
-
 
 
 #' @export
@@ -942,18 +940,18 @@ find_formula.wbm <- function(x, verbose = TRUE, ...) {
 
   f.cond <- trim_ws(f_parts[1])
 
-  if (length(f_parts) > 1) {
+  if (length(f_parts) > 1L) {
     f.instr <- paste0("~", trim_ws(f_parts[2]))
   } else {
     f.instr <- NULL
   }
 
-  if (length(f_parts) > 2) {
+  if (length(f_parts) > 2L) {
     f_parts[3] <- trim_ws(f_parts[3])
     if (grepl("\\((.+)\\|(.+)\\)", f_parts[3])) {
       # we have multiple random effects, which we can better extract
       # via ".findbars()"
-      if (length(gregexpr("|", f_parts[3], fixed = TRUE)[[1]]) > 1) {
+      if (length(gregexpr("|", f_parts[3], fixed = TRUE)[[1]]) > 1L) {
         f.rand <- .findbars(stats::as.formula(paste("~", f_parts[3])))
       } else {
         f.rand <- gsub("(\\(|\\))", "", f_parts[3])
@@ -995,7 +993,6 @@ find_formula.glimML <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.tobit <- function(x, verbose = TRUE, ...) {
   f <- tryCatch(
@@ -1028,7 +1025,6 @@ find_formula.zcpglm <- function(x, verbose = TRUE, ...) {
 
 
 # Ordinal models  --------------------------------------
-
 
 #' @export
 find_formula.clmm2 <- function(x, verbose = TRUE, ...) {
@@ -1069,13 +1065,13 @@ find_formula.DirichletRegModel <- function(x, verbose = TRUE, ...) {
 
   f.cond <- trim_ws(f_parts[1])
 
-  if (length(f_parts) > 1) {
+  if (length(f_parts) > 1L) {
     f.cond2 <- paste0("~", trim_ws(f_parts[2]))
   } else {
     f.cond2 <- NULL
   }
 
-  if (length(f_parts) > 2) {
+  if (length(f_parts) > 2L) {
     f.cond3 <- paste0("~", trim_ws(f_parts[3]))
   } else {
     f.cond3 <- NULL
@@ -1147,7 +1143,6 @@ find_formula.glmmTMB <- function(x, verbose = TRUE, ...) {
   ))
   .find_formula_return(f, verbose = verbose)
 }
-
 
 
 #' @export
@@ -1241,7 +1236,6 @@ find_formula.merModList <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.sem <- function(x, verbose = TRUE, ...) {
   if (!.is_semLme(x)) {
@@ -1274,14 +1268,14 @@ find_formula.lme <- function(x, verbose = TRUE, ...) {
   }
   ## TODO this is an intermediate fix to return the correlation variables from lme-objects
   fcorr <- x$call$correlation
-  if (!is.null(fcorr)) {
+  if (is.null(fcorr)) {
+    fc <- NULL
+  } else {
     if (inherits(fcorr, "name")) {
       fc <- attributes(eval(fcorr))$formula
     } else {
       fc <- parse(text = safe_deparse(fcorr))[[1]]$form
     }
-  } else {
-    fc <- NULL
   }
 
   f <- compact_list(list(
@@ -1307,7 +1301,6 @@ find_formula.lqmm <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.mixor <- function(x, verbose = TRUE, ...) {
   fm <- x$call$formula
@@ -1315,11 +1308,11 @@ find_formula.mixor <- function(x, verbose = TRUE, ...) {
   f_id <- deparse(x$call$id)
   f_rs <- x$call$which.random.slope
 
-  if (!is.null(f_rs)) {
+  if (is.null(f_rs)) {
+    fmr <- f_id
+  } else {
     f_rs <- trim_ws(unlist(strsplit(safe_deparse(x$call$formula[[3]]), "+", fixed = TRUE), use.names = FALSE))[f_rs]
     fmr <- paste(f_rs, "|", f_id)
-  } else {
-    fmr <- f_id
   }
 
   fmr <- stats::as.formula(paste("~", fmr))
@@ -1330,7 +1323,6 @@ find_formula.mixor <- function(x, verbose = TRUE, ...) {
   ))
   .find_formula_return(f, verbose = verbose)
 }
-
 
 
 #' @export
@@ -1350,7 +1342,6 @@ find_formula.MixMod <- function(x, verbose = TRUE, ...) {
 }
 
 
-
 #' @export
 find_formula.BBmm <- function(x, verbose = TRUE, ...) {
   f.cond <- parse(text = safe_deparse(x$call))[[1]]$fixed.formula
@@ -1362,7 +1353,6 @@ find_formula.BBmm <- function(x, verbose = TRUE, ...) {
   ))
   .find_formula_return(f, verbose = verbose)
 }
-
 
 
 #' @export
@@ -1491,7 +1481,10 @@ find_formula.BFBayesFactor <- function(x, verbose = TRUE, ...) {
     dt <- utils::tail(x@numerator, 1)[[1]]@dataTypes
     frand <- names(dt)[which(dt == "random")]
 
-    if (!is_empty_object(frand)) {
+    if (is_empty_object(frand)) {
+      f.random <- NULL
+      f.cond <- stats::as.formula(fcond)
+    } else {
       f.random <- stats::as.formula(paste0("~", paste(frand, collapse = " + ")))
       for (i in frand) {
         fcond <- sub(i, "", fcond, fixed = TRUE)
@@ -1507,9 +1500,6 @@ find_formula.BFBayesFactor <- function(x, verbose = TRUE, ...) {
         fcond <- paste(fcond, "1")
       }
       f.cond <- stats::as.formula(trim_ws(fcond))
-    } else {
-      f.random <- NULL
-      f.cond <- stats::as.formula(fcond)
     }
   } else if (.classify_BFBayesFactor(x) %in% c("ttest1", "ttest2")) {
     f.cond <- .safe(stats::as.formula(x@numerator[[1]]@identifier$formula))
@@ -1759,7 +1749,7 @@ find_formula.model_fit <- function(x, verbose = TRUE, ...) {
   }, TRUE)
   f <- compact_list(f[keep])
   # exceptions, if random effect is named Xr
-  if (!length(f) && len > 1) {
+  if (!length(f) && len > 1L) {
     f <- list(stats::as.formula("~1 | Xr"))
   }
   f
@@ -1847,7 +1837,7 @@ find_formula.model_fit <- function(x, verbose = TRUE, ...) {
   parts <- trim_ws(unlist(strsplit(split = pattern, x = RHS, perl = TRUE), use.names = FALSE))
   d_RHS <- unique(gsub("(.*)\\$(.*)", "\\1", grep("(.*)\\$(.*)", parts, value = TRUE)))
 
-  if (n_unique(c(d_LHS, d_RHS)) > 1) {
+  if (n_unique(c(d_LHS, d_RHS)) > 1L) {
     format_error("Multiple data objects present in formula. Specify your model using the `data` argument instead.")
   } else {
     d <- unique(d_RHS)

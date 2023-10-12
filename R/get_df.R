@@ -228,7 +228,7 @@ get_df.phylolm <- function(x, type = "residual", ...) {
     choices = c("wald", "residual", "normal", "model")
   )
   type <- switch(type,
-    "model" = stats::logLik(x)$df,
+    model = stats::logLik(x)$df,
     get_df.default(x, type = "residual")
   )
 }
@@ -250,8 +250,8 @@ get_df.fixest <- function(x, type = "residual", ...) {
     choices = c("wald", "residual", "normal")
   )
   type <- switch(type,
-    "wald" = "t",
-    "residual" = "resid",
+    wald = "t",
+    residual = "resid",
     type
   )
   if (type == "normal") {
@@ -388,13 +388,17 @@ get_df.mediate <- function(x, ...) {
 # Model approach (model-based / logLik df) ------------------------------
 
 .model_df <- function(x) {
-  dof <- .safe(attr(stats::logLik(x), "df"))
+  # logLik() for plm calls get_df(), so we would have a recursion here.
+  # therefore, we need to check for plm first
+  if (inherits(x, "plm")) {
+    dof <- NULL
+  } else {
+    dof <- .safe(attr(stats::logLik(x), "df"))
+  }
 
   if (is.null(dof) || all(is.infinite(dof)) || all(is.na(dof))) {
     r <- .safe(x$rank)
-    if (!is.null(r)) {
-      dof <- r + 1
-    } else {
+    if (is.null(r)) {
       n <- n_parameters(x)
       extra <- 0
       mi <- model_info(x, verbose = FALSE)
@@ -404,6 +408,8 @@ get_df.mediate <- function(x, ...) {
       }
 
       dof <- n + extra
+    } else {
+      dof <- r + 1
     }
   }
 

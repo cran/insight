@@ -1,7 +1,7 @@
 Type: Package
 Package: insight
 Title: Easy Access to Model Information for Various Model Objects
-Version: 0.19.5
+Version: 0.19.6
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -90,20 +90,20 @@ Suggests: AER, afex, aod, BayesFactor, bayestestR, bbmle, bdsmatrix,
         metaplus, mgcv, mice, mlogit, mhurdle, mmrm, modelbased,
         multgee, nestedLogit, nlme, nnet, nonnest2, ordinal, panelr,
         parameters, parsnip, pbkrtest, performance, plm, poorman, pscl,
-        psych, quantreg, rmarkdown, rms, rpart, robustbase, robustlmm,
-        rstanarm (>= 2.21.1), rstantools (>= 2.1.0), rstudioapi,
-        sandwich, speedglm, splines, statmod, survey, survival,
-        testthat, truncreg, tweedie, TMB, VGAM
+        psych, quantreg, Rcpp, rmarkdown, rms, rpart, robustbase,
+        robustlmm, rstanarm (>= 2.21.1), rstantools (>= 2.1.0),
+        rstudioapi, sandwich, speedglm, splines, statmod, survey,
+        survival, testthat, truncreg, tweedie, TMB, VGAM
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
-RoxygenNote: 7.2.3
+RoxygenNote: 7.2.3.9000
 Config/testthat/edition: 3
 Config/testthat/parallel: true
 Config/Needs/website: rstudio/bslib, r-lib/pkgdown,
         easystats/easystatstemplate
 NeedsCompilation: no
-Packaged: 2023-09-13 07:09:05 UTC; Daniel
+Packaged: 2023-10-12 10:36:22 UTC; mail
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @strengejacke),
   Dominique Makowski [aut, ctb] (<https://orcid.org/0000-0001-5375-9967>,
@@ -124,4 +124,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @rempsyc),
   Alex Reinhart [ctb] (<https://orcid.org/0000-0002-6658-514X>)
 Repository: CRAN
-Date/Publication: 2023-09-13 13:20:02 UTC
+Date/Publication: 2023-10-12 11:50:02 UTC

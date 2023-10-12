@@ -126,7 +126,7 @@
 
   if (is_special && is_empty_object(re)) {
     re <- all.vars(f[[2L]])
-    if (length(re) > 1) {
+    if (length(re) > 1L) {
       re <- as.list(re)
       split_nested <- FALSE
     }
@@ -245,8 +245,8 @@
 
   # location parameters
   location_parameters <- switch(effects,
-    "fixed" = setdiff(elements, c(auxiliary_parameters, random_parameters)),
-    "random" = intersect(setdiff(elements, auxiliary_parameters), random_parameters),
+    fixed = setdiff(elements, c(auxiliary_parameters, random_parameters)),
+    random = intersect(setdiff(elements, auxiliary_parameters), random_parameters),
     setdiff(elements, auxiliary_parameters)
   )
 
@@ -404,7 +404,7 @@
 
 
 # .split_formula <- function(f) {
-#   rhs <- if (length(f) > 2)
+#   rhs <- if (length(f) > 2L)
 #     f[[3L]]
 #   else
 #     f[[2L]]
@@ -445,17 +445,17 @@
 # required component of model-summary
 .filter_component <- function(dat, component) {
   switch(component,
-    "cond" = ,
-    "conditional" = dat[dat$Component == "conditional", , drop = FALSE],
-    "zi" = ,
-    "zero_inflated" = dat[dat$Component == "zero_inflated", , drop = FALSE],
-    "dispersion" = dat[dat$Component == "dispersion", , drop = FALSE],
-    "smooth_terms" = dat[dat$Component == "smooth_terms", , drop = FALSE],
-    "ip" = ,
-    "infrequent_purchase" = dat[dat$Component == "infrequent_purchase", , drop = FALSE],
-    "auxiliary" = dat[dat$Component == "auxiliary", , drop = FALSE],
-    "distributional" = dat[dat$Component == "distributional", , drop = FALSE],
-    "sigma" = dat[dat$Component == "sigma", , drop = FALSE],
+    cond = ,
+    conditional = dat[dat$Component == "conditional", , drop = FALSE],
+    zi = ,
+    zero_inflated = dat[dat$Component == "zero_inflated", , drop = FALSE],
+    dispersion = dat[dat$Component == "dispersion", , drop = FALSE],
+    smooth_terms = dat[dat$Component == "smooth_terms", , drop = FALSE],
+    ip = ,
+    infrequent_purchase = dat[dat$Component == "infrequent_purchase", , drop = FALSE],
+    auxiliary = dat[dat$Component == "auxiliary", , drop = FALSE],
+    distributional = dat[dat$Component == "distributional", , drop = FALSE],
+    sigma = dat[dat$Component == "sigma", , drop = FALSE],
     dat
   )
 }
@@ -609,7 +609,7 @@
 
   expandSlash <- function(bb) {
     makeInteraction <- function(x) {
-      if (length(x) < 2) {
+      if (length(x) < 2L) {
         return(x)
       }
       trm1 <- makeInteraction(x[[1]])

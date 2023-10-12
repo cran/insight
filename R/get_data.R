@@ -32,13 +32,11 @@
 #'
 #' @return The data that was used to fit the model.
 #'
-#' @examples
-#' if (require("lme4")) {
-#'   data(cbpp, package = "lme4")
-#'   cbpp$trials <- cbpp$size - cbpp$incidence
-#'   m <- glm(cbind(incidence, trials) ~ period, data = cbpp, family = binomial)
-#'   head(get_data(m))
-#' }
+#' @examplesIf require("lme4", quietly = TRUE)
+#' data(cbpp, package = "lme4")
+#' cbpp$trials <- cbpp$size - cbpp$incidence
+#' m <- glm(cbind(incidence, trials) ~ period, data = cbpp, family = binomial)
+#' head(get_data(m))
 #' @export
 get_data <- function(x, ...) {
   UseMethod("get_data")
@@ -243,7 +241,7 @@ get_data <- function(x, ...) {
     ))
   }
 
-  # sanity check- if data frame is named like a function, e.g.
+  # validation check- if data frame is named like a function, e.g.
   # rep <- data.frame(...), we now have a function instead of the data
   # we then need to reset "dat" to NULL and search in the global env
 
@@ -643,10 +641,10 @@ get_data.zcpglm <- function(x,
   }
 
   mf <- switch(component,
-    "all" = do.call(cbind, compact_list(list(mf_tweedie, mf_zero))),
-    "conditional" = mf_tweedie,
-    "zi" = ,
-    "zero_inflated" = mf_zero
+    all = do.call(cbind, compact_list(list(mf_tweedie, mf_zero))),
+    conditional = mf_tweedie,
+    zi = ,
+    zero_inflated = mf_zero
   )
   .prepare_get_data(x, stats::na.omit(mf), verbose = verbose)
 }
@@ -1290,7 +1288,7 @@ get_data.gamlss <- function(x, source = "environment", verbose = TRUE, ...) {
 
       mf_data <- mf_list[[1]]
 
-      if (length(mf_list) > 1) {
+      if (length(mf_list) > 1L) {
         for (i in 2:length(mf_list)) {
           cn <- setdiff(colnames(mf_list[[i]]), colnames(mf_data))
           if (length(cn)) mf_data <- cbind(mf_data, mf_list[[i]][, cn, drop = FALSE])

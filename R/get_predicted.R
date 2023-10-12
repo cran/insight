@@ -11,12 +11,15 @@
 #' "predictions" (a lose term for a variety of things) is a non-trivial process,
 #' with lots of caveats and complications. Read the 'Details' section for more
 #' information.
-#' \cr \cr
-#' `get_predicted_ci()` returns the confidence (or prediction) interval (CI)
+#'
+#' [`get_predicted_ci()`] returns the confidence (or prediction) interval (CI)
 #' associated with predictions made by a model. This function can be called
 #' separately on a vector of predicted values. `get_predicted()` usually
 #' returns confidence intervals (included as attribute, and accessible via the
-#' `as.data.frame()` method) by default.
+#' `as.data.frame()` method) by default. It is preferred to rely on the
+#' `get_predicted()` function for standard errors and confidence intervals -
+#' use `get_predicted_ci()` only if standard errors and confidence intervals
+#' are not available otherwise.
 #'
 #' @param x A statistical model (can also be a data.frame, in which case the
 #'   second argument has to be a model).
@@ -105,9 +108,8 @@
 #' In `insight::get_predicted()`, the `predict` argument jointly
 #' modulates two separate concepts, the **scale** and the **uncertainty interval**.
 #'
-#' \subsection{Confidence Interval (CI) vs. Prediction Interval (PI))}{
-#' \itemize{
-#'   \item **Linear models** - `lm()`: For linear models, Prediction
+#' @section Confidence Interval (CI) vs. Prediction Interval (PI)):
+#' - **Linear models** - `lm()`: For linear models, prediction
 #'   intervals (`predict="prediction"`) show the range that likely
 #'   contains the value of a new observation (in what range it is likely to
 #'   fall), whereas confidence intervals (`predict="expectation"` or
@@ -119,13 +121,12 @@
 #'   Moreover, prediction intervals will not necessarily become narrower as the
 #'   sample size increases (as they do not reflect only the quality of the fit,
 #'   but also the variability within the data).
-#'   \item **Generalized Linear models** - `glm()`: For binomial models,
+#' - **Generalized Linear models** - `glm()`: For binomial models,
 #'   prediction intervals are somewhat useless (for instance, for a binomial
 #'   (Bernoulli) model for which the dependent variable is a vector of 1s and
 #'   0s, the prediction interval is... `[0, 1]`).
-#' }}
 #'
-#' \subsection{Link scale vs. Response scale}{
+#' @section Link scale vs. Response scale:
 #' When users set the `predict` argument to `"expectation"`, the predictions
 #' are returned on the response scale, which is arguably the most convenient
 #' way to understand and visualize relationships of interest. When users set
@@ -138,17 +139,15 @@
 #' function will first calculate predictions as if the user had selected
 #' `predict="expectation"`. Then, it will round the responses in order to
 #' return the most likely outcome.
-#' }
 #'
-#' \subsection{Heteroscedasticity consistent standard errors}{
+#' @section Heteroscedasticity consistent standard errors:
 #' The arguments `vcov` and `vcov_args` can be used to calculate robust
 #' standard errors for confidence intervals of predictions. These arguments,
 #' when provided in `get_predicted()`, are passed down to `get_predicted_ci()`,
 #' thus, see the related documentation there for more
 #' details.
-#' }
 #'
-#' \subsection{Bayesian and Bootstrapped models and iterations}{
+#' @section Bayesian and Bootstrapped models and iterations:
 #' For predictions based on multiple iterations, for instance in the case of Bayesian
 #' models and bootstrapped predictions, the function used to compute the centrality
 #' (point-estimate predictions) can be modified via the `centrality_function`
@@ -156,11 +155,10 @@
 #' The default is `mean`. Individual draws can be accessed by running
 #' `iter <- as.data.frame(get_predicted(model))`, and their iterations can be
 #' reshaped into a long format by `bayestestR::reshape_iterations(iter)`.
-#' }
 #'
 #' @seealso [get_datagrid()]
 #'
-#' @examples
+#' @examplesIf require("boot")
 #' data(mtcars)
 #' x <- lm(mpg ~ cyl + hp, data = mtcars)
 #'
@@ -173,12 +171,10 @@
 #' # Get CI
 #' as.data.frame(predictions)
 #'
-#' if (require("boot")) {
-#'   # Bootstrapped
-#'   as.data.frame(get_predicted(x, iterations = 4))
-#'   # Same as as.data.frame(..., keep_iterations = FALSE)
-#'   summary(get_predicted(x, iterations = 4))
-#' }
+#' # Bootstrapped
+#' as.data.frame(get_predicted(x, iterations = 4))
+#' # Same as as.data.frame(..., keep_iterations = FALSE)
+#' summary(get_predicted(x, iterations = 4))
 #'
 #' # Different prediction types ------------------------
 #' data(iris)
@@ -271,10 +267,10 @@ get_predicted.default <- function(x,
   })
 
   # 3. step: back-transform
-  if (!is.null(predictions)) {
-    out <- .get_predicted_transform(x, predictions, args, ci_data, verbose = verbose)
-  } else {
+  if (is.null(predictions)) {
     out <- NULL
+  } else {
+    out <- .get_predicted_transform(x, predictions, args, ci_data, verbose = verbose)
   }
 
   # 4. step: final preparation
@@ -480,7 +476,7 @@ get_predicted.bife <- function(x,
   out <- .safe(stats::predict(x, type = args$scale, X_new = args$data))
 
   if (!is.null(out)) {
-    out <- .get_predicted_out(out, args = list("data" = data))
+    out <- .get_predicted_out(out, args = list(data = data))
   }
 
   out
@@ -571,7 +567,7 @@ get_predicted.rma <- function(x,
     if (nrow(out) == 1) {
       out <- do.call(rbind, lapply(seq_along(x$slab), function(i) out))
     }
-    out <- .get_predicted_out(out, args = list("data" = data))
+    out <- .get_predicted_out(out, args = list(data = data))
   }
 
   out
@@ -588,7 +584,7 @@ get_predicted.afex_aov <- function(x, data = NULL, ...) {
   if (is.null(data)) {
     args <- c(list(x), list(...))
   } else {
-    args <- c(list(x, "newdata" = data), list(...))
+    args <- c(list(x, newdata = data), list(...))
   }
 
   out <- .safe(do.call("predict", args))
@@ -598,7 +594,7 @@ get_predicted.afex_aov <- function(x, data = NULL, ...) {
   }
 
   if (!is.null(out)) {
-    out <- .get_predicted_out(out, args = list("data" = data))
+    out <- .get_predicted_out(out, args = list(data = data))
   }
 
   out
@@ -741,7 +737,7 @@ get_predicted.phylolm <- function(x,
 
     # Transform iterations
     if ("iterations" %in% names(attributes(predictions))) {
-      attr(predictions, "iterations") <- as.data.frame(sapply(attributes(predictions)$iterations, link_inv))
+      attr(predictions, "iterations") <- as.data.frame(sapply(attributes(predictions)$iterations, link_inv)) # nolint
     }
 
     # Transform to response "type"
@@ -751,7 +747,7 @@ get_predicted.phylolm <- function(x,
       predictions <- .get_predict_transform_response(predictions, response = response)
       if ("iterations" %in% names(attributes(predictions))) {
         attr(predictions, "iterations") <- as.data.frame(
-          sapply(
+          sapply( # nolint
             attributes(predictions)$iterations,
             .get_predict_transform_response,
             response = response
@@ -780,14 +776,14 @@ get_predicted.phylolm <- function(x,
   }
 
   # multidimensional or "grouped" predictions (e.g., nnet::multinom with `predict(type="probs")`)
-  if (is.matrix(predictions) && ncol(predictions) > 1) {
+  if (is.matrix(predictions) && ncol(predictions) > 1L) {
     predictions <- as.data.frame(predictions)
     vary <- colnames(predictions)
     predictions$Row <- seq_len(nrow(predictions))
     # if we have any focal predictors, add those as well, so we have
     # the associated levels/values for "Row"
     if (!is.null(args$data)) {
-      focal_predictors <- .safe(names(which(n_unique(args$data) > 1)))
+      focal_predictors <- .safe(names(which(n_unique(args$data) > 1L)))
       if (!is.null(focal_predictors)) {
         predictions <- cbind(predictions, args$data[focal_predictors])
       }

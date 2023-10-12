@@ -9,7 +9,7 @@
 #'   term, the instrumental variables or marginal effects be returned? Applies
 #'   to models with zero-inflated and/or dispersion formula, or to models with
 #'   instrumental variables (so called fixed-effects regressions), or models
-#'   with marginal effects from \pkg{mfx}. May be abbreviated. Note that the
+#'   with marginal effects from **mfx**. May be abbreviated. Note that the
 #'   *conditional* component is also called *count* or *mean*
 #'   component, depending on the model. There are three convenient shortcuts:
 #'   `component = "all"` returns all possible parameters.
@@ -25,11 +25,10 @@
 #'
 #' @return A list of parameter names. The returned list may have following
 #' elements:
-#'    \itemize{
-#'      \item `conditional`, the "fixed effects" part from the model.
-#'      \item `marginal`, the marginal effects.
-#'      \item `precision`, the precision parameter.
-#'    }
+#'
+#' - `conditional`, the "fixed effects" part from the model.
+#' - `marginal`, the marginal effects.
+#' - `precision`, the precision parameter.
 #'
 #' @examples
 #' data(mtcars)
@@ -56,7 +55,6 @@ find_parameters.betamfx <- function(x,
     pars
   }
 }
-
 
 
 #' @export

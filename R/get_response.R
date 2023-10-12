@@ -10,28 +10,35 @@
 #' @param as_proportion Logical, if `TRUE` and the response value is a proportion
 #'   (e.g. `y1 / y2`), then the returned response value will be a vector with
 #'   the result of this proportion. Else, always a data frame is returned.
+#' @param dichotomies Logical, if model is a `nestedLogit` objects, returns
+#' the response values for the dichotomies.
 #' @inheritParams find_predictors
 #' @inheritParams get_data
 #'
 #' @return The values of the response variable, as vector, or a data frame if
 #'   `x` has more than one defined response variable.
 #'
-#' @examples
-#' if (require("lme4")) {
-#'   data(cbpp)
-#'   cbpp$trials <- cbpp$size - cbpp$incidence
-#'   dat <<- cbpp
+#' @examplesIf require("lme4", quietly = TRUE)
+#' data(cbpp)
+#' cbpp$trials <- cbpp$size - cbpp$incidence
+#' dat <<- cbpp
 #'
-#'   m <- glm(cbind(incidence, trials) ~ period, data = dat, family = binomial)
-#'   head(get_response(m))
-#'   get_response(m, select = "incidence")
-#' }
+#' m <- glm(cbind(incidence, trials) ~ period, data = dat, family = binomial)
+#' head(get_response(m))
+#' get_response(m, select = "incidence")
 #'
 #' data(mtcars)
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' get_response(m)
 #' @export
-get_response <- function(x, select = NULL, as_proportion = TRUE, source = "environment", verbose = TRUE) {
+get_response <- function(x, ...) {
+  UseMethod("get_response")
+}
+
+
+#' @rdname get_response
+#' @export
+get_response.default <- function(x, select = NULL, as_proportion = TRUE, source = "environment", verbose = TRUE, ...) {
   rn <- find_response(x, combine = FALSE)
   combined_rn <- find_response(x, combine = TRUE)
 
@@ -47,35 +54,58 @@ get_response <- function(x, select = NULL, as_proportion = TRUE, source = "envir
   # data used to fit the model
   model_data <- get_data(x, source = source, verbose = FALSE)
 
-  # exceptions
-  if (inherits(x, "DirichletRegModel")) {
-    response <- x$Y
-    class(response) <- "matrix"
-    data.frame(response)
-  } else if (inherits(x, "bfsl")) {
-    response <- model_data[["y"]]
+  response <- model_data[, rn, drop = FALSE]
+  # if user only wants specific response value, return this only
+  if (!is.null(select) && all(select %in% colnames(response))) {
+    response <- response[, select, drop = TRUE]
+  }
+  # check if more than one column, else coerce to vector
+  if ((is.data.frame(response) || is.matrix(response)) && ncol(response) > 1L) {
+    # preserve response proportion?
+    if (as_proportion && glm_proportion) {
+      response <- response[[1]] / response[[2]]
+    }
+    # make sure we have a vector for 1-column data frames
   } else {
-    response <- model_data[, rn, drop = FALSE]
-    # if user only wants specific response value, return this only
-    if (!is.null(select) && all(select %in% colnames(response))) {
-      response <- response[, select, drop = TRUE]
-    }
-    # check if more than one column, else coerce to vector
-    if ((is.data.frame(response) || is.matrix(response)) && ncol(response) > 1) {
-      # preserve response proportion?
-      if (as_proportion && glm_proportion) {
-        response <- response[[1]] / response[[2]]
-      }
-      # make sure we have a vector for 1-column data frames
-    } else {
-      response <- response[[1]]
-    }
-    # for special classes, coerce to simple vector
-    if (!is.factor(response) && !is.numeric(response) && !is.character(response) &&
-      !is.logical(response) && !is.integer(response) && !is.data.frame(response) &&
-      !is.matrix(response)) {
-      response <- as.vector(response)
-    }
+    response <- response[[1]]
+  }
+  # for special classes, coerce to simple vector
+  if (!is.factor(response) && !is.numeric(response) && !is.character(response) &&
+    !is.logical(response) && !is.integer(response) && !is.data.frame(response) &&
+    !is.matrix(response)) {
+    response <- as.vector(response)
   }
   response
+}
+
+
+#' @export
+get_response.DirichletRegModel <- function(x, ...) {
+  response <- x$Y
+  class(response) <- "matrix"
+  data.frame(response)
+}
+
+
+#' @export
+get_response.bfsl <- function(x, source = "environment", ...) {
+  get_data(x, source = source, verbose = FALSE)[["y"]]
+}
+
+
+#' @rdname get_response
+#' @export
+get_response.nestedLogit <- function(x, dichotomies = FALSE, source = "environment", ...) {
+  if (isTRUE(dichotomies)) {
+    stats::setNames(
+      lapply(names(x$models), function(m) {
+        d <- x$models[[m]]$model
+        colnames(d)[1] <- m
+        d[[1]]
+      }),
+      names(x$models)
+    )
+  } else {
+    get_response.default(x, source = source, ...)
+  }
 }

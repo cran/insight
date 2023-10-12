@@ -14,7 +14,7 @@
 
   faminfo <- model_info(x, verbose = FALSE)
 
-  if (faminfo$family %in% c("truncated_nbinom1")) {
+  if (any(faminfo$family == "truncated_nbinom1")) {
     if (verbose) {
       format_warning(sprintf(
         "Truncated negative binomial families are currently not supported by `%s`.",
@@ -140,15 +140,15 @@
 
 
   compact_list(list(
-    "var.fixed" = var.fixed,
-    "var.random" = var.random,
-    "var.residual" = var.residual,
-    "var.distribution" = var.distribution,
-    "var.dispersion" = var.dispersion,
-    "var.intercept" = var.intercept,
-    "var.slope" = var.slope,
-    "cor.slope_intercept" = cor.slope_intercept,
-    "cor.slopes" = cor.slopes
+    var.fixed = var.fixed,
+    var.random = var.random,
+    var.residual = var.residual,
+    var.distribution = var.distribution,
+    var.dispersion = var.dispersion,
+    var.intercept = var.intercept,
+    var.slope = var.slope,
+    cor.slope_intercept = cor.slope_intercept,
+    cor.slopes = cor.slopes
   ))
 }
 
@@ -308,12 +308,12 @@
     vc <- lapply(names(lme4::VarCorr(x)), function(i) {
       element <- lme4::VarCorr(x)[[i]]
       if (i != "residual__") {
-        if (!is.null(element$cov)) {
-          out <- as.matrix(drop(element$cov[, 1, ]))
-          colnames(out) <- rownames(out) <- gsub("Intercept", "(Intercept)", rownames(element$cov), fixed = TRUE)
-        } else {
+        if (is.null(element$cov)) {
           out <- as.matrix(drop(element$sd[, 1])^2)
           colnames(out) <- rownames(out) <- gsub("Intercept", "(Intercept)", rownames(element$sd), fixed = TRUE)
+        } else {
+          out <- as.matrix(drop(element$cov[, 1, ]))
+          colnames(out) <- rownames(out) <- gsub("Intercept", "(Intercept)", rownames(element$cov), fixed = TRUE)
         }
         attr(out, "sttdev") <- element$sd[, 1]
       } else {
@@ -556,6 +556,14 @@
         log = .variance_distributional(x, faminfo, sig, name = name, verbose = verbose),
         .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
       )
+    } else if (faminfo$is_orderedbeta) {
+      # Ordered Beta  ----
+      # ------------------
+
+      dist.variance <- switch(faminfo$link_function,
+        logit = .variance_distributional(x, faminfo, sig, name = name, verbose = verbose),
+        .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
+      )
     } else {
       dist.variance <- sig
     }
@@ -600,7 +608,9 @@
   .null_model <- null_model(x, verbose = verbose)
 
   # check if null-model could be computed
-  if (!is.null(.null_model)) {
+  if (is.null(.null_model)) {
+    mu <- NA
+  } else {
     if (inherits(.null_model, "cpglmm")) {
       # installed?
       check_if_installed("cplm")
@@ -608,9 +618,7 @@
     } else {
       null_fixef <- unname(.collapse_cond(lme4::fixef(.null_model)))
     }
-    mu <- exp(null_fixef)
-  } else {
-    mu <- NA
+    mu <- null_fixef
   }
 
   if (is.na(mu)) {
@@ -620,7 +628,19 @@
       )
     }
     return(0)
-  } else if (mu < 6 && verbose) {
+  } else if (is.null(faminfo$family)) {
+    mu <- exp(mu)
+  } else {
+    # transform mu
+    mu <- switch(faminfo$family,
+      beta = mu,
+      ordbeta = stats::qlogis(mu),
+      exp(mu)
+    )
+  }
+
+  # check if mu is too close to zero, but not for beta-distribution
+  if (mu < 6 && verbose && isFALSE(faminfo$family %in% c("beta", "ordbeta"))) {
     format_warning(
       sprintf("mu of %0.1f is too close to zero, estimate of %s may be unreliable.", mu, name)
     )
@@ -657,6 +677,7 @@
         # ------------------------
         tweedie = .variance_family_tweedie(x, mu, sig),
         beta = .variance_family_beta(x, mu, sig),
+        ordbeta = .variance_family_orderedbeta(x, mu),
         # betabinomial = stats::family(x)$variance(mu, sig),
         # betabinomial = .variance_family_betabinom(x, mu, sig),
 
@@ -716,6 +737,20 @@
     stats::family(x)$variance(mu)
   } else {
     mu * (1 - mu) / (1 + phi)
+  }
+}
+
+
+
+
+
+# Get distributional variance for ordered beta-family
+# ----------------------------------------------
+.variance_family_orderedbeta <- function(x, mu) {
+  if (inherits(x, "MixMod")) {
+    stats::family(x)$variance(mu)
+  } else {
+    mu * (1 - mu)
   }
 }
 
@@ -951,7 +986,7 @@
       # anything missing? (i.e. correlated slope-intercept slopes)
       missig_rnd_slope <- setdiff(names(out), names(rndslopes))
       if (length(missig_rnd_slope)) {
-        # sanity check
+        # validation check
         to_remove <- NULL
         for (j in seq_along(out)) {
           # identical random slopes might have different names, so

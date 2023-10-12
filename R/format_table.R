@@ -55,21 +55,23 @@
 #'
 #' @note `options(insight_use_symbols = TRUE)` override the `use_symbols` argument
 #'   and always displays symbols, if possible.
-#' @examples
+#' @examplesIf require("rstanarm", warn.conflicts = FALSE) && require("parameters", , warn.conflicts = FALSE)
 #' format_table(head(iris), digits = 1)
 #'
-#' if (require("parameters")) {
-#'   x <- model_parameters(lm(Sepal.Length ~ Species * Sepal.Width, data = iris))
-#'   as.data.frame(format_table(x))
-#'   as.data.frame(format_table(x, p_digits = "scientific"))
-#' }
+#' m <- lm(Sepal.Length ~ Species * Sepal.Width, data = iris)
+#' x <- parameters::model_parameters(m)
+#' as.data.frame(format_table(x))
+#' as.data.frame(format_table(x, p_digits = "scientific"))
+#'
 #' \donttest{
-#' if (require("rstanarm", warn.conflicts = FALSE) &&
-#'   require("parameters", , warn.conflicts = FALSE)) {
-#'   model <- stan_glm(Sepal.Length ~ Species, data = iris, refresh = 0, seed = 123)
-#'   x <- model_parameters(model, ci = c(0.69, 0.89, 0.95))
-#'   as.data.frame(format_table(x))
-#' }
+#' model <- rstanarm::stan_glm(
+#'   Sepal.Length ~ Species,
+#'   data = iris,
+#'   refresh = 0,
+#'   seed = 123
+#' )
+#' x <- parameters::model_parameters(model, ci = c(0.69, 0.89, 0.95))
+#' as.data.frame(format_table(x))
 #' }
 #' @return A data frame. Note that `format_table()` converts all columns
 #' into character vectors!
@@ -90,7 +92,7 @@ format_table <- function(x,
                          use_symbols = getOption("insight_use_symbols", FALSE),
                          verbose = TRUE,
                          ...) {
-  # sanity check
+  # validation check
   if (is.null(x) || (is.data.frame(x) && nrow(x) == 0)) {
     if (isTRUE(verbose)) {
       format_alert("Can't format table, data frame is empty.")
@@ -233,10 +235,10 @@ format_table <- function(x,
 .format_p_values <- function(x, p_digits, stars = FALSE) {
   # Specify stars for which column (#656)
   if (is.character(stars)) {
-    starlist <- list("p" = FALSE)
+    starlist <- list(p = FALSE)
     starlist[stars] <- TRUE
   } else {
-    starlist <- list("p" = stars)
+    starlist <- list(p = stars)
   }
 
   for (pv in c("p", "p.value", "SGPV")) {
@@ -288,10 +290,10 @@ format_table <- function(x,
   # df for errors
   if ("df_error" %in% names(x)) {
     x$df_error <- format_value(x$df_error, protect_integers = TRUE)
-    if (!("df" %in% names(x))) {
-      names(x)[names(x) == "df_error"] <- "df"
-    } else {
+    if ("df" %in% names(x)) {
       names(x)[names(x) == "df_error"] <- "df (error)"
+    } else {
+      names(x)[names(x) == "df_error"] <- "df"
     }
   }
   # denominator and numerator df
@@ -447,14 +449,12 @@ format_table <- function(x,
   if (length(ci_low) >= 1 && length(ci_low) == length(ci_high)) {
     if (!is.null(ci_value)) {
       ci_value <- ci_value[!is.na(ci_value)]
-      if (n_unique(ci_value) > 1) {
+      if (n_unique(ci_value) > 1L) {
         ci_value <- unique(ci_value)
       } else {
         ci_value <- unique(ci_value)[1]
       }
-    } else if (!is.null(x$CI)) {
-      ci_value <- unique(x$CI[!is.na(x$CI)])[1]
-    } else {
+    } else if (is.null(x$CI)) {
       # all these edge cases... for some objects in "parameters::model_parameters()",
       # when we have multiple ci-levels, column names can be "CI_low_0.8" or
       # "CI_low_0.95" etc. - this is handled here, if we have no ci-attribute
@@ -465,12 +465,14 @@ format_table <- function(x,
       } else {
         ci_value <- NULL
       }
+    } else {
+      ci_value <- unique(x$CI[!is.na(x$CI)])[1]
     }
     x$CI <- NULL
 
     if (is.null(ci_value)) {
       ci_colname <- ci_name
-    } else if (isTRUE(tolower(ci_method) %in% "si")) {
+    } else if (isTRUE(tolower(ci_method) == "si")) {
       ci_colname <- sprintf("BF = %.5g SI", ci_value)
     } else {
       ci_colname <- sprintf("%g%% %s", ci_value * 100, ci_name)
@@ -514,7 +516,7 @@ format_table <- function(x,
       other_ci_colname <- sprintf("%s %g%% CI", other, unique(stats::na.omit(att[[paste0("ci_", other)]])) * 100)
     } else if (!is.null(att[["ci"]])) {
       other_ci_colname <- sprintf("%s %g%% CI", other, unique(stats::na.omit(att[["ci"]])) * 100)
-    } else if (length(other == 1) && paste0(other, "_CI") %in% colnames(x)) {
+    } else if (length(other) == 1 && paste0(other, "_CI") %in% colnames(x)) {
       other_ci_colname <- sprintf("%s %g%% CI", other, unique(stats::na.omit(x[[paste0(other, "_CI")]])) * 100)
     } else {
       other_ci_colname <- paste(other, " CI")
@@ -645,10 +647,10 @@ format_table <- function(x,
                                   exact = TRUE) {
   # Specify stars for which column
   if (is.character(stars)) {
-    starlist <- list("BF" = FALSE, "pd" = FALSE)
+    starlist <- list(BF = FALSE, pd = FALSE)
     starlist[stars] <- TRUE
   } else {
-    starlist <- list("BF" = stars, "pd" = stars)
+    starlist <- list(BF = stars, pd = stars)
   }
 
   # Indices
@@ -851,10 +853,10 @@ format_table <- function(x,
   win_os <- tryCatch(
     {
       si <- Sys.info()
-      if (!is.null(si["sysname"])) {
-        si["sysname"] == "Windows" || startsWith(R.version$os, "mingw")
-      } else {
+      if (is.null(si["sysname"])) {
         FALSE
+      } else {
+        si["sysname"] == "Windows" || startsWith(R.version$os, "mingw")
       }
     },
     error = function(e) {

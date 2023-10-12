@@ -11,8 +11,8 @@
 #' @return A data frame with a summary of the prior distributions used
 #'   for the parameters in a given model.
 #'
-#' @examples
-#' \dontrun{
+#' @examplesIf require("rstanarm", quietly = TRUE)
+#' \donttest{
 #' library(rstanarm)
 #' model <- stan_glm(Sepal.Width ~ Species * Petal.Length, data = iris)
 #' get_priors(model)
@@ -63,7 +63,7 @@ get_priors.stanreg <- function(x, verbose = TRUE, ...) {
     .x
   })
 
-  if (length(l) > 1) {
+  if (length(l) > 1L) {
     prior_info <- do.call(rbind, l)
   } else {
     cn <- colnames(l[[1]])
@@ -132,7 +132,7 @@ get_priors.stanmvreg <- function(x, ...) {
   }))
 
   prior_info <- do.call(rbind, lapply(l, function(.x) {
-    if (length(.x) > 1) {
+    if (length(.x) > 1L) {
       out <- lapply(names(.x), function(.i) {
         if (!("adjusted_scale" %in% colnames(.x[[.i]]))) .x[[.i]] <- cbind(.x[[.i]], adjusted_scale = NA)
         data.frame(.x[[.i]], response = .i, stringsAsFactors = FALSE)
@@ -489,12 +489,12 @@ get_priors.BFBayesFactor <- function(x, ...) {
   bf_type <- .classify_BFBayesFactor(x)
 
   prior_names <- switch(bf_type,
-    "correlation" = "rho",
-    "ttest1" = ,
-    "ttest2" = "Difference",
-    "meta" = "Effect",
-    "proptest" = "Proportion",
-    "xtable" = "Ratio",
+    correlation = "rho",
+    ttest1 = ,
+    ttest2 = "Difference",
+    meta = "Effect",
+    proptest = "Proportion",
+    xtable = "Ratio",
     names(prior)
   )
 

@@ -27,7 +27,7 @@
 #' find_transformation(model)
 #' @export
 find_transformation <- function(x) {
-  # sanity check
+  # validation check
   if (is.null(x) || is.data.frame(x) || !is_model(x)) {
     return(NULL)
   }
@@ -115,7 +115,7 @@ find_transformation <- function(x) {
 
   # power-transformation
 
-  if (any(grepl("I\\((.*)\\^\\s*2\\)", rv))) {
+  if (any(grepl("(.*)(\\^|\\*\\*)\\s?-?(\\d+|[()])", rv))) {
     transform_fun <- "power"
   }
 

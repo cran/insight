@@ -78,13 +78,13 @@ below.
 \details{
 This function prepares data frames that contain information
 about model parameters for clear printing.
-\cr \cr
+
 First, \code{x} is required, which should either be a model object or a
 prepared data frame as returned by \code{\link[=clean_parameters]{clean_parameters()}}. If
 \code{x} is a model, \code{clean_parameters()} is called on that model
 object to get information with which model components the parameters
 are associated.
-\cr \cr
+
 Then, \code{...} take one or more data frames that also contain information
 about parameters from the same model, but also have additional information
 provided by other methods. For instance, a data frame in \code{...} might
@@ -92,7 +92,7 @@ be the result of, for instance, \code{\link[bayestestR:describe_posterior]{bayes
 or \code{\link[parameters:model_parameters]{parameters::model_parameters()}}, where we have a) a
 \code{Parameter} column and b) columns with other parameter values (like
 CI, HDI, test statistic, etc.).
-\cr \cr
+
 Now we have a data frame with model parameters and information about the
 association to the different model components, a data frame with model
 parameters, and some summary statistics. \code{print_parameters()} then merges
@@ -103,8 +103,8 @@ component for a better overview. Further, parameter names are "cleaned", if
 necessary, also for a cleaner print. See also 'Examples'.
 }
 \examples{
-\dontshow{if (require("curl", quietly = TRUE) && curl::has_internet()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-\dontrun{
+\dontshow{if (require("curl", quietly = TRUE) && curl::has_internet() && require("bayestestR", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\donttest{
 library(bayestestR)
 model <- download_model("brms_zi_2")
 x <- hdi(model, effects = "all", component = "all")

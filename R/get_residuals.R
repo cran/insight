@@ -13,10 +13,10 @@
 #'   accessed.
 #'
 #' @note This function returns the default type of residuals, i.e. for the
-#'   response from linear models, the deviance residuals for models of class
-#'   `glm` etc. To access different types, pass down the `type`
-#'   argument (see 'Examples').
-#' \cr \cr
+#' response from linear models, the deviance residuals for models of class
+#' `glm` etc. To access different types, pass down the `type` argument (see
+#' 'Examples').
+#'
 #' This function is a robust alternative to `residuals()`, as it works for
 #' some special model objects that otherwise do not respond properly to calling
 #' `residuals()`.
@@ -93,6 +93,11 @@ get_residuals.default <- function(x, weighted = FALSE, verbose = TRUE, ...) {
     format_warning(paste0(
       "Can't extract '", res_type, "' residuals. Returning response residuals."
     ))
+  }
+
+  # fix for haven_labelled
+  if (inherits(res, "haven_labelled")) {
+    res <- as.numeric(res)
   }
 
   res
@@ -196,7 +201,7 @@ as.data.frame.insight_residuals <- function(x, ...) {
 print.insight_residuals <- function(x, ...) {
   print_colour("Residuals:\n\n", "blue")
   print.default(as.vector(x))
-  print_colour("\nNOTE: Credible intervals are stored as attributes and can be accessed using `as.data.frame()` on this output.\n", "yellow")
+  print_colour("\nNOTE: Credible intervals are stored as attributes and can be accessed using `as.data.frame()` on this output.\n", "yellow") # nolint
 }
 
 

@@ -9,11 +9,11 @@
 #'
 #' @return
 #' A logical, `TRUE` if either `x` is a model object and is a multivariate
-#' response model, or `TRUE` if a return value from a function of \pkg{insight}
+#' response model, or `TRUE` if a return value from a function of **insight**
 #' is from a multivariate response model.
 #'
-#' @examples
-#' \dontrun{
+#' @examplesIf require("rstanarm", quietly = TRUE)
+#' \donttest{
 #' library(rstanarm)
 #' data("pbcLong")
 #' model <- suppressWarnings(stan_mvmer(
@@ -51,7 +51,7 @@ is_multivariate <- function(x) {
   }
 
   if (inherits(x, "lm_robust")) {
-    return(isTRUE(ncol(x$coefficients) > 1))
+    return(isTRUE(ncol(x$coefficients) > 1L))
   }
 
   return(FALSE)

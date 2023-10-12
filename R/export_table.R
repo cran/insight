@@ -68,7 +68,7 @@
 #' # split longer tables
 #' export_table(head(iris), table_width = 30)
 #'
-#' \dontrun{
+#' \donttest{
 #' # colored footers
 #' data(iris)
 #' x <- as.data.frame(iris[1:5, ])
@@ -131,7 +131,7 @@ export_table <- function(x,
     format <- "markdown"
   }
 
-  # sanity check
+  # validation check
   if (is.null(x) || (is.data.frame(x) && nrow(x) == 0) || is_empty_object(x)) {
     if (isTRUE(verbose)) {
       format_alert("Can't export table to ", format, ", data frame is empty.")
@@ -602,7 +602,7 @@ print.insight_table <- function(x, ...) {
   }
 
   # Transform table matrix into a string value that can be printed
-  rows <- .table_parts(c(), final, header, sep, cross, empty_line)
+  rows <- .table_parts(NULL, final, header, sep, cross, empty_line)
 
   # if we have over-lengthy tables that are split into two parts,
   # print second table here
@@ -622,13 +622,13 @@ print.insight_table <- function(x, ...) {
     if (length(caption) == 2 && .is_valid_colour(caption[2])) {
       caption <- .colour(caption[2], caption[1])
     }
-    if (!is.null(subtitle)) {
+    if (is.null(subtitle)) {
+      subtitle <- ""
+    } else {
       # if we have a colour value, make coloured ansi-string
       if (length(subtitle) == 2 && .is_valid_colour(subtitle[2])) {
         subtitle <- .colour(subtitle[2], subtitle[1])
       }
-    } else {
-      subtitle <- ""
     }
 
     # paste everything together and remove unnecessary double spaces
@@ -956,7 +956,7 @@ print.insight_table <- function(x, ...) {
   }
 
 
-  # sanity check - clean caption, subtitle and footer from ansi-colour codes,
+  # validation check - clean caption, subtitle and footer from ansi-colour codes,
   # which only work for text format... But if user occidentally provides colours
   # for HTML format as well, remove those colour codes, so they don't appear as
   # text in the table header and footer. Furthermore, in footers, we need to
@@ -1008,8 +1008,8 @@ print.insight_table <- function(x, ...) {
         col_align <- c(
           col_align,
           switch(substr(align, i, i),
-            "l" = "left",
-            "r" = "right",
+            l = "left",
+            r = "right",
             "center"
           )
         )
