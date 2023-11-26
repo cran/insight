@@ -1,3 +1,33 @@
+# insight 0.19.7
+
+## General
+
+* Support for objects of class `ggcomparisons` from `ggeffects::hypothesis_test()`.
+
+* `brms::gr()` is now supported, meaning that functions like `get_data()` or
+  `find_predictors()` now also work for models with group-specific random effects.
+
+* Fix CRAN check issues due to the last *fixest* update.
+
+## Changes to functions
+
+* `get_varcov()` for models of class `pgmm` (package *plm*) now also supported
+  robust variance-covariance matrices (i.e. argument `vcov`).
+
+## Bug fixes
+
+* Fixed issue in `find_predictors()` for survival models with `strata()`,
+  containing more that one variable.
+
+* Fixed issue in `model_info()`, where in some cases logistic regression models
+  were erroneously considered as `"bernoulli"` models.
+
+* Fixed issue in `find_formula()` for models of class `gamlss` when the `random()`
+  function was used with namespace in the formula (i.e. `... + gamlss::random()`).
+
+* `model_info()` now detects models with zero-inflation part from package
+  *glmmTMB* when models have truncated-families but no `ziformula`.
+
 # insight 0.19.6
 
 ## General

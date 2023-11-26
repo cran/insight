@@ -192,9 +192,15 @@ find_formula.gamlss <- function(x, verbose = TRUE, ...) {
       if (length(f.random) == 1L) {
         f.random <- f.random[[1]]
       } else if (grepl("random\\((.*)\\)", safe_deparse(f.cond))) {
-        re <- gsub("(.*)random\\((.*)\\)", "\\2", safe_deparse(f.cond))
+        f.cond <- safe_deparse(f.cond)
+        # remove namespace prefixes
+        f.cond <- .remove_namespace_from_string(f.cond)
+        re <- gsub("(.*)random\\((.*)\\)", "\\2", f.cond)
         f.random <- stats::as.formula(paste0("~1|", re))
-        f.cond <- stats::update.formula(f.cond, stats::as.formula(paste0(". ~ . - random(", re, ")")))
+        f.cond <- stats::update.formula(
+          stats::as.formula(f.cond),
+          stats::as.formula(paste0(". ~ . - random(", re, ")"))
+        )
       }
 
       compact_list(list(
@@ -1787,7 +1793,7 @@ find_formula.model_fit <- function(x, verbose = TRUE, ...) {
   if (grepl("(.*)poly\\((.*),\\s*raw\\s*=\\s*T\\)", f)) {
     if (verbose) {
       format_warning(
-        "Looks like you are using `poly()` with \"raw = T\". This results in unexpected behaviour, because `all.vars()` considers `T` as variable.",
+        "Looks like you are using `poly()` with \"raw = T\". This results in unexpected behaviour, because `all.vars()` considers `T` as variable.", # nolint
         "Please use \"raw = TRUE\"."
       )
     }
@@ -1813,7 +1819,7 @@ find_formula.model_fit <- function(x, verbose = TRUE, ...) {
     } else {
       if (verbose) {
         format_warning(paste0(
-          "Using `$` in model formulas can produce unexpected results. Specify your model using the `data` argument instead.",
+          "Using `$` in model formulas can produce unexpected results. Specify your model using the `data` argument instead.", # nolint
           "\n  Try: ", fc$formula, ", data = ", fc$data
         ))
       }

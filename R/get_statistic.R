@@ -198,7 +198,7 @@ get_statistic.merModList <- function(x, ...) {
 get_statistic.afex_aov <- function(x, ...) {
   out <- data.frame(
     Parameter = rownames(x$anova_table),
-    Statistic = x$anova_table$`F`,
+    Statistic = x$anova_table[["F"]],
     stringsAsFactors = FALSE,
     row.names = NULL
   )
@@ -1588,6 +1588,33 @@ get_statistic.emm_list <- function(x, ci = 0.95, adjust = "none", ...) {
     Parameter = params$Parameter,
     Statistic = stat,
     Component = params$Component,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  out <- text_remove_backticks(out)
+  attr(out, "statistic") <- find_statistic(x)
+  out
+}
+
+
+#' @export
+get_statistic.ggcomparisons <- function(x, merge_parameters = FALSE, ...) {
+  estimate_pos <- which(colnames(x) == attr(x, "estimate_name"))
+  if (isTRUE(merge_parameters)) {
+    params <- get_parameters(x, merge_parameters = TRUE)["Parameter"]
+  } else {
+    params <- x[, seq_len(estimate_pos - 1), drop = FALSE]
+  }
+
+  stat <- .safe(x[[estimate_pos]] / attributes(x)$standard_error)
+  if (is.null(stat)) {
+    return(NULL)
+  }
+
+  out <- data.frame(
+    params,
+    Statistic = as.vector(stat),
     stringsAsFactors = FALSE,
     row.names = NULL
   )
