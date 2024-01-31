@@ -39,7 +39,7 @@
 #' * `is_hurdle`: model has zero-inflation component and is a hurdle-model (truncated family distribution)
 #' * `is_dispersion`: model has dispersion component (not only dispersion _parameter_)
 #' * `is_mixed`: model is a mixed effects model (with random effects)
-#' * `is_multivariate`: model is a multivariate response model (currently only works for _brmsfit_ objects)
+#' * `is_multivariate`: model is a multivariate response model (currently only works for _brmsfit_ and _vglm/vgam_ objects)
 #' * `is_trial`: model response contains additional information about the trials
 #' * `is_bayesian`: model is a Bayesian model
 #' * `is_gam`: model is a generalized additive model
@@ -204,6 +204,9 @@ model_info.bayesx <- model_info.maxLik
 
 #' @export
 model_info.rq <- model_info.maxLik
+
+#' @export
+model_info.rqs <- model_info.maxLik
 
 #' @export
 model_info.crq <- model_info.maxLik
@@ -465,8 +468,8 @@ model_info.brmultinom <- model_info.speedglm
 
 #' @export
 model_info.flexsurvreg <- function(x, verbose = TRUE, ...) {
-  dist <- parse(text = safe_deparse(x$call))[[1]]$dist
-  faminfo <- .make_tobit_family(x, dist)
+  distribution <- parse(text = safe_deparse(x$call))[[1]]$dist
+  faminfo <- .make_tobit_family(x, distribution)
 
   .make_family(
     x = x,
@@ -622,11 +625,11 @@ model_info.comprisk <- model_info.coxph
 #' @export
 model_info.zeroinfl <- function(x, ...) {
   if (is.list(x$dist)) {
-    dist <- x$dist[[1]]
+    distribution <- x$dist[[1]]
   } else {
-    dist <- x$dist
+    distribution <- x$dist
   }
-  fitfam <- switch(dist,
+  fitfam <- switch(distribution,
     poisson = "poisson",
     negbin = "negative binomial",
     "poisson"
@@ -647,11 +650,11 @@ model_info.zerotrunc <- model_info.zeroinfl
 #' @export
 model_info.hurdle <- function(x, ...) {
   if (is.list(x$dist)) {
-    dist <- x$dist[[1]]
+    distribution <- x$dist[[1]]
   } else {
-    dist <- x$dist
+    distribution <- x$dist
   }
-  fitfam <- switch(dist,
+  fitfam <- switch(distribution,
     poisson = "poisson",
     negbin = "negative binomial",
     "poisson"
@@ -745,7 +748,7 @@ model_info.BGGM <- function(x, ...) {
     stats::binomial()
   )
 
-  family <- switch(x$type,
+  fam <- switch(x$type,
     continuous = "gaussian",
     binary = "binomial",
     "ordinal"
@@ -753,7 +756,7 @@ model_info.BGGM <- function(x, ...) {
 
   .make_family(
     x = x,
-    fitfam = family,
+    fitfam = fam,
     zero.inf = FALSE,
     logit.link = link$link == "logit",
     link.fun = link$link,
@@ -934,14 +937,14 @@ model_info.LORgee <- function(x, ...) {
   }
 
   if (x$link == "Cumulative logit") {
-    family <- "ordinal"
+    fam <- "ordinal"
   } else {
-    family <- "multinomial"
+    fam <- "multinomial"
   }
 
   .make_family(
     x = x,
-    fitfam = family,
+    fitfam = fam,
     logit.link = link == "logit",
     link.fun = link,
     ...
@@ -1089,6 +1092,7 @@ model_info.vgam <- function(x, ...) {
     fitfam = faminfo@vfamily[1],
     logit.link = any(.string_contains("logit", faminfo@blurb)),
     link.fun = link.fun,
+    multi.var = is_multivariate(x),
     ...
   )
 }

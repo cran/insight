@@ -112,6 +112,9 @@ link_function.gls <- link_function.lm
 link_function.rq <- link_function.lm
 
 #' @export
+link_function.rqs <- link_function.lm
+
+#' @export
 link_function.rqss <- link_function.lm
 
 #' @export
@@ -314,8 +317,8 @@ link_function.psm <- link_function.tobit
 
 #' @export
 link_function.flexsurvreg <- function(x, ...) {
-  dist <- parse(text = safe_deparse(x$call))[[1]]$dist
-  .make_tobit_family(x, dist)$linkfun
+  distribution <- parse(text = safe_deparse(x$call))[[1]]$dist
+  .make_tobit_family(x, distribution)$linkfun
 }
 
 
@@ -413,6 +416,17 @@ link_function.mira <- function(x, ...) {
   # installed?
   check_if_installed("mice")
   link_function(mice::pool(x), ...)
+}
+
+
+#' @export
+link_function.averaging <- function(x, ...) {
+  ml <- attributes(x)$modelList
+  if (is.null(ml)) {
+    format_warning("Can't retrieve data. Please use `fit = TRUE` in `model.avg()`.")
+    return(NULL)
+  }
+  link_function(ml[[1]])
 }
 
 

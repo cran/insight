@@ -1,7 +1,7 @@
 Type: Package
 Package: insight
 Title: Easy Access to Model Information for Various Model Objects
-Version: 0.19.7
+Version: 0.19.8
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -88,23 +88,23 @@ Suggests: AER, afex, aod, BayesFactor, bayestestR, bbmle, bdsmatrix,
         lavaSearch2, lfe, lme4, lmerTest, lmtest, logistf, logitr,
         MASS, marginaleffects, Matrix, mclogit, mclust, MCMCglmm,
         merTools, metaBMA, metadat, metafor, metaplus, mgcv, mice,
-        mlogit, mhurdle, mmrm, modelbased, multgee, nestedLogit, nlme,
-        nnet, nonnest2, ordinal, panelr, parameters, parsnip, pbkrtest,
-        performance, plm, poorman, pscl, psych, quantreg, Rcpp,
-        rmarkdown, rms, rpart, robustbase, robustlmm, rstanarm (>=
-        2.21.1), rstantools (>= 2.1.0), rstudioapi, sandwich, speedglm,
-        splines, statmod, survey, survival, testthat, truncreg,
-        tweedie, TMB, VGAM, withr
+        mlogit, mhurdle, mmrm, modelbased, multgee, MuMIn, nestedLogit,
+        nlme, nnet, nonnest2, ordinal, panelr, parameters, parsnip,
+        pbkrtest, performance, plm, poorman, pscl, psych, quantreg,
+        Rcpp, rmarkdown, rms, rpart, robustbase, robustlmm, rstanarm
+        (>= 2.21.1), rstantools (>= 2.1.0), rstudioapi, sandwich,
+        speedglm, splines, statmod, survey, survival, testthat,
+        tinytable, truncreg, tweedie, TMB, VGAM, withr
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
-RoxygenNote: 7.2.3.9000
+RoxygenNote: 7.3.1
 Config/testthat/edition: 3
 Config/testthat/parallel: true
 Config/Needs/website: rstudio/bslib, r-lib/pkgdown,
         easystats/easystatstemplate
 NeedsCompilation: no
-Packaged: 2023-11-26 13:52:33 UTC; Daniel
+Packaged: 2024-01-31 18:34:21 UTC; Daniel
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @strengejacke),
   Dominique Makowski [aut, ctb] (<https://orcid.org/0000-0001-5375-9967>,
@@ -125,4 +125,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @rempsyc),
   Alex Reinhart [ctb] (<https://orcid.org/0000-0002-6658-514X>)
 Repository: CRAN
-Date/Publication: 2023-11-26 14:50:02 UTC
+Date/Publication: 2024-01-31 19:30:02 UTC

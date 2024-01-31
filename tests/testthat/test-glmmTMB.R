@@ -955,10 +955,9 @@ test_that("get_predicted", {
 
 
 test_that("model_info, ordered beta", {
-  skip_if_not_installed("glmmTMB")
+  skip_if_not_installed("glmmTMB", minimum_version = "1.1.8")
   skip_if_not_installed("datawizard")
   skip_if_not_installed("lme4")
-  skip_if_not(packageVersion("glmmTMB") >= "1.1.5")
   data(sleepstudy, package = "lme4")
   sleepstudy$y <- datawizard::normalize(sleepstudy$Reaction)
   m <- glmmTMB::glmmTMB(
@@ -985,3 +984,26 @@ test_that("model_info, recognize ZI even without ziformula", {
   expect_true(out$is_zero_inflated)
   expect_true(out$is_hurdle)
 })
+
+## FIXME: test doesn't work on GitHuba
+
+# skip_if_not_installed("withr")
+
+# withr::with_environment(
+#   new.env(),
+#   test_that("get_variance, ordered beta", {
+#     skip_if_not_installed("glmmTMB", minimum_version = "1.1.8")
+#     skip_if_not_installed("datawizard")
+#     skip_if_not_installed("lme4")
+#     skip_on_cran()
+#     data(sleepstudy, package = "lme4")
+#     sleepstudy$y <- datawizard::normalize(sleepstudy$Reaction)
+#     m <- glmmTMB::glmmTMB(
+#       y ~ Days + (Days | Subject),
+#       data = sleepstudy,
+#       family = glmmTMB::ordbeta()
+#     )
+#     out <- get_variance(m)
+#     expect_equal(out$var.distribution, 1.44250604187634, tolerance = 1e-4)
+#   })
+# )

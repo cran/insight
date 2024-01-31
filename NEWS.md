@@ -1,3 +1,28 @@
+# insight 0.19.8
+
+## General
+
+* Removed deprecated arguments in `get_data.mmrm()`.
+
+* Improved support for models of class `rqs` (package *quantreg*).
+
+* Revised test to address forthcoming changes in the *pscl* package.
+
+## Bug fixes
+
+* Fixed issue in `get_loglikelihood()` for glm-models with binary outcome, where
+  levels were defined in reversed order.
+
+* Fixed issue in `find_formula()` for models of class `glmmPQL` (package *MASS*).
+
+* Fixed issue in `find_formula()` for models of class `gam` (package *mgcv*) for
+  the `"gaulss"` family.
+
+* Fixed issue in `get_variance()` for *glmmTMB* models with `family = "ordbeta"`.
+
+* Fixed issue in `model_info()` with correctly detecting multivariate vgam/vglm
+  models.
+
 # insight 0.19.7
 
 ## General
