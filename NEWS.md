@@ -1,3 +1,25 @@
+# insight 0.19.9
+
+## New supported models
+
+* Support for models of class `serp` (package *serp*).
+
+## General
+
+* `standardize_names()` now also recognizes column `s.value` from objects of
+  package *marginaleffects*.
+
+## Bug fixes
+
+* Fixed issue in `find_predictors()` for models with splines (`s()`), where
+  number of dimensions was indicated with a variable, not a number.
+
+* `format_ci()` now works for factors and character vectors again.
+
+* Fixed issues with latest release of _tinytable_.
+
+* Fixed issues with latest release of _PROreg_.
+
 # insight 0.19.8
 
 ## General

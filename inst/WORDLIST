@@ -33,6 +33,7 @@ Nakagawa
 Newburgh
 ORCID
 PIs
+PROreg
 Rhat
 ROPEs
 RStudio
@@ -156,6 +157,7 @@ riskRegression
 rms
 rstanarm
 sampleSelection
+serp
 sjPlot
 smicd
 spaMM
@@ -168,6 +170,7 @@ systemfit
 terciles
 th
 tidymodels
+tinytable
 tranformations
 tseries
 tweedie
