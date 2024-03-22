@@ -398,10 +398,10 @@
                                              verbose = TRUE) {
   # check if data argument was used
   model_call <- get_call(model)
-  if (!is.null(model_call)) {
-    data_arg <- .safe(parse(text = safe_deparse(model_call))[[1]]$data)
-  } else {
+  if (is.null(model_call)) {
     data_arg <- NULL
+  } else {
+    data_arg <- .safe(parse(text = safe_deparse(model_call))[[1]]$data)
   }
 
   # do we have variable names like "mtcars$mpg"?
@@ -564,14 +564,14 @@
     random.component.data <- .remove_values(random.component.data, c(1, 0))
   }
 
-  weights <- find_weights(x)
-  # if (!is.null(weights) && "(weights)" %in% colnames(mf)) {
-  #   weights <- c(weights, "(weights)")
+  model_weights <- find_weights(x)
+  # if (!is.null(model_weights) && "(weights)" %in% colnames(mf)) {
+  #   model_weights <- c(model_weights, "(weights)")
   # }
 
   vars <- switch(effects,
-    all = unique(c(response, fixed.component.data, random.component.data, weights)),
-    fixed = unique(c(response, fixed.component.data, weights)),
+    all = unique(c(response, fixed.component.data, random.component.data, model_weights)),
+    fixed = unique(c(response, fixed.component.data, model_weights)),
     random = unique(random.component.data)
   )
 
@@ -873,15 +873,11 @@
           (startsWith(x$method, "McNemar") || (length(columns) == 1 && is.matrix(columns[[1]])))) {
           # McNemar: preserve table data for McNemar ----
           return(as.table(columns[[1]]))
-
-          # Kruskal Wallis ====================================================
         } else if (startsWith(x$method, "Kruskal-Wallis") && length(columns) == 1 && is.list(columns[[1]])) {
           # Kruskal-Wallis: check if data is a list for kruskal-wallis ----
           l <- columns[[1]]
           names(l) <- paste0("x", seq_along(l))
           return(l)
-
-          # t-tests ===========================================================
         } else if (grepl("t-test", x$method, fixed = TRUE)) {
           # t-Test: (Welch) Two Sample t-test ----
           if (grepl("Two", x$method, fixed = TRUE)) {
@@ -908,9 +904,8 @@
           } else {
             d <- .htest_other_format(columns)
           }
-
-          # Wilcoxon ========================================================
         } else if (startsWith(x$method, "Wilcoxon rank sum")) {
+          # Wilcoxon ========================================================
           if (grepl(" by ", x$data.name, fixed = TRUE)) {
             # Wilcoxon: Paired Wilcoxon, formula (no reshape required) ----
             return(.htest_no_reshape(columns))
@@ -932,7 +927,6 @@
           }
         } else {
           # Other htests ======================================================
-
           d <- .htest_other_format(columns)
         }
 
