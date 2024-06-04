@@ -60,7 +60,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
 { counter-reset: source-line 0; }
@@ -557,34 +557,34 @@ higher.</p>
 <span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co"># standard output</span></span>
 <span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="fu">format_table</span>(x)</span>
 <span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt;   Phi (adj.) Glass&#39; delta Epsilon2   R2</span></span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt; 1       0.30         0.40     0.70 0.40</span></span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a></span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co"># column names of effect sizes as symbols</span></span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="fu">format_table</span>(x, <span class="at">use_symbols =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co">#&gt;   ϕ (adj.) Glass&#39; Δ   ε²   R²</span></span>
-<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt; 1     0.30     0.40 0.70 0.40</span></span></code></pre></div>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt; 1       0.30         0.40     0.70 0.40</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="co"># column names of effect sizes as symbols</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="fu">format_table</span>(x, <span class="at">use_symbols =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co">#&gt;   ϕ (adj.) Glass&#39; Δ   ε²   R²</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="co">#&gt; 1     0.30     0.40 0.70 0.40</span></span></code></pre></div>
 <p>In combination with <code>export_table()</code> (see next section),
 this will give you nicely formatted tables.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">export_table</span>(<span class="fu">format_table</span>(x, <span class="at">use_symbols =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="co">#&gt; ϕ (adj.) | Glass&#39; Δ |   ε² |   R²</span></span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="co">#&gt; ---------------------------------</span></span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co">#&gt; 0.30     |     0.40 | 0.70 | 0.40</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">export_table</span>(<span class="fu">format_table</span>(x, <span class="at">use_symbols =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co">#&gt; ϕ (adj.) | Glass&#39; Δ |   ε² |   R²</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt; ---------------------------------</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt; 0.30     |     0.40 | 0.70 | 0.40</span></span></code></pre></div>
 <div id="exporting" class="section level3">
 <h3>Exporting</h3>
 <p>The next step is <em>exporting</em>, which takes a data frame and
 renders it in a given format, so that it looks good in the console, or
 in markdown, HTML or latex.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">export_table</span>(df)</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co">#&gt; Variable | Group |   CI | CI_low | CI_high |        p</span></span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt; -----------------------------------------------------</span></span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt;        1 |     A | 0.95 |   3.35 |    4.23 | 1.00e-03</span></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt;        3 |     A | 0.95 |   2.42 |    5.31 |     0.05</span></span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt;        5 |     A | 0.95 |   6.21 |    7.12 |     0.45</span></span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt;        3 |     B | 0.95 |  12.10 |   13.50 | 4.20e-03</span></span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co">#&gt;        1 |     B | 0.95 |   1.23 |    3.61 |     0.34</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">export_table</span>(df)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="co">#&gt; Variable | Group |   CI | CI_low | CI_high |        p</span></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co">#&gt; -----------------------------------------------------</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#&gt;        1 |     A | 0.95 |   3.35 |    4.23 | 1.00e-03</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt;        3 |     A | 0.95 |   2.42 |    5.31 |     0.05</span></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt;        5 |     A | 0.95 |   6.21 |    7.12 |     0.45</span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt;        3 |     B | 0.95 |  12.10 |   13.50 | 4.20e-03</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt;        1 |     B | 0.95 |   1.23 |    3.61 |     0.34</span></span></code></pre></div>
 <p>For markdown or HTML, simply change the <code>format</code> argument
 to markdown (“md”)…</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">export_table</span>(df, <span class="at">format =</span> <span class="st">&quot;md&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">export_table</span>(df, <span class="at">format =</span> <span class="st">&quot;md&quot;</span>)</span></code></pre></div>
 <table>
 <thead>
 <tr class="header">
@@ -640,21 +640,21 @@ to markdown (“md”)…</p>
 </tbody>
 </table>
 <p>…or HTML format.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">export_table</span>(df, <span class="at">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
-<div id="vmiqldlvhi" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#vmiqldlvhi table {
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">export_table</span>(df, <span class="at">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
+<div id="zexbutripu" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#zexbutripu table {
 font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 -webkit-font-smoothing: antialiased;
 -moz-osx-font-smoothing: grayscale;
 }
-#vmiqldlvhi thead, #vmiqldlvhi tbody, #vmiqldlvhi tfoot, #vmiqldlvhi tr, #vmiqldlvhi td, #vmiqldlvhi th {
+#zexbutripu thead, #zexbutripu tbody, #zexbutripu tfoot, #zexbutripu tr, #zexbutripu td, #zexbutripu th {
 border-style: none;
 }
-#vmiqldlvhi p {
+#zexbutripu p {
 margin: 0;
 padding: 0;
 }
-#vmiqldlvhi .gt_table {
+#zexbutripu .gt_table {
 display: table;
 border-collapse: collapse;
 line-height: normal;
@@ -679,11 +679,11 @@ border-left-style: none;
 border-left-width: 2px;
 border-left-color: #D3D3D3;
 }
-#vmiqldlvhi .gt_caption {
+#zexbutripu .gt_caption {
 padding-top: 4px;
 padding-bottom: 4px;
 }
-#vmiqldlvhi .gt_title {
+#zexbutripu .gt_title {
 color: #333333;
 font-size: 125%;
 font-weight: initial;
@@ -694,7 +694,7 @@ padding-right: 5px;
 border-bottom-color: #FFFFFF;
 border-bottom-width: 0;
 }
-#vmiqldlvhi .gt_subtitle {
+#zexbutripu .gt_subtitle {
 color: #333333;
 font-size: 85%;
 font-weight: initial;
@@ -705,7 +705,7 @@ padding-right: 5px;
 border-top-color: #FFFFFF;
 border-top-width: 0;
 }
-#vmiqldlvhi .gt_heading {
+#zexbutripu .gt_heading {
 background-color: #FFFFFF;
 text-align: center;
 border-bottom-color: #FFFFFF;
@@ -716,12 +716,12 @@ border-right-style: none;
 border-right-width: 1px;
 border-right-color: #D3D3D3;
 }
-#vmiqldlvhi .gt_bottom_border {
+#zexbutripu .gt_bottom_border {
 border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#vmiqldlvhi .gt_col_headings {
+#zexbutripu .gt_col_headings {
 border-top-style: solid;
 border-top-width: 2px;
 border-top-color: #D3D3D3;
@@ -735,7 +735,7 @@ border-right-style: none;
 border-right-width: 1px;
 border-right-color: #D3D3D3;
 }
-#vmiqldlvhi .gt_col_heading {
+#zexbutripu .gt_col_heading {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -754,7 +754,7 @@ padding-left: 5px;
 padding-right: 5px;
 overflow-x: hidden;
 }
-#vmiqldlvhi .gt_column_spanner_outer {
+#zexbutripu .gt_column_spanner_outer {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -765,13 +765,13 @@ padding-bottom: 0;
 padding-left: 4px;
 padding-right: 4px;
 }
-#vmiqldlvhi .gt_column_spanner_outer:first-child {
+#zexbutripu .gt_column_spanner_outer:first-child {
 padding-left: 0;
 }
-#vmiqldlvhi .gt_column_spanner_outer:last-child {
+#zexbutripu .gt_column_spanner_outer:last-child {
 padding-right: 0;
 }
-#vmiqldlvhi .gt_column_spanner {
+#zexbutripu .gt_column_spanner {
 border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
@@ -782,10 +782,10 @@ overflow-x: hidden;
 display: inline-block;
 width: 100%;
 }
-#vmiqldlvhi .gt_spanner_row {
+#zexbutripu .gt_spanner_row {
 border-bottom-style: hidden;
 }
-#vmiqldlvhi .gt_group_heading {
+#zexbutripu .gt_group_heading {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -810,7 +810,7 @@ border-right-color: #D3D3D3;
 vertical-align: middle;
 text-align: left;
 }
-#vmiqldlvhi .gt_empty_group_heading {
+#zexbutripu .gt_empty_group_heading {
 padding: 0.5px;
 color: #333333;
 background-color: #FFFFFF;
@@ -824,13 +824,13 @@ border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 vertical-align: middle;
 }
-#vmiqldlvhi .gt_from_md > :first-child {
+#zexbutripu .gt_from_md > :first-child {
 margin-top: 0;
 }
-#vmiqldlvhi .gt_from_md > :last-child {
+#zexbutripu .gt_from_md > :last-child {
 margin-bottom: 0;
 }
-#vmiqldlvhi .gt_row {
+#zexbutripu .gt_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -848,7 +848,7 @@ border-right-color: #D3D3D3;
 vertical-align: middle;
 overflow-x: hidden;
 }
-#vmiqldlvhi .gt_stub {
+#zexbutripu .gt_stub {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -860,7 +860,7 @@ border-right-color: #D3D3D3;
 padding-left: 5px;
 padding-right: 5px;
 }
-#vmiqldlvhi .gt_stub_row_group {
+#zexbutripu .gt_stub_row_group {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -873,13 +873,13 @@ padding-left: 5px;
 padding-right: 5px;
 vertical-align: top;
 }
-#vmiqldlvhi .gt_row_group_first td {
+#zexbutripu .gt_row_group_first td {
 border-top-width: 2px;
 }
-#vmiqldlvhi .gt_row_group_first th {
+#zexbutripu .gt_row_group_first th {
 border-top-width: 2px;
 }
-#vmiqldlvhi .gt_summary_row {
+#zexbutripu .gt_summary_row {
 color: #333333;
 background-color: #FFFFFF;
 text-transform: inherit;
@@ -888,14 +888,14 @@ padding-bottom: 8px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#vmiqldlvhi .gt_first_summary_row {
+#zexbutripu .gt_first_summary_row {
 border-top-style: solid;
 border-top-color: #D3D3D3;
 }
-#vmiqldlvhi .gt_first_summary_row.thick {
+#zexbutripu .gt_first_summary_row.thick {
 border-top-width: 2px;
 }
-#vmiqldlvhi .gt_last_summary_row {
+#zexbutripu .gt_last_summary_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -904,7 +904,7 @@ border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#vmiqldlvhi .gt_grand_summary_row {
+#zexbutripu .gt_grand_summary_row {
 color: #333333;
 background-color: #FFFFFF;
 text-transform: inherit;
@@ -913,7 +913,7 @@ padding-bottom: 8px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#vmiqldlvhi .gt_first_grand_summary_row {
+#zexbutripu .gt_first_grand_summary_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -922,7 +922,7 @@ border-top-style: double;
 border-top-width: 6px;
 border-top-color: #D3D3D3;
 }
-#vmiqldlvhi .gt_last_grand_summary_row_top {
+#zexbutripu .gt_last_grand_summary_row_top {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -931,10 +931,10 @@ border-bottom-style: double;
 border-bottom-width: 6px;
 border-bottom-color: #D3D3D3;
 }
-#vmiqldlvhi .gt_striped {
+#zexbutripu .gt_striped {
 background-color: rgba(128, 128, 128, 0.05);
 }
-#vmiqldlvhi .gt_table_body {
+#zexbutripu .gt_table_body {
 border-top-style: solid;
 border-top-width: 2px;
 border-top-color: #D3D3D3;
@@ -942,7 +942,7 @@ border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#vmiqldlvhi .gt_footnotes {
+#zexbutripu .gt_footnotes {
 color: #333333;
 background-color: #FFFFFF;
 border-bottom-style: none;
@@ -955,7 +955,7 @@ border-right-style: none;
 border-right-width: 2px;
 border-right-color: #D3D3D3;
 }
-#vmiqldlvhi .gt_footnote {
+#zexbutripu .gt_footnote {
 margin: 0px;
 font-size: 90%;
 padding-top: 4px;
@@ -963,7 +963,7 @@ padding-bottom: 4px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#vmiqldlvhi .gt_sourcenotes {
+#zexbutripu .gt_sourcenotes {
 color: #333333;
 background-color: #FFFFFF;
 border-bottom-style: none;
@@ -976,57 +976,57 @@ border-right-style: none;
 border-right-width: 2px;
 border-right-color: #D3D3D3;
 }
-#vmiqldlvhi .gt_sourcenote {
+#zexbutripu .gt_sourcenote {
 font-size: 90%;
 padding-top: 4px;
 padding-bottom: 4px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#vmiqldlvhi .gt_left {
+#zexbutripu .gt_left {
 text-align: left;
 }
-#vmiqldlvhi .gt_center {
+#zexbutripu .gt_center {
 text-align: center;
 }
-#vmiqldlvhi .gt_right {
+#zexbutripu .gt_right {
 text-align: right;
 font-variant-numeric: tabular-nums;
 }
-#vmiqldlvhi .gt_font_normal {
+#zexbutripu .gt_font_normal {
 font-weight: normal;
 }
-#vmiqldlvhi .gt_font_bold {
+#zexbutripu .gt_font_bold {
 font-weight: bold;
 }
-#vmiqldlvhi .gt_font_italic {
+#zexbutripu .gt_font_italic {
 font-style: italic;
 }
-#vmiqldlvhi .gt_super {
+#zexbutripu .gt_super {
 font-size: 65%;
 }
-#vmiqldlvhi .gt_footnote_marks {
+#zexbutripu .gt_footnote_marks {
 font-size: 75%;
 vertical-align: 0.4em;
 position: initial;
 }
-#vmiqldlvhi .gt_asterisk {
+#zexbutripu .gt_asterisk {
 font-size: 100%;
 vertical-align: 0;
 }
-#vmiqldlvhi .gt_indent_1 {
+#zexbutripu .gt_indent_1 {
 text-indent: 5px;
 }
-#vmiqldlvhi .gt_indent_2 {
+#zexbutripu .gt_indent_2 {
 text-indent: 10px;
 }
-#vmiqldlvhi .gt_indent_3 {
+#zexbutripu .gt_indent_3 {
 text-indent: 15px;
 }
-#vmiqldlvhi .gt_indent_4 {
+#zexbutripu .gt_indent_4 {
 text-indent: 20px;
 }
-#vmiqldlvhi .gt_indent_5 {
+#zexbutripu .gt_indent_5 {
 text-indent: 25px;
 }
 </style>
@@ -1082,23 +1082,23 @@ text-indent: 25px;
 </table>
 </div>
 <p>This can be combined with <code>format_table()</code>.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>df <span class="sc">%&gt;%</span></span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>  <span class="fu">format_table</span>(<span class="at">ci_brackets =</span> <span class="fu">c</span>(<span class="st">&quot;(&quot;</span>, <span class="st">&quot;)&quot;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>  <span class="fu">export_table</span>(<span class="at">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
-<div id="ibwvtgyyls" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#ibwvtgyyls table {
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>df <span class="sc">%&gt;%</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  <span class="fu">format_table</span>(<span class="at">ci_brackets =</span> <span class="fu">c</span>(<span class="st">&quot;(&quot;</span>, <span class="st">&quot;)&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  <span class="fu">export_table</span>(<span class="at">format =</span> <span class="st">&quot;html&quot;</span>)</span></code></pre></div>
+<div id="ulwjtsntdi" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ulwjtsntdi table {
 font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 -webkit-font-smoothing: antialiased;
 -moz-osx-font-smoothing: grayscale;
 }
-#ibwvtgyyls thead, #ibwvtgyyls tbody, #ibwvtgyyls tfoot, #ibwvtgyyls tr, #ibwvtgyyls td, #ibwvtgyyls th {
+#ulwjtsntdi thead, #ulwjtsntdi tbody, #ulwjtsntdi tfoot, #ulwjtsntdi tr, #ulwjtsntdi td, #ulwjtsntdi th {
 border-style: none;
 }
-#ibwvtgyyls p {
+#ulwjtsntdi p {
 margin: 0;
 padding: 0;
 }
-#ibwvtgyyls .gt_table {
+#ulwjtsntdi .gt_table {
 display: table;
 border-collapse: collapse;
 line-height: normal;
@@ -1123,11 +1123,11 @@ border-left-style: none;
 border-left-width: 2px;
 border-left-color: #D3D3D3;
 }
-#ibwvtgyyls .gt_caption {
+#ulwjtsntdi .gt_caption {
 padding-top: 4px;
 padding-bottom: 4px;
 }
-#ibwvtgyyls .gt_title {
+#ulwjtsntdi .gt_title {
 color: #333333;
 font-size: 125%;
 font-weight: initial;
@@ -1138,7 +1138,7 @@ padding-right: 5px;
 border-bottom-color: #FFFFFF;
 border-bottom-width: 0;
 }
-#ibwvtgyyls .gt_subtitle {
+#ulwjtsntdi .gt_subtitle {
 color: #333333;
 font-size: 85%;
 font-weight: initial;
@@ -1149,7 +1149,7 @@ padding-right: 5px;
 border-top-color: #FFFFFF;
 border-top-width: 0;
 }
-#ibwvtgyyls .gt_heading {
+#ulwjtsntdi .gt_heading {
 background-color: #FFFFFF;
 text-align: center;
 border-bottom-color: #FFFFFF;
@@ -1160,12 +1160,12 @@ border-right-style: none;
 border-right-width: 1px;
 border-right-color: #D3D3D3;
 }
-#ibwvtgyyls .gt_bottom_border {
+#ulwjtsntdi .gt_bottom_border {
 border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#ibwvtgyyls .gt_col_headings {
+#ulwjtsntdi .gt_col_headings {
 border-top-style: solid;
 border-top-width: 2px;
 border-top-color: #D3D3D3;
@@ -1179,7 +1179,7 @@ border-right-style: none;
 border-right-width: 1px;
 border-right-color: #D3D3D3;
 }
-#ibwvtgyyls .gt_col_heading {
+#ulwjtsntdi .gt_col_heading {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -1198,7 +1198,7 @@ padding-left: 5px;
 padding-right: 5px;
 overflow-x: hidden;
 }
-#ibwvtgyyls .gt_column_spanner_outer {
+#ulwjtsntdi .gt_column_spanner_outer {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -1209,13 +1209,13 @@ padding-bottom: 0;
 padding-left: 4px;
 padding-right: 4px;
 }
-#ibwvtgyyls .gt_column_spanner_outer:first-child {
+#ulwjtsntdi .gt_column_spanner_outer:first-child {
 padding-left: 0;
 }
-#ibwvtgyyls .gt_column_spanner_outer:last-child {
+#ulwjtsntdi .gt_column_spanner_outer:last-child {
 padding-right: 0;
 }
-#ibwvtgyyls .gt_column_spanner {
+#ulwjtsntdi .gt_column_spanner {
 border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
@@ -1226,10 +1226,10 @@ overflow-x: hidden;
 display: inline-block;
 width: 100%;
 }
-#ibwvtgyyls .gt_spanner_row {
+#ulwjtsntdi .gt_spanner_row {
 border-bottom-style: hidden;
 }
-#ibwvtgyyls .gt_group_heading {
+#ulwjtsntdi .gt_group_heading {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -1254,7 +1254,7 @@ border-right-color: #D3D3D3;
 vertical-align: middle;
 text-align: left;
 }
-#ibwvtgyyls .gt_empty_group_heading {
+#ulwjtsntdi .gt_empty_group_heading {
 padding: 0.5px;
 color: #333333;
 background-color: #FFFFFF;
@@ -1268,13 +1268,13 @@ border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 vertical-align: middle;
 }
-#ibwvtgyyls .gt_from_md > :first-child {
+#ulwjtsntdi .gt_from_md > :first-child {
 margin-top: 0;
 }
-#ibwvtgyyls .gt_from_md > :last-child {
+#ulwjtsntdi .gt_from_md > :last-child {
 margin-bottom: 0;
 }
-#ibwvtgyyls .gt_row {
+#ulwjtsntdi .gt_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -1292,7 +1292,7 @@ border-right-color: #D3D3D3;
 vertical-align: middle;
 overflow-x: hidden;
 }
-#ibwvtgyyls .gt_stub {
+#ulwjtsntdi .gt_stub {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -1304,7 +1304,7 @@ border-right-color: #D3D3D3;
 padding-left: 5px;
 padding-right: 5px;
 }
-#ibwvtgyyls .gt_stub_row_group {
+#ulwjtsntdi .gt_stub_row_group {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -1317,13 +1317,13 @@ padding-left: 5px;
 padding-right: 5px;
 vertical-align: top;
 }
-#ibwvtgyyls .gt_row_group_first td {
+#ulwjtsntdi .gt_row_group_first td {
 border-top-width: 2px;
 }
-#ibwvtgyyls .gt_row_group_first th {
+#ulwjtsntdi .gt_row_group_first th {
 border-top-width: 2px;
 }
-#ibwvtgyyls .gt_summary_row {
+#ulwjtsntdi .gt_summary_row {
 color: #333333;
 background-color: #FFFFFF;
 text-transform: inherit;
@@ -1332,14 +1332,14 @@ padding-bottom: 8px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#ibwvtgyyls .gt_first_summary_row {
+#ulwjtsntdi .gt_first_summary_row {
 border-top-style: solid;
 border-top-color: #D3D3D3;
 }
-#ibwvtgyyls .gt_first_summary_row.thick {
+#ulwjtsntdi .gt_first_summary_row.thick {
 border-top-width: 2px;
 }
-#ibwvtgyyls .gt_last_summary_row {
+#ulwjtsntdi .gt_last_summary_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -1348,7 +1348,7 @@ border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#ibwvtgyyls .gt_grand_summary_row {
+#ulwjtsntdi .gt_grand_summary_row {
 color: #333333;
 background-color: #FFFFFF;
 text-transform: inherit;
@@ -1357,7 +1357,7 @@ padding-bottom: 8px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#ibwvtgyyls .gt_first_grand_summary_row {
+#ulwjtsntdi .gt_first_grand_summary_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -1366,7 +1366,7 @@ border-top-style: double;
 border-top-width: 6px;
 border-top-color: #D3D3D3;
 }
-#ibwvtgyyls .gt_last_grand_summary_row_top {
+#ulwjtsntdi .gt_last_grand_summary_row_top {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -1375,10 +1375,10 @@ border-bottom-style: double;
 border-bottom-width: 6px;
 border-bottom-color: #D3D3D3;
 }
-#ibwvtgyyls .gt_striped {
+#ulwjtsntdi .gt_striped {
 background-color: rgba(128, 128, 128, 0.05);
 }
-#ibwvtgyyls .gt_table_body {
+#ulwjtsntdi .gt_table_body {
 border-top-style: solid;
 border-top-width: 2px;
 border-top-color: #D3D3D3;
@@ -1386,7 +1386,7 @@ border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#ibwvtgyyls .gt_footnotes {
+#ulwjtsntdi .gt_footnotes {
 color: #333333;
 background-color: #FFFFFF;
 border-bottom-style: none;
@@ -1399,7 +1399,7 @@ border-right-style: none;
 border-right-width: 2px;
 border-right-color: #D3D3D3;
 }
-#ibwvtgyyls .gt_footnote {
+#ulwjtsntdi .gt_footnote {
 margin: 0px;
 font-size: 90%;
 padding-top: 4px;
@@ -1407,7 +1407,7 @@ padding-bottom: 4px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#ibwvtgyyls .gt_sourcenotes {
+#ulwjtsntdi .gt_sourcenotes {
 color: #333333;
 background-color: #FFFFFF;
 border-bottom-style: none;
@@ -1420,57 +1420,57 @@ border-right-style: none;
 border-right-width: 2px;
 border-right-color: #D3D3D3;
 }
-#ibwvtgyyls .gt_sourcenote {
+#ulwjtsntdi .gt_sourcenote {
 font-size: 90%;
 padding-top: 4px;
 padding-bottom: 4px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#ibwvtgyyls .gt_left {
+#ulwjtsntdi .gt_left {
 text-align: left;
 }
-#ibwvtgyyls .gt_center {
+#ulwjtsntdi .gt_center {
 text-align: center;
 }
-#ibwvtgyyls .gt_right {
+#ulwjtsntdi .gt_right {
 text-align: right;
 font-variant-numeric: tabular-nums;
 }
-#ibwvtgyyls .gt_font_normal {
+#ulwjtsntdi .gt_font_normal {
 font-weight: normal;
 }
-#ibwvtgyyls .gt_font_bold {
+#ulwjtsntdi .gt_font_bold {
 font-weight: bold;
 }
-#ibwvtgyyls .gt_font_italic {
+#ulwjtsntdi .gt_font_italic {
 font-style: italic;
 }
-#ibwvtgyyls .gt_super {
+#ulwjtsntdi .gt_super {
 font-size: 65%;
 }
-#ibwvtgyyls .gt_footnote_marks {
+#ulwjtsntdi .gt_footnote_marks {
 font-size: 75%;
 vertical-align: 0.4em;
 position: initial;
 }
-#ibwvtgyyls .gt_asterisk {
+#ulwjtsntdi .gt_asterisk {
 font-size: 100%;
 vertical-align: 0;
 }
-#ibwvtgyyls .gt_indent_1 {
+#ulwjtsntdi .gt_indent_1 {
 text-indent: 5px;
 }
-#ibwvtgyyls .gt_indent_2 {
+#ulwjtsntdi .gt_indent_2 {
 text-indent: 10px;
 }
-#ibwvtgyyls .gt_indent_3 {
+#ulwjtsntdi .gt_indent_3 {
 text-indent: 15px;
 }
-#ibwvtgyyls .gt_indent_4 {
+#ulwjtsntdi .gt_indent_4 {
 text-indent: 20px;
 }
-#ibwvtgyyls .gt_indent_5 {
+#ulwjtsntdi .gt_indent_5 {
 text-indent: 25px;
 }
 </style>
