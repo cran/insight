@@ -1,7 +1,7 @@
 Type: Package
 Package: insight
 Title: Easy Access to Model Information for Various Model Objects
-Version: 0.20.0
+Version: 0.20.1
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -70,7 +70,7 @@ Description: A tool to provide an easy, intuitive and consistent
     used to fit the model or data from response variables. 'insight'
     mainly revolves around two types of functions: Functions that find
     (the names of) information, starting with 'find_', and functions that
-    get the underlying data, starting with 'get_'.  The package has a
+    get the underlying data, starting with 'get_'. The package has a
     consistent syntax and works with many different model objects, where
     otherwise functions to access these information are missing.
 License: GPL-3
@@ -79,33 +79,32 @@ BugReports: https://github.com/easystats/insight/issues
 Depends: R (>= 3.6)
 Imports: methods, stats, utils
 Suggests: AER, afex, aod, BayesFactor, bayestestR, bbmle, bdsmatrix,
-        betareg, bife, biglm, blavaan, blme, boot, brms, broom, car,
-        carData, censReg, cgam, clubSandwich, coxme, cplm, crch, curl,
-        datawizard, effectsize, emmeans, epiR, estimatr, feisr, fixest
-        (>= 0.11.2), fungible, gam, gamlss, gamlss.data, gamm4, gbm,
-        gee, geepack, geoR, ggeffects, GLMMadaptive, glmmTMB, gmnl,
-        grDevices, gt, httr, interp, ivreg, JM, knitr, lavaan,
-        lavaSearch2, lfe, lme4, lmerTest, lmtest, logistf, logitr,
-        MASS, marginaleffects, Matrix, mclogit, mclust, MCMCglmm,
-        merTools, metaBMA, metadat, metafor, metaplus, mgcv, mice,
-        mlogit, mmrm, modelbased, multgee, MuMIn, nestedLogit, nlme,
-        nnet, nonnest2, ordinal, panelr, parameters, parsnip, pbkrtest,
-        performance, plm, poorman, PROreg (>= 1.3.0), pscl, psych,
-        quantreg, Rcpp, rmarkdown, rms, rpart, robustbase, robustlmm,
-        rstanarm (>= 2.21.1), rstantools (>= 2.1.0), rstudioapi,
-        sandwich, serp, speedglm, splines, statmod, survey, survival,
-        testthat, tinytable (>= 0.1.0), truncreg, tweedie, TMB, VGAM,
-        withr
+        betareg, bife, biglm, blavaan (>= 0.5-5), blme, boot, brms,
+        broom, car, carData, censReg, cgam, clubSandwich, coxme, cplm,
+        crch, curl, datawizard, effectsize, emmeans, epiR, estimatr,
+        feisr, fixest (>= 0.11.2), fungible, gam, gamlss, gamlss.data,
+        gamm4, gbm, gee, geepack, geoR, ggeffects, GLMMadaptive,
+        glmmTMB, gmnl, grDevices, gt, httptest2, httr, httr2, interp,
+        ivreg, JM, knitr, lavaan, lavaSearch2, lfe, lme4, lmerTest,
+        lmtest, logistf, logitr, marginaleffects, MASS, Matrix,
+        mclogit, mclust, MCMCglmm, merTools, metaBMA, metadat, metafor,
+        metaplus, mgcv, mice, mlogit, mmrm, modelbased, multgee, MuMIn,
+        nestedLogit, nlme, nnet, nonnest2, ordinal, panelr, parameters,
+        parsnip, pbkrtest, performance, plm, poorman, PROreg (>=
+        1.3.0), pscl, psych, quantreg, Rcpp, rmarkdown, rms,
+        robustbase, robustlmm, rpart, rstanarm (>= 2.21.1), rstantools
+        (>= 2.1.0), rstudioapi, sandwich, serp, speedglm, splines,
+        statmod, survey, survival, testthat, tinytable (>= 0.1.0), TMB,
+        truncreg, tweedie, VGAM, withr
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
 RoxygenNote: 7.3.1
 Config/testthat/edition: 3
 Config/testthat/parallel: true
-Config/Needs/website: rstudio/bslib, r-lib/pkgdown,
-        easystats/easystatstemplate
+Config/Needs/website: easystats/easystatstemplate
 NeedsCompilation: no
-Packaged: 2024-06-03 12:54:40 UTC; mail
+Packaged: 2024-06-11 14:52:23 UTC; mail
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @strengejacke),
   Dominique Makowski [aut, ctb] (<https://orcid.org/0000-0001-5375-9967>,
@@ -126,4 +125,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @rempsyc),
   Alex Reinhart [ctb] (<https://orcid.org/0000-0002-6658-514X>)
 Repository: CRAN
-Date/Publication: 2024-06-04 09:49:33 UTC
+Date/Publication: 2024-06-11 15:40:02 UTC

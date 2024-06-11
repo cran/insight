@@ -1,6 +1,6 @@
-9b5670ea7c65491e846680bc59bb12db *DESCRIPTION
+57388d0ce3fad27b15efdcbba24eff91 *DESCRIPTION
 f64e6e517fb4229b1194ae48628b3815 *NAMESPACE
-bae133ab5f7061d35526635dd3c29f69 *NEWS.md
+892ead2614d1a82c4e57d5db7c5f70ae *NEWS.md
 49598b4ae7338528dfea3f4c422b903a *R/all_equal_models.R
 27e4e22536c6664f9ddbad4646c74c66 *R/apply_table_theme.R
 4a8284ffdd38c8c6e3c13cc61978680d *R/check_if_installed.R
@@ -10,7 +10,7 @@ bae133ab5f7061d35526635dd3c29f69 *NEWS.md
 b8c9848d128dcfb18daf604103b74d9a *R/colour_tools.R
 d400cde5d437dc457680d71d6c732b93 *R/compute_variances.R
 a2ee2a93b808086ed22355c26b54a50c *R/display.R
-ba51e551a582d9d31666c369ad5e4d25 *R/download_model.R
+57996178f9198552ca98ccec5a38f0f6 *R/download_model.R
 e107a68808c6de991f54d14323b1f324 *R/ellipsis_info.R
 281a2f76979ae8a82ce5c37a6932c2b0 *R/export_table.R
 c197ae14f02eb62437760355509973dd *R/find_algorithm.R
@@ -50,7 +50,7 @@ c69eff2ca1f6594ec39cbcd50df912cb *R/format_value.R
 9dad12be0bbdd646c2d3d9aab0f28bb0 *R/get_auxiliary.R
 45effbce1729539d4dd543550ec0ac69 *R/get_call.R
 7b2be53b95c43983bcb6b4ab09be4698 *R/get_data.R
-2274571cda6f4f01d9e0730cda051b1b *R/get_datagrid.R
+db8d3eef1e60f6ee295cde069392a381 *R/get_datagrid.R
 ed77deb571f1103ca3f7deeb8e3d3b26 *R/get_deviance.R
 f4b62b6cba525461fa16c65dff65a558 *R/get_df.R
 c2ba89279aaaf8d8c612291faa50bba8 *R/get_df_betwithin.R
@@ -124,7 +124,7 @@ ad372498b54d829e49c6977fcced8142 *R/print_parameters.R
 0c3dc205063a1c3bf622d974557e9476 *R/standardize_names.R
 6a7989e0cdb37fdfcb919aae432d9e28 *R/text_remove_backticks.R
 816a8e93768519855276019b523f2002 *R/utilities.R
-54d9090097046c169748f0a881e5c59e *R/utils_compact.R
+6c928b1e0923817f6f43e7b85366f63f *R/utils_compact.R
 0ed592b8803f9cef89bced4316e765f6 *R/utils_get_data.R
 bfe2a52dbb51d17b30b2e771c2bfdb78 *R/utils_model_info.R
 a59eda0cfb86a1702af241e5f45d761c *R/utils_object.R
@@ -136,7 +136,7 @@ b2ef4148f3d981813f57432a2c54184d *inst/CITATION
 c58e205aaf9927e8604df0163b5cbcc6 *inst/WORDLIST
 2031816efc746069c372e520f59d4549 *inst/doc/display.R
 f1021449c64f5dd8b6096f3c490e4185 *inst/doc/display.Rmd
-cb07655934c25bf1e03a9ec28ccb3295 *inst/doc/display.html
+5e17a4b07e3e8a47afc636efbe5de9d6 *inst/doc/display.html
 99de5c6d14ea6839e205b701d29835c7 *inst/doc/export.R
 b370275914b68836324f33f97059f4f7 *inst/doc/export.Rmd
 658a0eafb123fab6338cf294d1f06b8f *inst/doc/export.html
@@ -152,7 +152,7 @@ cb0cf3c000355b6b9945eac8d53cd100 *man/compact_character.Rd
 1b39b418f3337cf02d1e7974b4531f86 *man/compact_list.Rd
 999a1acd1240d7a532cd0b2bc24eaaa0 *man/display.Rd
 08544489787e37f41453f53a323bfecd *man/dot-colour_detect.Rd
-b42468ec6c1e60cef482d10b27b45a2e *man/download_model.Rd
+0da138b386fbf83b1aab34184035e39a *man/download_model.Rd
 942a3df71b9fec94891532c2f861505f *man/ellipsis_info.Rd
 c07465cc8e3e643db581de10d04b5fba *man/export_table.Rd
 ecb15158024dac89ecf5cd7be7dd34ec *man/figures/logo.png
@@ -193,7 +193,7 @@ c334dd8ed14592171ca5ba82b75ed3b5 *man/format_number.Rd
 a58e12df339fa83029f4d820ec84d60a *man/get_auxiliary.Rd
 9a86117b173c1ab6caeada707bbc7b23 *man/get_call.Rd
 946f72be2c727af6651e2aa8c28a5ce7 *man/get_data.Rd
-0e28a35d191e5eb4bfe665ef2bd289ad *man/get_datagrid.Rd
+6d3b69a8fb3320dc6d849911c84cce9d *man/get_datagrid.Rd
 463451fd0affa544ebc79a00eaba03c0 *man/get_deviance.Rd
 d960b429fc9012d847b4032452ae150b *man/get_df.Rd
 1a56cc1464d3ef1c53ca36bfa6b31d38 *man/get_family.Rd
@@ -254,6 +254,9 @@ feb8d063857785e0b2c6a380f0012fa4 *tests/testthat/_snaps/format_table.md
 b8655d56be83cde1a9f40cc6d6fbf3a1 *tests/testthat/_snaps/format_table_ci.md
 6c7334283560332f798da658c1cc1e83 *tests/testthat/_snaps/mipo.md
 22dfdaac918a56284d90477f7f75f58c *tests/testthat/_snaps/windows/format_table.md
+73610db818521999dce50e4d9d6aa0c0 *tests/testthat/download-model-failure/raw.github.com/easystats/circus/master/data/xyz.rda.R
+1d932057b4808ad66173058944a61199 *tests/testthat/download-model-success/raw.github.com/easystats/circus/master/data/lm_0.rda.R
+3d2a8a7a465d79a59ce868ed946caff1 *tests/testthat/setup.R
 fc3ce0093ba33fa1c804c5cc6b10e5bf *tests/testthat/test-BayesFactorBF.R
 d136450c6f26c770a247b1d922e55573 *tests/testthat/test-FE-formula.R
 47c542fbaea2b4faf8d2c1f9b70eb43c *tests/testthat/test-GLMMadaptive.R
@@ -284,13 +287,14 @@ b4b6a04f9e9682a9355a75d6a60e291d *tests/testthat/test-clean_names.R
 088d108c3146b2fe3e6fccdf88872dbe *tests/testthat/test-clm2.R
 3fe5bd7c6cb55f619e552bfcdfc90741 *tests/testthat/test-clmm.R
 992667c857302fc815b2f7ec528c6dd5 *tests/testthat/test-compact-character.R
-4878f6763ca72e3b7141253485c849c0 *tests/testthat/test-compact-list.R
+4ff38f1cec7e4bd35d519533e9ecaa20 *tests/testthat/test-compact-list.R
 58772cffff45e7b8bf67430d49346475 *tests/testthat/test-coxme.R
 5cc9a51b6e48f4fadecce9256258e2ac *tests/testthat/test-coxph.R
 7ffef851ea246eea9e9c8de5243e1a18 *tests/testthat/test-cpglmm.R
 136e64f3b1bb30f23c27e9693eba94f6 *tests/testthat/test-crch.R
 7ae000715cf343bdd6b8aeeb30c3a48c *tests/testthat/test-crq.R
 aebc9b38602964d74eb15cd5fca7829f *tests/testthat/test-data.frame.R
+789b6e3100b4693f9c6a29799c0352ae *tests/testthat/test-download_model.R
 a1aaf66a0df41a7d704db0f947664142 *tests/testthat/test-ellipses_info.R
 5d03516b5f9458f2d9ebd5df7924af2c *tests/testthat/test-emmeans.R
 2a443baacba8c8db4a757bad9b446cc2 *tests/testthat/test-epiR.R
@@ -324,7 +328,7 @@ ecf3eeee4f949acc3844cf7f72d3993d *tests/testthat/test-gbm.R
 c96edd412c94d977ed6f76aa679ce5f7 *tests/testthat/test-geeglm.R
 b65c455998545807b1f0c1170c78895e *tests/testthat/test-get_auxiliary.R
 cd083343da47098d6b27d55ed1111d34 *tests/testthat/test-get_data.R
-321763f9095e41c5349d4c812da6e5b6 *tests/testthat/test-get_datagrid.R
+c98b935e7a2fab91faa15c1f3b992d7a *tests/testthat/test-get_datagrid.R
 fc72d53fa1a81657d0112487914652d3 *tests/testthat/test-get_deviance.R
 e0e30058f872568279aa0b903e9372db *tests/testthat/test-get_loglikelihood.R
 e3c6772f6f16b4538441b1272c34acca *tests/testthat/test-get_modelmatrix.R
