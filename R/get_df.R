@@ -120,7 +120,7 @@ get_df.default <- function(x, type = "residual", verbose = TRUE, ...) {
   }
 
 
-  if (type == "normal") {
+  if (type == "normal") { # nolint
     # Wald normal approximation - always Inf -----
     return(Inf)
   } else if (type == "residual") {
@@ -168,6 +168,17 @@ get_df.default <- function(x, type = "residual", verbose = TRUE, ...) {
 #' @export
 get_df.model_fit <- function(x, type = "residual", verbose = TRUE, ...) {
   get_df(x$fit, type = type, verbose = verbose, ...)
+}
+
+
+#' @export
+get_df.svy2lme <- function(x, type = "residual", verbose = TRUE, ...) {
+  type <- match.arg(tolower(type), choices = c("residual", "model", "normal"))
+  if (type == "model") {
+    .model_df(x)
+  } else {
+    Inf
+  }
 }
 
 
@@ -379,7 +390,7 @@ get_df.mediate <- function(x, ...) {
     return(Inf)
   }
 
-  return(n - nparam)
+  n - nparam
 }
 
 

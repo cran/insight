@@ -1,6 +1,10 @@
 # small wrapper around this commonly used try-catch
 .safe <- function(code, on_error = NULL) {
-  tryCatch(code, error = function(e) on_error)
+  if (isTRUE(getOption("easystats_errors", FALSE)) && is.null(on_error)) {
+    code
+  } else {
+    tryCatch(code, error = function(e) on_error)
+  }
 }
 
 
@@ -118,14 +122,14 @@
 }
 
 
-
 # extract random effects from formula
 .get_model_random <- function(f, model, split_nested = FALSE) {
   is_special <- inherits(
     model,
     c(
       "MCMCglmm", "gee", "LORgee", "mixor", "clmm2", "felm", "feis", "bife",
-      "BFBayesFactor", "BBmm", "glimML", "MANOVA", "RM", "cglm", "glmm"
+      "BFBayesFactor", "BBmm", "glimML", "MANOVA", "RM", "cglm", "glmm",
+      "glmgee"
     )
   )
 
@@ -190,7 +194,6 @@
 }
 
 
-
 # in case we need the random effects terms as formula (symbol),
 # not as character string, then call this functions instead of
 # .get_model_random()
@@ -215,9 +218,7 @@
 }
 
 
-
 # helper to access model components ----------------
-
 
 .all_elements <- function() {
   c(
@@ -279,7 +280,6 @@
     return(auxiliary_parameters)
   }
 
-
   elements <- switch(effects,
     all = elements,
     fixed = elements[!elements %in% random_parameters],
@@ -297,48 +297,6 @@
 
   elements
 }
-
-
-
-
-# checks if a mixed model fit is singular or not. Need own function,
-# because lme4::isSingular() does not work with glmmTMB
-.is_singular <- function(x, vals, tolerance = 1e-5) {
-  check_if_installed("lme4", reason = "to compute variances for mixed models")
-
-  tryCatch(
-    {
-      if (inherits(x, "glmmTMB")) {
-        eigen_values <- list()
-        for (component in c("cond", "zi")) {
-          for (i in seq_along(vals$vc[[component]])) {
-            eigen_values <- c(eigen_values, list(eigen(vals$vc[[component]][[i]], only.values = TRUE)$values))
-          }
-        }
-        is_si <- any(vapply(eigen_values, min, numeric(1), na.rm = TRUE) < tolerance)
-      } else if (inherits(x, c("clmm", "cpglmm"))) {
-        is_si <- any(sapply(vals$vc, function(.x) any(abs(diag(.x)) < tolerance)))
-      } else if (inherits(x, "merMod")) {
-        theta <- lme4::getME(x, "theta")
-        diag.element <- lme4::getME(x, "lower") == 0
-        is_si <- any(abs(theta[diag.element]) < tolerance)
-      } else if (inherits(x, "MixMod")) {
-        vc <- diag(x$D)
-        is_si <- any(sapply(vc, function(.x) any(abs(.x) < tolerance)))
-      } else if (inherits(x, "lme")) {
-        is_si <- any(abs(stats::na.omit(as.numeric(diag(vals$vc))) < tolerance))
-      } else {
-        is_si <- FALSE
-      }
-
-      is_si
-    },
-    error = function(x) {
-      FALSE
-    }
-  )
-}
-
 
 
 # Filter parameters from Stan-model fits
@@ -361,7 +319,6 @@
 }
 
 
-
 .filter_pars_univariate <- function(l, parameters) {
   lapply(l, function(component) {
     unlist(sapply(
@@ -375,12 +332,10 @@
 }
 
 
-
 # remove column
 .remove_column <- function(data, variables) {
   data[, -which(colnames(data) %in% variables), drop = FALSE]
 }
-
 
 
 .grep_smoothers <- function(x) {
@@ -400,13 +355,11 @@
 }
 
 
-
 .grep_zi_smoothers <- function(x) {
   grepl("^(s\\.\\d\\()", x, perl = TRUE) |
     grepl("^(gam::s\\.\\d\\()", x, perl = TRUE) |
     grepl("^(mgcv::s\\.\\d\\()", x, perl = TRUE)
 }
-
 
 
 .grep_non_smoothers <- function(x) {
@@ -427,7 +380,6 @@
     grepl("^(?!(brms::t2\\())", x, perl = TRUE) &
     grepl("^(?!(smooth_sd\\[))", x, perl = TRUE)
 }
-
 
 
 # .split_formula <- function(f) {
@@ -454,7 +406,6 @@
 # }
 
 
-
 .gam_family <- function(x) {
   faminfo <- .safe(stats::family(x))
 
@@ -465,7 +416,6 @@
 
   faminfo
 }
-
 
 
 # for models with zero-inflation component, return
@@ -486,8 +436,6 @@
     dat
   )
 }
-
-
 
 
 #' @keywords internal
@@ -516,7 +464,6 @@
 }
 
 
-
 .is_baysian_emmeans <- function(x) {
   if (inherits(x, "emm_list")) {
     x <- x[[1]]
@@ -524,7 +471,6 @@
   post.beta <- methods::slot(x, "post.beta")
   !(all(dim(post.beta) == 1) && is.na(post.beta))
 }
-
 
 
 .is_bayesian_model <- function(x) {
@@ -536,7 +482,6 @@
     "blrm"
   ))
 }
-
 
 
 # safe conversion from factor to numeric
@@ -585,9 +530,6 @@
 }
 
 
-
-
-
 ## copied from lme4::findbars() -----------------------
 
 
@@ -601,7 +543,6 @@
     paste0(trm, "|", deparse(term[[3]]))
   }, ""), collapse = ")+("), ")"))[[2]]
 }
-
 
 
 .expandDoubleVerts <- function(term) {
@@ -620,7 +561,6 @@
   }
   term
 }
-
 
 
 .findbars <- function(term) {
@@ -687,8 +627,6 @@
 }
 
 
-
-
 ## copied from lme4::nobars() -----------------------
 
 
@@ -706,7 +644,6 @@
   }
   nb
 }
-
 
 
 .nobars_ <- function(term) {
@@ -748,7 +685,6 @@
 }
 
 
-
 .isBar <- function(term) {
   if (is.call(term) && ((term[[1]] == as.name("|") || term[[1]] == as.name("||")))) {
     return(TRUE)
@@ -767,7 +703,6 @@
   }
   FALSE
 }
-
 
 
 # classify emmeans objects -------------

@@ -515,6 +515,7 @@ model_info.MixMod <- function(x, verbose = TRUE, ...) {
   .make_family(
     x = x,
     fitfam = faminfo$family,
+    zero.inf = !is.null(stats::formula(x, type = "zi_fixed")),
     logit.link = faminfo$link == "logit",
     link.fun = faminfo$link,
     verbose = verbose,
@@ -1002,6 +1003,19 @@ model_info.glmmadmb <- function(x, ...) {
 
 
 #' @export
+model_info.glmgee <- function(x, ...) {
+  faminfo <- x$family
+  .make_family(
+    x = x,
+    fitfam = faminfo$family,
+    logit.link = faminfo$link == "logit",
+    link.fun = faminfo$link,
+    ...
+  )
+}
+
+
+#' @export
 model_info.cpglmm <- function(x, ...) {
   link <- parse(text = safe_deparse(x@call))[[1]]$link
   if (is.null(link)) link <- "log"
@@ -1107,6 +1121,12 @@ model_info.vglm <- model_info.vgam
 #' @export
 model_info.svy_vglm <- function(x, verbose = TRUE, ...) {
   model_info(x$fit, verbose = verbose)
+}
+
+
+#' @export
+model_info.svy2lme <- function(x, verbose = TRUE, ...) {
+  .make_family(x = x, verbose = verbose, ...)
 }
 
 

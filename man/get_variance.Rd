@@ -2,6 +2,8 @@
 % Please edit documentation in R/get_variances.R
 \name{get_variance}
 \alias{get_variance}
+\alias{get_variance.merMod}
+\alias{get_variance.glmmTMB}
 \alias{get_variance_residual}
 \alias{get_variance_fixed}
 \alias{get_variance_random}
@@ -13,10 +15,27 @@
 \alias{get_correlation_slopes}
 \title{Get variance components from random effects models}
 \usage{
-get_variance(
+get_variance(x, ...)
+
+\method{get_variance}{merMod}(
   x,
   component = c("all", "fixed", "random", "residual", "distribution", "dispersion",
     "intercept", "slope", "rho01", "rho00"),
+  tolerance = 1e-08,
+  null_model = NULL,
+  approximation = "lognormal",
+  verbose = TRUE,
+  ...
+)
+
+\method{get_variance}{glmmTMB}(
+  x,
+  component = c("all", "fixed", "random", "residual", "distribution", "dispersion",
+    "intercept", "slope", "rho01", "rho00"),
+  model_component = NULL,
+  tolerance = 1e-08,
+  null_model = NULL,
+  approximation = "lognormal",
   verbose = TRUE,
   ...
 )
@@ -25,7 +44,7 @@ get_variance_residual(x, verbose = TRUE, ...)
 
 get_variance_fixed(x, verbose = TRUE, ...)
 
-get_variance_random(x, verbose = TRUE, tolerance = 1e-05, ...)
+get_variance_random(x, verbose = TRUE, tolerance = 1e-08, ...)
 
 get_variance_distribution(x, verbose = TRUE, ...)
 
@@ -42,28 +61,45 @@ get_correlation_slopes(x, verbose = TRUE, ...)
 \arguments{
 \item{x}{A mixed effects model.}
 
-\item{component}{Character value, indicating the variance component that should
-be returned. By default, all variance components are returned. The
-distribution-specific (\code{"distribution"}) and residual (\code{"residual"})
-variance are the most computational intensive components, and hence may
-take a few seconds to calculate.}
-
-\item{verbose}{Toggle off warnings.}
-
 \item{...}{Currently not used.}
+
+\item{component}{Character value, indicating the variance component that
+should be returned. By default, all variance components are returned. The
+distribution-specific (\code{"distribution"}) and residual (\code{"residual"}) variance
+are the most computational intensive components, and hence may take a few
+seconds to calculate.}
 
 \item{tolerance}{Tolerance for singularity check of random effects, to decide
 whether to compute random effect variances or not. Indicates up to which
 value the convergence result is accepted. The larger tolerance is, the
 stricter the test will be. See \code{\link[performance:check_singularity]{performance::check_singularity()}}.}
+
+\item{null_model}{Optional, a null-model to be used for the calculation of
+random effect variances. If \code{NULL}, the null-model is computed internally.}
+
+\item{approximation}{Character string, indicating the approximation method
+for the distribution-specific (observation level, or residual) variance. Only
+applies to non-Gaussian models. Can be \code{"lognormal"} (default), \code{"delta"} or
+\code{"trigamma"}. For binomial models, the default is the \emph{theoretical}
+distribution specific variance, however, it can also be
+\code{"observation_level"}. See \emph{Nakagawa et al. 2017}, in particular supplement
+2, for details.}
+
+\item{verbose}{Toggle off warnings.}
+
+\item{model_component}{For models that can have a zero-inflation component,
+specify for which component variances should be returned. If \code{NULL} or
+\code{"full"} (the default), both the conditional and the zero-inflation component
+are taken into account. If \code{"conditional"}, only the conditional component is
+considered.}
 }
 \value{
 A list with following elements:
 \itemize{
 \item \code{var.fixed}, variance attributable to the fixed effects
 \item \code{var.random}, (mean) variance of random effects
-\item \code{var.residual}, residual variance (sum of dispersion and distribution)
-\item \code{var.distribution}, distribution-specific variance
+\item \code{var.residual}, residual variance (sum of dispersion and distribution-specific/observation level variance)
+\item \code{var.distribution}, distribution-specific (or observation level) variance
 \item \code{var.dispersion}, variance due to additive dispersion
 \item \code{var.intercept}, the random-intercept-variance, or between-subject-variance (\ifelse{html}{\out{&tau;<sub>00</sub>}}{\eqn{\tau_{00}}})
 \item \code{var.slope}, the random-slope-variance (\ifelse{html}{\out{&tau;<sub>11</sub>}}{\eqn{\tau_{11}}})
@@ -74,19 +110,13 @@ A list with following elements:
 \description{
 This function extracts the different variance components of a mixed model and
 returns the result as list. Functions like \code{get_variance_residual(x)} or
-\code{get_variance_fixed(x)} are shortcuts for \code{get_variance(x, component = "residual")} etc.
+\code{get_variance_fixed(x)} are shortcuts for \code{get_variance(x, component = "residual")}
+etc.
 }
 \details{
 This function returns different variance components from mixed models,
 which are needed, for instance, to calculate r-squared measures or the
 intraclass-correlation coefficient (ICC).
-}
-\note{
-This function supports models of class \code{merMod} (including models
-from \strong{blme}), \code{clmm}, \code{cpglmm}, \code{glmmadmb}, \code{glmmTMB}, \code{MixMod}, \code{lme},
-\code{mixed}, \code{rlmerMod}, \code{stanreg}, \code{brmsfit} or \code{wbm}. Support for objects of
-class \code{MixMod} (\strong{GLMMadaptive}), \code{lme} (\strong{nlme}) or \code{brmsfit} (\strong{brms}) is
-experimental and may not work for all models.
 }
 \section{Fixed effects variance}{
 
@@ -106,19 +136,29 @@ like random slopes or nested random effects. Details can be found in
 the random effects variance equals the random-intercept variance.
 }
 
-\section{Distribution-specific variance}{
+\section{Distribution-specific (observation level) variance}{
 
 The distribution-specific variance,
 \ifelse{html}{\out{&sigma;<sup>2</sup><sub>d</sub>}}{\eqn{\sigma^2_d}},
-depends on the model family. For Gaussian models, it is
+is the conditional variance of the response given the predictors , \code{Var[y|x]},
+which depends on the model family.
+\itemize{
+\item \strong{Gaussian:} For Gaussian models, it is
 \ifelse{html}{\out{&sigma;<sup>2</sup>}}{\eqn{\sigma^2}} (i.e. \code{sigma(model)^2}).
-For models with binary outcome, it is
-\eqn{\pi^2 / 3} for logit-link, \code{1} for probit-link, and \eqn{\pi^2 / 6}
-for cloglog-links. Models from Gamma-families use \eqn{\mu^2} (as obtained
-from \code{family$variance()}). For all other models, the distribution-specific
-variance is based on lognormal approximation, \eqn{log(1 + var(x) / \mu^2)}
-(see \cite{Nakagawa et al. 2017}). The expected variance of a zero-inflated
-model is computed according to \emph{Zuur et al. 2012, p277}.
+\item \strong{Bernoulli:} For models with binary outcome, it is \eqn{\pi^2 / 3} for
+logit-link, \code{1} for probit-link, and \eqn{\pi^2 / 6} for cloglog-links.
+\item \strong{Binomial:} For other binomial models, the distribution-specific variance
+for Bernoulli models is used, divided by a weighting factor based on the
+number of trials and successes.
+\item \strong{Gamma:} Models from Gamma-families use \eqn{\mu^2} (as obtained from
+\code{family$variance()}).
+\item For all other models, the distribution-specific variance is by default
+based on lognormal approximation, \eqn{log(1 + var(x) / \mu^2)} (see
+\emph{Nakagawa et al. 2017}). Other approximation methods can be specified with
+the \code{approximation} argument.
+\item \strong{Zero-inflation models:} The expected variance of a zero-inflated model
+is computed according to \emph{Zuur et al. 2012, p277}.
+}
 }
 
 \section{Variance for the additive overdispersion term}{
@@ -158,6 +198,55 @@ The random slope-intercept correlation
 (\ifelse{html}{\out{&rho;<sub>01</sub>}}{\eqn{\rho_{01}}}) is obtained from
 \code{VarCorr()}. This measure is only available for mixed models with random
 intercepts and slopes.
+}
+
+\section{Supported models and model families}{
+
+This function supports models of class \code{merMod} (including models from
+\strong{blme}), \code{clmm}, \code{cpglmm}, \code{glmmadmb}, \code{glmmTMB}, \code{MixMod}, \code{lme}, \code{mixed},
+\code{rlmerMod}, \code{stanreg}, \code{brmsfit} or \code{wbm}. Support for objects of class
+\code{MixMod} (\strong{GLMMadaptive}), \code{lme} (\strong{nlme}) or \code{brmsfit} (\strong{brms}) is
+not fully implemented or tested, and therefore may not work for all models
+of the aforementioned classes.
+
+The results are validated against the solutions provided by \emph{Nakagawa et al. (2017)},
+in particular examples shown in the Supplement 2 of the paper. Other model
+families are validated against results from the \strong{MuMIn} package. This means
+that the returned variance components should be accurate and reliable for
+following mixed models or model families:
+\itemize{
+\item Bernoulli (logistic) regression
+\item Binomial regression (with other than binary outcomes)
+\item Poisson and Quasi-Poisson regression
+\item Negative binomial regression (including nbinom1 and nbinom2 families)
+\item Gaussian regression (linear models)
+\item Gamma regression
+\item Tweedie regression
+\item Beta regression
+\item Ordered beta regression
+}
+
+Following model families are not yet validated, but should work:
+\itemize{
+\item Zero-inflated and hurdle models
+\item Beta-binomial regression
+\item Compound Poisson regression
+\item Generalized Poisson regression
+\item Log-normal regression
+}
+
+Extracting variance components for models with zero-inflation part is not
+straightforward, because it is not definitely clear how the distribution-specific
+variance should be calculated. Therefore, it is
+recommended to carefully inspect the results, and probably validate against
+other models, e.g. Bayesian models (although results may be only roughly
+comparable).
+
+Log-normal regressions (e.g. \code{lognormal()} family in \strong{glmmTMB} or
+\code{gaussian("log")}) often have a very low fixed effects variance (if they were
+calculated as suggested by \emph{Nakagawa et al. 2017}). This results in very low
+ICC or r-squared values, which may not be meaningful (see
+\code{\link[performance:icc]{performance::icc()}} or \code{\link[performance:r2_nakagawa]{performance::r2_nakagawa()}}).
 }
 
 \examples{

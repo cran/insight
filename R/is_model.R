@@ -86,7 +86,7 @@ is_regression_model <- function(x) {
     # g --------------------
     "gam", "Gam", "GAMBoost", "gamlr", "gamlss", "gamm", "gamm4",
     "garch", "gbm", "gee", "geeglm", "gjrm", "glht", "glimML", "Glm", "glm",
-    "glmaag", "glmbb", "glmboostLSS", "glmc", "glmdm", "glmdisc",
+    "glmaag", "glmbb", "glmboostLSS", "glmc", "glmdm", "glmdisc", "glmgee",
     "glmerMod", "glmlep", "glmm", "glmmadmb", "glmmEP", "glmmFit",
     "glmmfields", "glmmLasso", "glmmPQL", "glmmTMB", "glmnet", "glmrob",
     "glmRob", "glmx", "gls", "gmnl", "gmm", "gnls", "gsm", "ggcomparisons",
@@ -144,7 +144,7 @@ is_regression_model <- function(x) {
     "Sarlm", "scam", "selection", "sem", "SemiParBIV", "serp", "slm", "speedlm",
     "speedglm", "splmm", "spml", "stanmvreg", "stanreg", "summary.lm",
     "survfit", "survreg", "survPresmooth", "svychisq", "svyglm", "svy_vglm",
-    "svyolr", "svytable", "systemfit",
+    "svyolr", "svytable", "systemfit", "svy2lme",
 
     # t --------------------
     "t1way", "t2way", "t3way", "test_mediation", "tobit", "trendPMCMR",
@@ -166,7 +166,7 @@ is_regression_model <- function(x) {
   if (isTRUE(regression_only)) {
     out <- setdiff(out, c(
       "emmGrid", "emm_list", "htest", "pairwise.htest", "summary.lm",
-      "marginaleffects", "marginaleffects.summary"
+      "marginaleffects", "marginaleffects.summary", "ggcomparisons"
     ))
   }
 

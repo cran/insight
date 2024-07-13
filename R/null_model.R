@@ -39,25 +39,23 @@ null_model <- function(model, verbose = TRUE, ...) {
     stats::update(model, location = ~1, scale = ~1)
   } else if (inherits(model, "multinom")) {
     stats::update(model, ~1, trace = FALSE)
+  } else if (is.null(offset_term)) {
+    # stats::update(model, ~1)
+    out <- stats::update(model, ~1, evaluate = FALSE)
+    eval(out, envir = parent.frame())
   } else {
-    if (!is.null(offset_term)) {
-      tryCatch(
-        do.call(stats::update, list(model, ~1, offset = str2lang(offset_term))),
-        error = function(e) {
-          if (verbose) {
-            format_warning(
-              "Model contains offset-terms, which could not be considered in the returned null-model.",
-              "Coefficients might be inaccurate."
-            )
-          }
-          stats::update(model, ~1)
+    tryCatch(
+      do.call(stats::update, list(model, ~1, offset = str2lang(offset_term))),
+      error = function(e) {
+        if (verbose) {
+          format_warning(
+            "Model contains offset-terms, which could not be considered in the returned null-model.",
+            "Coefficients might be inaccurate."
+          )
         }
-      )
-    } else {
-      # stats::update(model, ~1)
-      out <- stats::update(model, ~1, evaluate = FALSE)
-      eval(out, envir = parent.frame())
-    }
+        stats::update(model, ~1)
+      }
+    )
   }
 }
 
@@ -65,10 +63,37 @@ null_model <- function(model, verbose = TRUE, ...) {
 .null_model_mixed <- function(model, offset_term = NULL, verbose = TRUE) {
   if (inherits(model, "MixMod")) {
     nullform <- stats::as.formula(paste(find_response(model), "~ 1"))
-    null.model <- stats::update(model, fixed = nullform)
+    null.model <- suppressWarnings(stats::update(model, fixed = nullform))
+    # fix fixed effects formula
+    null.model$call$fixed <- nullform
   } else if (inherits(model, "cpglmm")) {
     nullform <- find_formula(model, verbose = FALSE)[["random"]]
-    null.model <- stats::update(model, nullform)
+    null.model <- suppressWarnings(stats::update(model, nullform))
+  } else if (inherits(model, "glmmTMB") && !is.null(find_formula(model)$zero_inflated)) {
+    insight::check_if_installed("glmmTMB")
+    # for zero-inflated models, we need to create the NULL model for the
+    # zero-inflation part as well. Since "update()" won't work here, we need
+    # to extract all elements from the call and modify the formulas there
+    model_args <- lapply(get_call(model), safe_deparse)[-1]
+    formula_args <- endsWith(names(model_args), "formula")
+    resp <- find_response(model)
+    model_args[formula_args] <- lapply(names(model_args[formula_args]), function(f_names) {
+      f <- model_args[[f_names]]
+      re_string <- sapply(.findbars(stats::as.formula(f)), safe_deparse)
+      if (is_empty_object(re_string)) {
+        stats::as.formula("~1")
+      } else if (startsWith(f_names, "zi")) {
+        stats::reformulate(paste0("(", re_string, ")"), response = NULL)
+      } else {
+        stats::reformulate(paste0("(", re_string, ")"), response = resp)
+      }
+    })
+    model_args[!formula_args] <- lapply(model_args[!formula_args], str2lang)
+    # add offset back
+    if (!is.null(offset_term)) {
+      model_args$offset <- str2lang(offset_term)
+    }
+    null.model <- do.call(glmmTMB::glmmTMB, model_args)
   } else {
     f <- stats::formula(model)
     resp <- find_response(model)
@@ -79,21 +104,21 @@ null_model <- function(model, verbose = TRUE, ...) {
     re.terms <- paste0("(", sapply(.findbars(f), safe_deparse), ")")
     nullform <- stats::reformulate(re.terms, response = resp)
     null.model <- tryCatch(
-      if (!is.null(offset_term)) {
-        do.call(stats::update, list(model, formula = nullform, offset = str2lang(offset_term)))
+      if (is.null(offset_term)) {
+        suppressWarnings(stats::update(model, nullform))
       } else {
-        stats::update(model, nullform)
+        suppressWarnings(do.call(stats::update, list(model, formula = nullform, offset = str2lang(offset_term))))
       },
       error = function(e) {
         msg <- e$message
         if (verbose) {
           if (grepl("(^object)(.*)(not found$)", msg)) {
-            print_color("Can't calculate null-model. Probably the data that was used to fit the model cannot be found.\n", "red")
+            print_color("Can't calculate null-model. Probably the data that was used to fit the model cannot be found.\n", "red") # nolint
           } else if (startsWith(msg, "could not find function")) {
-            print_color("Can't calculate null-model. Probably you need to load the package that was used to fit the model.\n", "red")
+            print_color("Can't calculate null-model. Probably you need to load the package that was used to fit the model.\n", "red") # nolint
           }
         }
-        return(NULL)
+        NULL
       }
     )
   }

@@ -171,6 +171,9 @@ link_function.RM <- link_function.lm
 #' @export
 link_function.afex_aov <- link_function.lm
 
+#' @export
+link_function.svy2lme <- link_function.lm
+
 
 # General family ---------------------------------
 
@@ -512,6 +515,9 @@ link_function.bife <- function(x, ...) {
   x$family$linkfun
 }
 
+#' @export
+link_function.glmgee <- link_function.bife
+
 
 #' @export
 link_function.cpglmm <- function(x, ...) {
@@ -600,13 +606,18 @@ link_function.glmm <- function(x, ...) {
 link_function.gamlss <- function(x, what = c("mu", "sigma", "nu", "tau"), ...) {
   what <- match.arg(what)
   faminfo <- get(x$family[1], asNamespace("gamlss"))()
-  switch(what,
-    mu = faminfo$mu.linkfun,
-    sigma = faminfo$sigma.linkfun,
-    nu = faminfo$nu.linkfun,
-    tau = faminfo$tau.linkfun,
-    faminfo$mu.linkfun
-  )
+  # exceptions
+  if (faminfo$family[1] == "LOGNO") {
+    function(mu) log(mu)
+  } else {
+    switch(what,
+      mu = faminfo$mu.linkfun,
+      sigma = faminfo$sigma.linkfun,
+      nu = faminfo$nu.linkfun,
+      tau = faminfo$tau.linkfun,
+      faminfo$mu.linkfun
+    )
+  }
 }
 
 

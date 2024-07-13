@@ -201,6 +201,9 @@ link_inverse.speedlm <- link_inverse.lm
 #' @export
 link_inverse.afex_aov <- link_inverse.lm
 
+#' @export
+link_inverse.svy2lme <- link_inverse.lm
+
 
 
 
@@ -479,6 +482,9 @@ link_inverse.bife <- function(x, ...) {
   x$family$linkinv
 }
 
+#' @export
+link_inverse.glmgee <- link_inverse.bife
+
 
 #' @export
 link_inverse.glmmadmb <- function(x, ...) {
@@ -637,13 +643,18 @@ link_inverse.brmsfit <- function(x, ...) {
 link_inverse.gamlss <- function(x, what = c("mu", "sigma", "nu", "tau"), ...) {
   what <- match.arg(what)
   faminfo <- get(x$family[1], asNamespace("gamlss"))()
-  switch(what,
-    mu = faminfo$mu.linkinv,
-    sigma = faminfo$sigma.linkinv,
-    nu = faminfo$nu.linkinv,
-    tau = faminfo$tau.linkinv,
-    faminfo$mu.linkinv
-  )
+  # exceptions
+  if (faminfo$family[1] == "LOGNO") {
+    function(eta) pmax(exp(eta), .Machine$double.eps)
+  } else {
+    switch(what,
+      mu = faminfo$mu.linkinv,
+      sigma = faminfo$sigma.linkinv,
+      nu = faminfo$nu.linkinv,
+      tau = faminfo$tau.linkinv,
+      faminfo$mu.linkinv
+    )
+  }
 }
 
 
