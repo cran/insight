@@ -14,6 +14,14 @@
   ## Revisions and adaption to more complex models and other packages
   ## by Daniel Lüdecke
 
+  # sanity check - only proceed for mixed models
+  if (!is_mixed_model(model)) {
+    if (verbose) {
+      format_warning("This function only works for mixed models, i.e. models with random effects.")
+    }
+    return(NULL)
+  }
+
   # needed for singularity check
   check_if_installed("performance", reason = "to check for singularity")
 
@@ -242,7 +250,7 @@
     return(NULL)
   }
 
-  # installed?
+
   check_if_installed("lme4", reason = "to compute variances for mixed models")
 
   if (inherits(model, "lme")) {
@@ -412,7 +420,6 @@
     # cpglmm
     # ---------------------------
   } else if (inherits(model, "cpglmm")) {
-    # installed?
     check_if_installed("cplm")
 
     mixed_effects_info <- list(
@@ -586,7 +593,7 @@
                                            model_component = NULL,
                                            verbose = TRUE) {
   # get overdispersion parameter / sigma
-  sig <- .safe(get_sigma(model))
+  sig <- .safe(.get_sigma(model, no_recursion = TRUE))
 
   if (is.null(sig)) {
     sig <- 1
@@ -797,7 +804,7 @@
     mu <- NA
   } else {
     if (inherits(model_null, "cpglmm")) {
-      check_if_installed("cplm") # installed?
+      check_if_installed("cplm")
       null_fixef <- unname(cplm::fixef(model_null))
     } else {
       null_fixef <- unname(.collapse_cond(lme4::fixef(model_null)))
@@ -1150,7 +1157,6 @@
 # undefined families / link-functions
 # ----------------------------------------------
 .variance_family_default <- function(model, mu, verbose) {
-  # installed?
   check_if_installed("lme4")
 
   tryCatch(

@@ -31,7 +31,7 @@ test_that("ellipses_info - single model", {
 test_that("ellipses_info - list of models", {
   expect_message(out <- ellipsis_info(list(m1, m2, m3)))
   expect_true(attributes(out)$is_nested)
-  expect_equal(names(out), c("m1", "m2", "m3"))
+  expect_named(out, c("m1", "m2", "m3"))
   expect_equal(length(out), 3L)
 })
 
@@ -39,7 +39,7 @@ test_that("ellipses_info - names of models for lists", {
   models <- list(m1, m2, m3)
   out <- ellipsis_info(models, verbose = FALSE)
   expect_true(attributes(out)$is_nested)
-  expect_equal(names(out), c("Model 1", "Model 2", "Model 3"))
+  expect_named(out, c("Model 1", "Model 2", "Model 3"))
   expect_equal(length(out), 3L)
 })
 
@@ -101,4 +101,23 @@ test_that("ellipses_info, random effects", {
   expect_true(attributes(info)$all_mixed_models)
   expect_true(attributes(info)$re_nested_increasing)
   expect_true(attributes(info)$re_nested_decreasing)
+})
+
+test_that("ellipses_info, do.call", {
+  data(iris)
+  lm1 <- lm(Sepal.Length ~ Species, data = iris)
+  lm2 <- lm(Sepal.Length ~ Species + Petal.Length, data = iris)
+  lm3 <- lm(Sepal.Length ~ Species * Petal.Length, data = iris)
+
+  out <- do.call(ellipsis_info, list(lm1, lm2, lm3, only_models = TRUE))
+  expect_length(out, 3)
+  expect_named(out, c("model1", "model2", "model3"))
+
+  out <- ellipsis_info(list(lm1, lm2, lm3), only_models = TRUE)
+  expect_length(out, 3)
+  expect_named(out, c("lm1", "lm2", "lm3"))
+
+  out <- ellipsis_info(lm1, lm2, lm3, only_models = TRUE)
+  expect_length(out, 3)
+  expect_named(out, c("lm1", "lm2", "lm3"))
 })
