@@ -884,19 +884,40 @@ test_that("clean_parameters", {
 test_that("get_modelmatrix", {
   out <- get_modelmatrix(m1)
   expect_identical(dim(out), c(236L, 4L))
-  m9 <- insight::download_model("brms_mo2")
+  m9 <- suppressWarnings(insight::download_model("brms_mo2"))
   skip_if(is.null(m9))
   out <- get_modelmatrix(m9)
   expect_identical(dim(out), c(32L, 2L))
 })
 
 test_that("get_modelmatrix", {
-  m10 <- insight::download_model("brms_lf_1")
+  m10 <- suppressWarnings(insight::download_model("brms_lf_1"))
   expect_identical(
     find_variables(m10),
     list(
       response = "carb",
-      conditional = c("gear", "vs"),disc = c("disc", "cyl")
+      conditional = c("gear", "vs"), disc = c("disc", "cyl")
     )
   )
+})
+
+# get variance
+test_that("get_variance works", {
+  mdl <- suppressWarnings(insight::download_model("brms_mixed_9"))
+  out <- get_variance(mdl)
+  expect_equal(
+    out,
+    list(
+      var.fixed = 4.91103174480995,
+      var.random = 22.4069708072874,
+      var.residual = 11.3506326649,
+      var.distribution = 11.3506326649,
+      var.dispersion = 0,
+      var.intercept = c(cyl = 22.4069708072874)
+    ),
+    tolerance = 1e-3,
+    ignore_attr = TRUE
+  )
+  # make sure it's a matrix
+  # expect_true(is.matrix(get_modelmatrix(null_model(mdl))))
 })

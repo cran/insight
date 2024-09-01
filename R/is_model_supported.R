@@ -57,6 +57,7 @@ supported_models <- function() {
     "censReg", "cgam", "cgamm", "cglm", "clm", "clm2", "clmm", "clmm2",
     "clogit", "coeftest", "complmrob", "confusionMatrix", "coxme", "coxph",
     "coxph.penal", "coxr", "cpglm", "cpglmm", "crch", "crq", "crqs", "crr",
+    "coxph_weightit",
 
     # d ----------------------------
     "dep.effect", "DirichletRegModel", "draws", "drc",
@@ -71,7 +72,7 @@ supported_models <- function() {
     "gam", "Gam", "gamlss", "gamm", "gamm4", "garch", "gbm", "gee", "geeglm",
     "glht", "glimML", "glmm", "glm", "Glm", "glmmadmb", "glmmPQL", "glmmTMB",
     "glmrob", "glmRob", "glmx", "gls", "gmnl", "glmgee", "ggcomparisons",
-    "glmerMod",
+    "glmerMod", "glm_weightit",
 
     # h ----------------------------
     "HLfit", "htest", "hurdle", "hglm",
@@ -90,13 +91,13 @@ supported_models <- function() {
     "metaplus", "merMod", "merModList", "mipo", "mira", "mixed", "mixor", "MixMod",
     "mhurdle", "mjoint", "mle", "mle2", "mlm", "mblogit", "mclogit", "mcmc.list",
     "meta_bma", "meta_fixed", "meta_random", "mlogit", "mmlogit", "model_fit",
-    "multinom", "mvord", "mmclogit", "mmrm", "mmrm_fit", "mmrm_tmb",
+    "multinom", "mvord", "mmclogit", "mmrm", "mmrm_fit", "mmrm_tmb", "multinom_weightit",
 
     # n ----------------------------
     "negbinmfx", "negbinirr", "nestedLogit",
 
     # o ----------------------------
-    "ols", "onesampb", "orm",
+    "ols", "onesampb", "orm", "ordinal_weightit",
 
     # p ----------------------------
     "PMCMR", "poissonmfx", "poissonirr", "pgmm", "plm", "polr", "psm",
