@@ -158,8 +158,8 @@ test_that("robust vcov", {
   skip_if_not_installed("sandwich")
   mod <- lm(mpg ~ hp, data = mtcars)
   se0 <- get_predicted_se(mod)
-  se1 <- suppressWarnings(get_predicted_se(mod, vcov_estimation = "HC"))
-  se2 <- suppressWarnings(get_predicted_se(mod, vcov_estimation = "HC", vcov_type = "HC3"))
+  se1 <- suppressWarnings(get_predicted_se(mod, vcov = "HC"))
+  se2 <- suppressWarnings(get_predicted_se(mod, vcov = "HC3"))
   se3 <- get_predicted_se(mod, vcov = "HC", vcov_args = list(type = "HC3"))
   expect_true(all(se0 != se1))
   expect_true(all(se1 == se2))
@@ -173,13 +173,11 @@ test_that("robust vcov", {
   ignore_attr = TRUE
   )
   # various user inputs
-  se1 <- suppressWarnings(get_predicted_se(mod, vcov_estimation = "HC", vcov_type = "HC2"))
-  se2 <- get_predicted_se(mod, vcov = "HC2")
-  se3 <- get_predicted_se(mod, vcov = "vcovHC", vcov_args = list(type = "HC2"))
-  se4 <- get_predicted_se(mod, vcov = sandwich::vcovHC, vcov_args = list(type = "HC2"))
+  se1 <- get_predicted_se(mod, vcov = "HC2")
+  se2 <- get_predicted_se(mod, vcov = "vcovHC", vcov_args = list(type = "HC2"))
+  se3 <- get_predicted_se(mod, vcov = sandwich::vcovHC, vcov_args = list(type = "HC2"))
   expect_true(all(se1 == se2))
   expect_true(all(se1 == se3))
-  expect_true(all(se1 == se4))
   se1 <- get_predicted_se(mod, vcov = "HC1")
   se2 <- get_predicted_se(mod, vcov = sandwich::vcovHC, vcov_args = list(type = "HC1"))
   expect_true(all(se1 == se2))
@@ -202,7 +200,6 @@ test_that("MASS::rlm", {
 # =========================================================================
 
 test_that("get_predicted - lmerMod", {
-  skip_if(getRversion() > "4.3.3")
   suppressWarnings(skip_if_not_installed("glmmTMB"))
   skip_if_not_installed("lme4")
   skip_if_not_installed("merTools")
@@ -291,7 +288,6 @@ test_that("get_predicted - lmerMod (log)", {
 
 
 test_that("get_predicted - merMod", {
-  skip_if(getRversion() > "4.3.3")
   skip_if_not_installed("lme4")
   skip_if_not_installed("glmmTMB")
   x <- lme4::glmer(vs ~ am + (1 | cyl), data = mtcars, family = "binomial")
@@ -314,7 +310,6 @@ test_that("get_predicted - merMod", {
 
 
 test_that("get_predicted - glmmTMB", {
-  skip_if(getRversion() > "4.3.3")
   skip_if_not_installed("glmmTMB")
   x <- glmmTMB::glmmTMB(mpg ~ am + (1 | cyl), data = mtcars)
 
@@ -632,7 +627,6 @@ test_that("brms: `type` in ellipsis used to produce the wrong intervals", {
 
 
 test_that("zero-inflation stuff works", {
-  skip_if(getRversion() > "4.3.3")
   skip_if_not_installed("glmmTMB")
   skip_if_not_installed("pscl")
 

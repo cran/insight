@@ -1,3 +1,19 @@
+# insight 0.20.5
+
+## General
+
+* `get_datagrid()` can now be used to extract the "grid" information from
+  `{emmeans}` and `{marginaleffects}` outputs.
+
+* Arguments `na.rm` and `na_rm` are deprecated throughout the package's functions.
+  Instead, use `remove_na`.
+
+## Bug fixes
+
+* Fixed rendering issue of the example in `?insight::display`.
+
+* Fixed issues due to recent changes in the *glmmTMB* package.
+
 # insight 0.20.4
 
 ## New supported models

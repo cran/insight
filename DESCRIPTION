@@ -1,23 +1,23 @@
 Type: Package
 Package: insight
 Title: Easy Access to Model Information for Various Model Objects
-Version: 0.20.4
+Version: 0.20.5
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
              role = c("aut", "cre"),
              email = "d.luedecke@uke.de",
-             comment = c(ORCID = "0000-0002-8895-3206", Twitter = "@strengejacke")),
+             comment = c(ORCID = "0000-0002-8895-3206")),
       person(given = "Dominique",
              family = "Makowski",
              role = c("aut", "ctb"),
              email = "dom.makowski@gmail.com",
-             comment = c(ORCID = "0000-0001-5375-9967", Twitter = "@Dom_Makowski")),
+             comment = c(ORCID = "0000-0001-5375-9967")),
       person(given = "Indrajeet",
              family = "Patil",
              role = c("aut", "ctb"),
              email = "patilindrajeet.science@gmail.com",
-             comment = c(ORCID = "0000-0003-1995-6531", Twitter = "@patilindrajeets")),
+             comment = c(ORCID = "0000-0003-1995-6531")),
       person(given = "Philip",
              family = "Waggoner",
              role = c("aut", "ctb"),
@@ -32,7 +32,7 @@ Authors@R:
              family = "Wiernik",
              role = c("aut", "ctb"),
              email = "brenton@wiernik.org",
-             comment = c(ORCID = "0000-0001-9560-6336", Twitter = "@bmwiernik")),
+             comment = c(ORCID = "0000-0001-9560-6336")),
       person(given = "Vincent",
              family = "Arel-Bundock",
              email = "vincent.arel-bundock@umontreal.ca",
@@ -57,7 +57,7 @@ Authors@R:
              family = "Thériault",
              role = "ctb",
              email = "remi.theriault@mail.mcgill.ca",
-             comment = c(ORCID = "0000-0003-4315-6788", Twitter = "@rempsyc")),
+             comment = c(ORCID = "0000-0003-4315-6788")),
       person(given = "Alex",
              family = "Reinhart",
              role = "ctb",
@@ -84,8 +84,8 @@ Suggests: AER, afex, aod, BayesFactor, bayestestR, bbmle, bdsmatrix,
         coxme, cplm, crch, curl, datawizard, effectsize, emmeans, epiR,
         estimatr, feisr, fixest (>= 0.11.2), fungible, fwb, gam,
         gamlss, gamlss.data, gamm4, gbm, gee, geepack, geoR, ggeffects,
-        GLMMadaptive, glmmTMB, glmtoolbox, gmnl, grDevices, gt,
-        httptest2, httr, httr2, interp, ivreg, JM, knitr, lavaan,
+        GLMMadaptive, glmmTMB (>= 1.1.10), glmtoolbox, gmnl, grDevices,
+        gt, httptest2, httr, httr2, interp, ivreg, JM, knitr, lavaan,
         lavaSearch2, lfe, lme4, lmerTest, lmtest, logistf, logitr,
         marginaleffects, MASS, Matrix, mclogit, mclust, MCMCglmm,
         merTools, metaBMA, metadat, metafor, metaplus, mgcv, mice,
@@ -106,25 +106,20 @@ Config/testthat/parallel: true
 Config/Needs/website: easystats/easystatstemplate
 Config/Needs/check: stan-dev/cmdstanr
 NeedsCompilation: no
-Packaged: 2024-09-01 17:55:44 UTC; Daniel
-Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
-    @strengejacke),
-  Dominique Makowski [aut, ctb] (<https://orcid.org/0000-0001-5375-9967>,
-    @Dom_Makowski),
-  Indrajeet Patil [aut, ctb] (<https://orcid.org/0000-0003-1995-6531>,
-    @patilindrajeets),
+Packaged: 2024-10-01 23:01:26 UTC; Daniel
+Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>),
+  Dominique Makowski [aut, ctb] (<https://orcid.org/0000-0001-5375-9967>),
+  Indrajeet Patil [aut, ctb] (<https://orcid.org/0000-0003-1995-6531>),
   Philip Waggoner [aut, ctb] (<https://orcid.org/0000-0002-7825-7573>),
   Mattan S. Ben-Shachar [aut, ctb]
     (<https://orcid.org/0000-0002-4287-4801>),
-  Brenton M. Wiernik [aut, ctb] (<https://orcid.org/0000-0001-9560-6336>,
-    @bmwiernik),
+  Brenton M. Wiernik [aut, ctb] (<https://orcid.org/0000-0001-9560-6336>),
   Vincent Arel-Bundock [aut, ctb]
     (<https://orcid.org/0000-0003-2042-7063>),
   Etienne Bacher [aut, ctb] (<https://orcid.org/0000-0002-9271-5075>),
   Alex Hayes [rev] (<https://orcid.org/0000-0002-4985-5160>),
   Grant McDermott [ctb] (<https://orcid.org/0000-0001-7883-8573>),
-  Rémi Thériault [ctb] (<https://orcid.org/0000-0003-4315-6788>,
-    @rempsyc),
+  Rémi Thériault [ctb] (<https://orcid.org/0000-0003-4315-6788>),
   Alex Reinhart [ctb] (<https://orcid.org/0000-0002-6658-514X>)
 Repository: CRAN
-Date/Publication: 2024-09-01 22:20:02 UTC
+Date/Publication: 2024-10-02 07:50:02 UTC
