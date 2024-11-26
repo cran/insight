@@ -44,8 +44,37 @@ test_that("find_transformation - power-1", {
 })
 
 test_that("find_transformation - power-2", {
-  model <- lm(I(Sepal.Length^2) ~ Species, data = iris)
+  model <- lm(I(Sepal.Length^2.5) ~ Species, data = iris)
   expect_identical(find_transformation(model), "power")
+})
+
+test_that("find_transformation - scale", {
+  model <- lm(mpg / 0.7 ~ hp, data = mtcars)
+  expect_identical(find_transformation(model), "scale")
+  model <- lm(I(mpg / 0.7) ~ hp, data = mtcars)
+  expect_identical(find_transformation(model), "scale")
+})
+
+test_that("find_transformation - box-cox", {
+  m <- lm((mpg^0.7 - 1) / 0.7 ~ hp, data = mtcars)
+  expect_identical(find_transformation(m), "box-cox")
+  m <- lm(I((mpg^0.7 - 1) / 0.7) ~ hp, data = mtcars)
+  expect_identical(find_transformation(m), "box-cox")
+})
+
+test_that("find_transformation - box-cox, minus", {
+  m <- lm((mpg^-1.3 - 1) / -1.3 ~ hp, data = mtcars)
+  expect_identical(find_transformation(m), "box-cox")
+  expect_identical(
+    get_transformation(m)$transformation(5),
+    0.67430248265846,
+    tolerance = 1e-4
+  )
+  expect_identical(
+    get_transformation(m)$inverse(0.67430248265846),
+    5,
+    tolerance = 1e-4
+  )
 })
 
 test_that("find_transformation - unknown", {
@@ -101,4 +130,36 @@ test_that("find_transformation - detect powers", {
   expect_identical(insight::find_transformation(m5), "power")
   expect_identical(insight::find_transformation(m6), "power")
   # styler: on
+})
+
+
+test_that("find_transformation - detect powers", {
+  skip_if_not_installed("lme4")
+  data(mtcars)
+  model <- lme4::lmer(mpg ~ log(wt) + I(gear^2) + exp(am) + vs + (1 | cyl), data = mtcars)
+  expect_identical(find_transformation(model), "identity")
+  expect_identical(
+    find_transformation(model, include_all = TRUE),
+    list(
+      response = c(mpg = "identity"),
+      conditional = c(wt = "log", gear = "power", am = "exp", vs = "identity"),
+      random = c(cyl = "identity")
+    )
+  )
+})
+
+
+test_that("find_transformation - works with log-edge cases", {
+  set.seed(1)
+  n <- 30
+  x <- rlnorm(n = n, meanlog = 3, sdlog = 1)
+  y <- exp(2 + log(x) + rnorm(n, sd = 3))
+  d <- data.frame(x, y)
+  m <- lm(log(y) ~ log(x), data = d)
+
+  expect_identical(find_transformation(m), "log")
+  expect_identical(
+    find_transformation(m, include_all = TRUE),
+    list(response = c(y = "log"), conditional = c(x = "log"))
+  )
 })

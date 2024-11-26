@@ -101,33 +101,35 @@ identifies the function to be used to compute the covariance matrix.
 \item A function which returns a covariance matrix (e.g., \code{stats::vcov()})
 \item A string which indicates the kind of uncertainty estimates to return.
 \itemize{
-\item Heteroskedasticity-consistent: \code{"vcovHC"}, \code{"HC"}, \code{"HC0"}, \code{"HC1"},
-\code{"HC2"}, \code{"HC3"}, \code{"HC4"}, \code{"HC4m"}, \code{"HC5"}. See \code{?sandwich::vcovHC}
-\item Cluster-robust: \code{"vcovCR"}, \code{"CR0"}, \code{"CR1"}, \code{"CR1p"}, \code{"CR1S"},
-\code{"CR2"}, \code{"CR3"}. See \code{?clubSandwich::vcovCR()}
-\item Bootstrap: \code{"vcovBS"}, \code{"xy"}, \code{"residual"}, \code{"wild"}, \code{"mammen"},
-\code{"webb"}. See \code{?sandwich::vcovBS}
-\item Other \code{sandwich} package functions: \code{"vcovHAC"}, \code{"vcovPC"}, \code{"vcovCL"},
-\code{"vcovPL"}.
+\item Heteroskedasticity-consistent: \code{"HC"}, \code{"HC0"}, \code{"HC1"}, \code{"HC2"},
+\code{"HC3"}, \code{"HC4"}, \code{"HC4m"}, \code{"HC5"}. See \code{?sandwich::vcovHC}
+\item Cluster-robust: \code{"CR"}, \code{"CR0"}, \code{"CR1"}, \code{"CR1p"}, \code{"CR1S"}, \code{"CR2"},
+\code{"CR3"}. See \code{?clubSandwich::vcovCR}
+\item Bootstrap: \code{"BS"}, \code{"xy"}, \code{"residual"}, \code{"wild"}, \code{"mammen"},
+\code{"fractional"}, \code{"jackknife"}, \code{"norm"}, \code{"webb"}. See
+\code{?sandwich::vcovBS}
+\item Other \code{sandwich} package functions: \code{"HAC"}, \code{"PC"}, \code{"CL"}, \code{"OPG"},
+\code{"PL"}.
+\item Kenward-Roger approximation: \code{kenward-roger}. See \code{?pbkrtest::vcovAdj}.
 }
 }}
 
 \item{vcov_args}{List of arguments to be passed to the function identified by
-the \code{vcov} argument. This function is typically supplied by the \strong{sandwich}
-or \strong{clubSandwich} packages. Please refer to their documentation (e.g.,
-\code{?sandwich::vcovHAC}) to see the list of available arguments. If no estimation
-type (argument \code{type}) is given, the default type for \code{"HC"} (or \code{"vcovHC"})
-equals the default from the \strong{sandwich} package; for type \code{"CR"} (or
-\code{"vcoCR"}), the default is set to \code{"CR3"}.}
+the \code{vcov} argument. This function is typically supplied by the
+\strong{sandwich} or \strong{clubSandwich} packages. Please refer to their
+documentation (e.g., \code{?sandwich::vcovHAC}) to see the list of available
+arguments. If no estimation type (argument \code{type}) is given, the default
+type for \code{"HC"} equals the default from the \strong{sandwich} package; for type
+\code{"CR"}, the default is set to \code{"CR3"}.}
 
 \item{component}{Should the complete variance-covariance matrix of the model
 be returned, or only for specific model components only (like count or
 zero-inflated model parts)? Applies to models with zero-inflated component,
 or models with precision (e.g. \code{betareg}) component. \code{component} may be one
-of \code{"conditional"}, \code{"zi"}, \code{"zero-inflated"}, \code{"dispersion"},
-\code{"precision"}, or \code{"all"}. May be abbreviated. Note that the \emph{conditional}
-component is also called \emph{count} or \emph{mean} component, depending on the
-model.}
+of \code{"conditional"}, \code{"zi"}, \code{"zero-inflated"}, \code{"dispersion"}, \code{"precision"},
+or \code{"all"}. May be abbreviated. Note that the \emph{conditional} component also
+refers to the \emph{count} or \emph{mean} component - names may differ, depending on
+the modeling package.}
 
 \item{effects}{Should the complete variance-covariance matrix of the model
 be returned, or only for specific model parameters only? Currently only

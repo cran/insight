@@ -27,7 +27,7 @@ df <- data.frame(
 df
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  knitr::kable(df, format = "markdown")
+# knitr::kable(df, format = "markdown")
 
 ## ----results='asis'-----------------------------------------------------------
 knitr::kable(df, format = "html")

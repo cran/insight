@@ -25,7 +25,8 @@ export_table(
   align = NULL,
   by = NULL,
   zap_small = FALSE,
-  table_width = NULL,
+  table_width = "auto",
+  remove_duplicates = FALSE,
   verbose = TRUE,
   ...
 )
@@ -88,17 +89,15 @@ new text line under the table. If \code{x} is a list of data frames, \code{foote
 may be a list of table captions, one for each table.}
 
 \item{align}{Column alignment. For markdown-formatted tables, the default
-\code{align = NULL} will right-align numeric columns, while all other
-columns will be left-aligned. If \code{format = "html"}, the default is
-left-align first column and center all remaining. May be a string to
-indicate alignment rules for the complete table, like \code{"left"},
-\code{"right"}, \code{"center"} or \code{"firstleft"} (to left-align first
-column, center remaining); or maybe a string with abbreviated alignment
-characters, where the length of the string must equal the number of columns,
-for instance, \code{align = "lccrl"} would left-align the first column, center
-the second and third, right-align column four and left-align the fifth
-column. For HTML-tables, may be one of \code{"center"}, \code{"left"} or
-\code{"right"}.}
+\code{align = NULL} will right-align numeric columns, while all other columns
+will be left-aligned. If \code{format = "html"}, the default is left-align first
+column and center all remaining. May be a string to indicate alignment
+rules for the complete table, like \code{"left"}, \code{"right"}, \code{"center"} or
+\code{"firstleft"} (to left-align first column, center remaining); or a string
+with abbreviated alignment characters, where the length of the string must
+equal the number of columns. For instance, \code{align = "lccrl"} would
+left-align the first column, center the second and third, right-align
+column four and left-align the fifth column.}
 
 \item{by}{Name of column in \code{x} that indicates grouping for tables.
 Only applies when \code{format = "html"}. \code{by} is passed down to
@@ -108,22 +107,44 @@ Only applies when \code{format = "html"}. \code{by} is passed down to
 \code{digits} decimal places. If \code{FALSE}, values with more decimal
 places than \code{digits} are printed in scientific notation.}
 
-\item{table_width}{Numeric, or \code{"auto"}, indicating the width of the complete
-table. If \code{table_width = "auto"} and the table is wider than the current
-width (i.e. line length) of the console (or any other source for textual
-output, like markdown files), the table is split into two parts. Else,
-if \code{table_width} is numeric and table rows are larger than \code{table_width},
-the table is split into two parts.}
+\item{table_width}{Numeric,\code{"auto"}, \code{NULL} or \code{Inf}, indicating the width of
+the complete table.
+\itemize{
+\item If \code{table_width = "auto"} (default) and the table is wider than the
+current width (i.e. line length) of the console (or any other source for
+textual output, like markdown files), the table is split into multiple
+parts.
+\item Else, if \code{table_width} is numeric and table rows are larger than
+\code{table_width}, the table is split into multiple parts. For each new table,
+the first column is repeated for better orientation.
+\item Use \code{NULL} or \code{Inf} to turn off automatic splitting of the table.
+\item \verb{options(easystats_table_width = <value>)} can be used to set a default
+width for tables.
+}}
+
+\item{remove_duplicates}{Logical, if \code{TRUE} and table is split into multiple
+parts, duplicated ("empty") rows will be removed. If \code{FALSE}, empty rows
+will be preserved. Only applies when \code{table_width} is \emph{not} \code{NULL} (or
+\code{Inf}) \emph{and} table is split into multiple parts.}
 
 \item{verbose}{Toggle messages and warnings.}
 
 \item{...}{Currently not used.}
 }
 \value{
-A data frame in character format.
+If \code{format = "text"} (or \code{NULL}), a formatted character string is
+returned. \code{format = "markdown"} (or \code{"md"}) returns a character string of
+class \code{knitr_kable}, which renders nicely in markdown files. \code{format = "html"}
+returns an \code{gt} object (created by the \strong{gt} package), which - by default -
+is displayed in the IDE's viewer pane or default browser. This object can
+be further modified with the various gt-functions.
 }
 \description{
-Data frame and Tables Pretty Formatting
+Function to export data frames into tables, which can be printed
+to the console, or displayed in markdown or HTML format (and thereby, exported
+to other formats like Word or PDF). The table width is automatically adjusted
+to fit into the width of the display device (e.g., width of console). Use
+the \code{table_width} argument to control this behaviour.
 }
 \note{
 The values for \code{caption}, \code{subtitle} and \code{footer} can also be provided

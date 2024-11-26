@@ -4,26 +4,17 @@
 #' @description Returns the names of model parameters, like they typically
 #'     appear in the `summary()` output.
 #'
-#' @param component Which type of parameters to return, such as parameters for
-#'   the conditional model, the zero-inflated part of the model or the
-#'   dispersion term? Applies to models with zero-inflated and/or dispersion
-#'   formula. Note that the *conditional* component is also called
-#'   *count* or *mean* component, depending on the model. There are
-#'   three convenient shortcuts: `component = "all"` returns all possible
-#'   parameters. If `component = "location"`, location parameters such as
-#'   `conditional` or `zero_inflated` are returned (everything that
-#'   are fixed or random effects - depending on the `effects` argument -
-#'   but no auxiliary parameters). For `component = "distributional"` (or
-#'   `"auxiliary"`), components like `sigma` or `dispersion` (and
-#'   other auxiliary parameters) are returned.
 #' @param ... Currently not used.
+#' @inheritParams find_predictors
 #' @inheritParams find_parameters
 #' @inheritParams find_parameters.betamfx
 #' @inheritParams find_parameters.BGGM
-#' @inheritParams find_predictors
+#'
+#' @inheritSection find_predictors Model components
 #'
 #' @return A list of parameter names. The returned list may have following
-#' elements:
+#' elements, usually returned based on the combination of the `effects` and
+#' `component` arguments:
 #'
 #' - `conditional`, the "fixed effects" part from the model.
 #' - `random`, the "random effects" part from the model.
@@ -36,18 +27,20 @@
 #'   parameters (auxiliary parameter)
 #' - `nonlinear`, the parameters from the nonlinear formula.
 #'
-#' @examples
-#' data(mtcars)
-#' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
+#' @examplesIf requireNamespace("lme4", quietly = TRUE)
+#' data(sleepstudy, package = "lme4")
+#' m <- lme4::lmer(
+#'   Reaction ~ Days + (1 + Days | Subject),
+#'   data = sleepstudy
+#' )
 #' find_parameters(m)
 #' @export
-find_parameters.glmmTMB <- function(x,
-                                    effects = c("all", "fixed", "random"),
-                                    component = c("all", "conditional", "zi", "zero_inflated", "dispersion"),
-                                    flatten = FALSE,
-                                    ...) {
-  effects <- match.arg(effects)
-  component <- match.arg(component)
+find_parameters.glmmTMB <- function(x, effects = "all", component = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
+  component <- validate_argument(
+    component,
+    c("all", "conditional", "zi", "zero_inflated", "dispersion", "location", "distributional", "auxiliary")
+  )
 
   # installed
   check_if_installed("lme4")
@@ -82,17 +75,13 @@ find_parameters.glmmTMB <- function(x,
 
 
 #' @export
-find_parameters.MixMod <- function(x,
-                                   effects = c("all", "fixed", "random"),
-                                   component = c("all", "conditional", "zi", "zero_inflated"),
-                                   flatten = FALSE,
-                                   ...) {
+find_parameters.MixMod <- function(x, effects = "all", component = "all", flatten = FALSE, ...) {
   # installed
   check_if_installed("lme4")
 
   re.names <- dimnames(lme4::ranef(x))[[2]]
 
-  has_zeroinf <- !is.null(find_formula(x)[["zero_inflated"]])
+  has_zeroinf <- !is.null(find_formula(x, verbose = FALSE)[["zero_inflated"]])
 
   if (has_zeroinf) {
     z_inflated <- names(lme4::fixef(x, sub_model = "zero_part"))
@@ -111,8 +100,9 @@ find_parameters.MixMod <- function(x,
 
   l <- lapply(l, text_remove_backticks)
 
-  effects <- match.arg(effects)
-  component <- match.arg(component)
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
+  component <- validate_argument(component, c("all", "conditional", "zi", "zero_inflated"))
+
   elements <- .get_elements(effects = effects, component = component)
   l <- compact_list(l[elements])
 
@@ -124,18 +114,14 @@ find_parameters.MixMod <- function(x,
 }
 
 
-#' @rdname find_parameters.glmmTMB
 #' @export
-find_parameters.nlmerMod <- function(x,
-                                     effects = c("all", "fixed", "random"),
-                                     component = c("all", "conditional", "nonlinear"),
-                                     flatten = FALSE,
-                                     ...) {
+find_parameters.nlmerMod <- function(x, effects = "all", component = "all", flatten = FALSE, ...) {
   # installed
   check_if_installed("lme4")
 
-  effects <- match.arg(effects)
-  component <- match.arg(component)
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
+  component <- validate_argument(component, c("all", "conditional", "nonlinear"))
+
   startvectors <- .get_startvector_from_env(x)
 
   if (effects == "fixed") {
@@ -155,18 +141,18 @@ find_parameters.nlmerMod <- function(x,
 }
 
 
-#' @rdname find_parameters.glmmTMB
 #' @export
-find_parameters.hglm <- function(x,
-                                 effects = c("all", "fixed", "random"),
-                                 component = c("all", "conditional", "dispersion"),
-                                 flatten = FALSE,
-                                 ...) {
-  effects <- match.arg(effects)
+find_parameters.hglm <- function(x, effects = "all", component = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
+  component <- validate_argument(
+    component,
+    c("all", "conditional", "dispersion", "location", "distributional", "auxiliary")
+  )
+
   fe <- x$fixef
   re <- x$ranef
 
-  f <- find_formula(x)
+  f <- find_formula(x, verbose = FALSE)
   if (is.null(f$dispersion)) {
     disp_name <- NULL
   } else {
@@ -184,13 +170,9 @@ find_parameters.hglm <- function(x,
 }
 
 
-#' @rdname find_parameters.glmmTMB
 #' @export
-find_parameters.merMod <- function(x,
-                                   effects = c("all", "fixed", "random"),
-                                   flatten = FALSE,
-                                   ...) {
-  effects <- match.arg(effects)
+find_parameters.merMod <- function(x, effects = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
 
   # installed
   check_if_installed("lme4")
@@ -218,21 +200,15 @@ find_parameters.rlmerMod <- find_parameters.merMod
 find_parameters.glmmadmb <- find_parameters.merMod
 
 #' @export
-find_parameters.merModList <- function(x,
-                                       effects = c("all", "fixed", "random"),
-                                       flatten = FALSE,
-                                       ...) {
-  effects <- match.arg(effects)
+find_parameters.merModList <- function(x, effects = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
   find_parameters(x[[1]], effects = effects, flatten = flatten, ...)
 }
 
 
 #' @export
-find_parameters.svy2lme <- function(x,
-                                    effects = c("all", "fixed", "random"),
-                                    flatten = FALSE,
-                                    ...) {
-  effects <- match.arg(effects)
+find_parameters.svy2lme <- function(x, effects = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
 
   # we extract random effects only when really necessary, to save
   # computational time. In particular model with large sample and
@@ -252,11 +228,8 @@ find_parameters.svy2lme <- function(x,
 
 
 #' @export
-find_parameters.HLfit <- function(x,
-                                  effects = c("all", "fixed", "random"),
-                                  flatten = FALSE,
-                                  ...) {
-  effects <- match.arg(effects)
+find_parameters.HLfit <- function(x, effects = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
 
   # installed
   check_if_installed("lme4")
@@ -280,15 +253,12 @@ find_parameters.HLfit <- function(x,
 
 
 #' @export
-find_parameters.sem <- function(x,
-                                effects = c("all", "fixed", "random"),
-                                flatten = FALSE,
-                                ...) {
+find_parameters.sem <- function(x, effects = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
+
   if (!.is_semLme(x)) {
     return(NULL)
   }
-
-  effects <- match.arg(effects)
 
   l <- compact_list(list(
     conditional = names(x$coef),
@@ -300,14 +270,10 @@ find_parameters.sem <- function(x,
 
 
 #' @export
-find_parameters.cpglmm <- function(x,
-                                   effects = c("all", "fixed", "random"),
-                                   flatten = FALSE,
-                                   ...) {
+find_parameters.cpglmm <- function(x, effects = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
   # installed
   check_if_installed("cplm")
-
-  effects <- match.arg(effects)
 
   # we extract random effects only when really necessary, to save
   # computational time. In particular model with large sample and
@@ -327,13 +293,9 @@ find_parameters.cpglmm <- function(x,
 
 
 #' @export
-find_parameters.coxme <- function(x,
-                                  effects = c("all", "fixed", "random"),
-                                  flatten = FALSE,
-                                  ...) {
+find_parameters.coxme <- function(x, effects = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
   check_if_installed("lme4")
-
-  effects <- match.arg(effects)
 
   if (effects == "fixed") {
     l <- list(conditional = names(lme4::fixef(x)))
@@ -353,14 +315,10 @@ find_parameters.coxme <- function(x,
 
 
 #' @export
-find_parameters.mixed <- function(x,
-                                  effects = c("all", "fixed", "random"),
-                                  flatten = FALSE,
-                                  ...) {
+find_parameters.mixed <- function(x, effects = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
   # installed
   check_if_installed("lme4")
-
-  effects <- match.arg(effects)
 
   if (effects == "fixed") {
     l <- list(conditional = names(lme4::fixef(x$full_model)))
@@ -376,13 +334,9 @@ find_parameters.mixed <- function(x,
 
 
 #' @export
-find_parameters.lme <- function(x,
-                                effects = c("all", "fixed", "random"),
-                                flatten = FALSE,
-                                ...) {
+find_parameters.lme <- function(x, effects = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
   check_if_installed("lme4")
-
-  effects <- match.arg(effects)
 
   if (effects == "fixed") {
     l <- list(conditional = names(lme4::fixef(x)))
@@ -405,11 +359,9 @@ find_parameters.lme <- function(x,
 
 
 #' @export
-find_parameters.glmm <- function(x,
-                                 effects = c("all", "fixed", "random"),
-                                 flatten = FALSE,
-                                 ...) {
-  effects <- match.arg(effects)
+find_parameters.glmm <- function(x, effects = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
+
   s <- summary(x)
   fe_params <- rownames(s$coefmat)
   re_params <- rownames(s$nucoefmat)
@@ -424,16 +376,14 @@ find_parameters.glmm <- function(x,
 
 
 #' @export
-find_parameters.BBmm <- function(x,
-                                 effects = c("all", "fixed", "random"),
-                                 flatten = FALSE,
-                                 ...) {
+find_parameters.BBmm <- function(x, effects = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
+
   l <- compact_list(list(
     conditional = rownames(x$fixed.coef),
     random = x$namesRand
   ))
 
-  effects <- match.arg(effects)
   .filter_parameters(l,
     effects = effects,
     flatten = flatten,
@@ -443,16 +393,14 @@ find_parameters.BBmm <- function(x,
 
 
 #' @export
-find_parameters.glimML <- function(x,
-                                   effects = c("all", "fixed", "random"),
-                                   flatten = FALSE,
-                                   ...) {
+find_parameters.glimML <- function(x, effects = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
+
   l <- compact_list(list(
     conditional = names(x@fixed.param),
     random = names(x@random.param)
   ))
 
-  effects <- match.arg(effects)
   .filter_parameters(l,
     effects = effects,
     flatten = flatten,
@@ -462,11 +410,8 @@ find_parameters.glimML <- function(x,
 
 
 #' @export
-find_parameters.mixor <- function(x,
-                                  effects = c("all", "fixed", "random"),
-                                  flatten = FALSE,
-                                  ...) {
-  effects <- match.arg(effects)
+find_parameters.mixor <- function(x, effects = "all", flatten = FALSE, ...) {
+  effects <- validate_argument(effects, c("all", "fixed", "random"))
   coefs <- x$Model
   random_start <- grep("(\\(Intercept\\) \\(Intercept\\)|Random\\.\\(Intercept\\))", rownames(coefs))
   thresholds <- grep("Threshold\\d", rownames(coefs))

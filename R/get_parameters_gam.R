@@ -5,8 +5,10 @@
 #'
 #' @param ... Currently not used.
 #'
-#' @inheritParams find_parameters
 #' @inheritParams find_predictors
+#' @inheritParams find_parameters
+#'
+#' @inheritSection find_predictors Model components
 #'
 #' @return For models with smooth terms or zero-inflation component, a data
 #'   frame with three columns: the parameter names, the related point estimates
@@ -17,17 +19,16 @@
 #' m <- lm(mpg ~ wt + cyl + vs, data = mtcars)
 #' get_parameters(m)
 #' @export
-get_parameters.gamm <- function(x, component = c("all", "conditional", "smooth_terms", "location"), ...) {
+get_parameters.gamm <- function(x, component = "all", ...) {
   x <- x$gam
   class(x) <- c(class(x), c("glm", "lm"))
   get_parameters.gam(x, component, ...)
 }
 
 
-
 #' @export
-get_parameters.Gam <- function(x, component = c("all", "conditional", "smooth_terms", "location"), ...) {
-  component <- match.arg(component)
+get_parameters.Gam <- function(x, component = "all", ...) {
+  component <- validate_argument(component, c("all", "conditional", "smooth_terms", "location"))
   pars <- stats::coef(x)
 
   .return_smooth_parms(
@@ -38,11 +39,9 @@ get_parameters.Gam <- function(x, component = c("all", "conditional", "smooth_te
 }
 
 
-
-#' @rdname get_parameters.gamm
 #' @export
-get_parameters.gam <- function(x, component = c("all", "conditional", "smooth_terms", "location"), ...) {
-  component <- match.arg(component)
+get_parameters.gam <- function(x, component = "all", ...) {
+  component <- validate_argument(component, c("all", "conditional", "smooth_terms", "location"))
   pars <- stats::coef(x)
 
   st <- summary(x)$s.table
@@ -56,15 +55,13 @@ get_parameters.gam <- function(x, component = c("all", "conditional", "smooth_te
   )
 }
 
-
 #' @export
 get_parameters.scam <- get_parameters.gam
 
 
-
 #' @export
-get_parameters.vgam <- function(x, component = c("all", "conditional", "smooth_terms", "location"), ...) {
-  component <- match.arg(component)
+get_parameters.vgam <- function(x, component = "all", ...) {
+  component <- validate_argument(component, c("all", "conditional", "smooth_terms", "location"))
   pars <- stats::coef(x)
 
   .return_smooth_parms(
@@ -73,7 +70,6 @@ get_parameters.vgam <- function(x, component = c("all", "conditional", "smooth_t
     component = component
   )
 }
-
 
 
 #' @export
@@ -112,10 +108,9 @@ get_parameters.gamlss <- function(x, ...) {
 }
 
 
-#' @rdname get_parameters.gamm
 #' @export
-get_parameters.rqss <- function(x, component = c("all", "conditional", "smooth_terms"), ...) {
-  component <- match.arg(component)
+get_parameters.rqss <- function(x, component = "all", ...) {
+  component <- validate_argument(component, c("all", "conditional", "smooth_terms"))
   sc <- summary(x)
 
   smooth_terms <- sc$qsstab[, 1]
@@ -129,10 +124,9 @@ get_parameters.rqss <- function(x, component = c("all", "conditional", "smooth_t
 }
 
 
-
 #' @export
-get_parameters.cgam <- function(x, component = c("all", "conditional", "smooth_terms"), ...) {
-  component <- match.arg(component)
+get_parameters.cgam <- function(x, component = "all", ...) {
+  component <- validate_argument(component, c("all", "conditional", "smooth_terms"))
   sc <- summary(x)
 
   estimates <- sc$coefficients

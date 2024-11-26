@@ -15,19 +15,33 @@ find_variables(
 \arguments{
 \item{x}{A fitted model.}
 
-\item{effects}{Should variables for fixed effects, random effects
-or both be returned? Only applies to mixed models. May be abbreviated.}
+\item{effects}{Should variables for fixed effects (\code{"fixed"}), random effects
+(\code{"random"}) or both (\code{"all"}) be returned? Only applies to mixed models. May
+be abbreviated.}
 
-\item{component}{Should all predictor variables, predictor variables for the
-conditional model, the zero-inflated part of the model, the dispersion
-term or the instrumental variables be returned? Applies to models
-with zero-inflated and/or dispersion formula, or to models with instrumental
-variable (so called fixed-effects regressions). May be abbreviated. Note that the
-\emph{conditional} component is also called \emph{count} or \emph{mean}
-component, depending on the model.}
+\item{component}{Which type of parameters to return, such as parameters for
+the conditional model, the zero-inflated part of the model, the dispersion
+term, the instrumental variables or marginal effects be returned? Applies to
+models with zero-inflated and/or dispersion formula, or to models with
+instrumental variables (so called fixed-effects regressions), or models with
+marginal effects (from \strong{mfx}). See details in section \emph{Model Components}
+.May be abbreviated. Note that the \emph{conditional} component also refers to the
+\emph{count} or \emph{mean} component - names may differ, depending on the modeling
+package. There are three convenient shortcuts (not applicable to \emph{all} model
+classes):
+\itemize{
+\item \code{component = "all"} returns all possible parameters.
+\item If \code{component = "location"}, location parameters such as \code{conditional},
+\code{zero_inflated}, \code{smooth_terms}, or \code{instruments} are returned (everything
+that are fixed or random effects - depending on the \code{effects} argument -
+but no auxiliary parameters).
+\item For \code{component = "distributional"} (or \code{"auxiliary"}), components like
+\code{sigma}, \code{dispersion}, \code{beta} or \code{precision} (and other auxiliary
+parameters) are returned.
+}}
 
-\item{flatten}{Logical, if \code{TRUE}, the values are returned
-as character vector, not as list. Duplicated values are removed.}
+\item{flatten}{Logical, if \code{TRUE}, the values are returned as character
+vector, not as list. Duplicated values are removed.}
 
 \item{verbose}{Toggle warnings.}
 }
@@ -36,12 +50,14 @@ A list with (depending on the model) following elements (character
 vectors):
 \itemize{
 \item \code{response}, the name of the response variable
-\item \code{conditional}, the names of the predictor variables from the \emph{conditional} model (as opposed to the zero-inflated part of a model)
+\item \code{conditional}, the names of the predictor variables from the \emph{conditional}
+model (as opposed to the zero-inflated part of a model)
 \item \code{cluster}, the names of cluster or grouping variables
 \item \code{dispersion}, the name of the dispersion terms
 \item \code{instruments}, the names of instrumental variables
 \item \code{random}, the names of the random effects (grouping factors)
-\item \code{zero_inflated}, the names of the predictor variables from the \emph{zero-inflated} part of the model
+\item \code{zero_inflated}, the names of the predictor variables from the
+\emph{zero-inflated} part of the model
 \item \code{zero_inflated_random}, the names of the random effects (grouping factors)
 }
 }
@@ -50,10 +66,10 @@ Returns a list with the names of all variables, including
 response value and random effects.
 }
 \note{
-The difference to \code{\link[=find_terms]{find_terms()}} is that
-\code{find_variables()} returns each variable name only once, while
-\code{find_terms()} may return a variable multiple times in case of
-transformations or when arithmetic expressions were used in the formula.
+The difference to \code{\link[=find_terms]{find_terms()}} is that \code{find_variables()} returns
+each variable name only once, while \code{find_terms()} may return a variable
+multiple times in case of transformations or when arithmetic expressions
+were used in the formula.
 }
 \section{Model components}{
 
@@ -72,12 +88,64 @@ models that may contain smooth terms).
 for models with zero-inflation or that can model the dispersion parameter.
 \item \code{"instruments"}: for instrumental-variable or some fixed effects regression,
 returns the instruments.
+\item \code{"nonlinear"}: for non-linear models (like models of class \code{nlmerMod} or
+\code{nls}), returns staring estimates for the nonlinear parameters.
+\item \code{"correlation"}: for models with correlation-component, like \code{gls}, the
+variables used to describe the correlation structure are returned.
 \item \code{"location"}: returns location parameters such as \code{conditional},
 \code{zero_inflated}, \code{smooth_terms}, or \code{instruments} (everything that are
 fixed or random effects - depending on the \code{effects} argument - but no
 auxiliary parameters).
 \item \code{"distributional"} (or \code{"auxiliary"}): components like \code{sigma}, \code{dispersion},
 \code{beta} or \code{precision} (and other auxiliary parameters) are returned.
+}
+
+\strong{Special models}
+
+Some model classes also allow rather uncommon options. These are:
+\itemize{
+\item \strong{mhurdle}: \code{"infrequent_purchase"}, \code{"ip"}, and \code{"auxiliary"}
+\item \strong{BGGM}: \code{"correlation"} and \code{"intercept"}
+\item \strong{BFBayesFactor}, \strong{glmx}: \code{"extra"}
+\item \strong{averaging}:\code{"conditional"} and \code{"full"}
+\item \strong{mjoint}: \code{"survival"}
+\item \strong{mfx}: \code{"precision"}, \code{"marginal"}
+\item \strong{betareg}, \strong{DirichletRegModel}: \code{"precision"}
+\item \strong{mvord}: \code{"thresholds"} and \code{"correlation"}
+\item \strong{clm2}: \code{"scale"}
+\item \strong{selection}: \code{"selection"}, \code{"outcome"}, and \code{"auxiliary"}
+}
+
+For models of class \code{brmsfit} (package \strong{brms}), even more options are
+possible for the \code{component} argument, which are not all documented in detail
+here.
+}
+
+\section{Parameters, Variables, Predictors and Terms}{
+
+There are four functions that return information about the variables in a
+model: \code{find_predictors()}, \code{find_variables()}, \code{find_terms()} and
+\code{find_parameters()}. There are some differences between those functions,
+which are explained using following model. Note that some, but not all of
+those functions return information about the \emph{dependent} and \emph{independent}
+variables. In this example, we only show the differences for the independent
+variables.
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{model <- lm(mpg ~ factor(gear), data = mtcars)
+}\if{html}{\out{</div>}}
+\itemize{
+\item \code{find_terms(model)} returns the model terms, i.e. how the variables were
+used in the model, e.g. applying transformations like \code{factor()}, \code{poly()}
+etc. \code{find_terms()} may return a variable name multiple times in case of
+multiple transformations. The return value would be \code{"factor(gear)"}.
+\item \code{find_parameters(model)} returns the names of the model parameters
+(coefficients). The return value would be \code{"(Intercept)"}, \code{"factor(gear)4"}
+and \code{"factor(gear)5"}.
+\item \code{find_variables()} returns the original variable names. \code{find_variables()}
+returns each variable name only once. The return value would be \code{"gear"}.
+\item \code{find_predictors()} is comparable to \code{find_variables()} and also returns
+the original variable names, but excluded the \emph{dependent} (response)
+variables. The return value would be \code{"gear"}.
 }
 }
 

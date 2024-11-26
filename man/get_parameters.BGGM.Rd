@@ -2,28 +2,13 @@
 % Please edit documentation in R/get_parameters_bayesian.R
 \name{get_parameters.BGGM}
 \alias{get_parameters.BGGM}
-\alias{get_parameters.MCMCglmm}
 \alias{get_parameters.BFBayesFactor}
-\alias{get_parameters.stanmvreg}
 \alias{get_parameters.brmsfit}
-\alias{get_parameters.stanreg}
-\alias{get_parameters.bayesx}
-\alias{get_parameters.bamlss}
-\alias{get_parameters.sim.merMod}
-\alias{get_parameters.sim}
 \title{Get model parameters from Bayesian models}
 \usage{
 \method{get_parameters}{BGGM}(
   x,
-  component = c("correlation", "conditional", "intercept", "all"),
-  summary = FALSE,
-  centrality = "mean",
-  ...
-)
-
-\method{get_parameters}{MCMCglmm}(
-  x,
-  effects = c("fixed", "random", "all"),
+  component = "correlation",
   summary = FALSE,
   centrality = "mean",
   ...
@@ -31,20 +16,11 @@
 
 \method{get_parameters}{BFBayesFactor}(
   x,
-  effects = c("all", "fixed", "random"),
-  component = c("all", "extra"),
+  effects = "all",
+  component = "all",
   iterations = 4000,
   progress = FALSE,
   verbose = TRUE,
-  summary = FALSE,
-  centrality = "mean",
-  ...
-)
-
-\method{get_parameters}{stanmvreg}(
-  x,
-  effects = c("fixed", "random", "all"),
-  parameters = NULL,
   summary = FALSE,
   centrality = "mean",
   ...
@@ -59,57 +35,30 @@
   centrality = "mean",
   ...
 )
-
-\method{get_parameters}{stanreg}(
-  x,
-  effects = c("fixed", "random", "all"),
-  component = c("location", "all", "conditional", "smooth_terms", "sigma",
-    "distributional", "auxiliary"),
-  parameters = NULL,
-  summary = FALSE,
-  centrality = "mean",
-  ...
-)
-
-\method{get_parameters}{bayesx}(
-  x,
-  component = c("conditional", "smooth_terms", "all"),
-  summary = FALSE,
-  centrality = "mean",
-  ...
-)
-
-\method{get_parameters}{bamlss}(
-  x,
-  component = c("all", "conditional", "smooth_terms", "location", "distributional",
-    "auxiliary"),
-  parameters = NULL,
-  summary = FALSE,
-  centrality = "mean",
-  ...
-)
-
-\method{get_parameters}{sim.merMod}(
-  x,
-  effects = c("fixed", "random", "all"),
-  parameters = NULL,
-  summary = FALSE,
-  centrality = "mean",
-  ...
-)
-
-\method{get_parameters}{sim}(x, parameters = NULL, summary = FALSE, centrality = "mean", ...)
 }
 \arguments{
 \item{x}{A fitted model.}
 
-\item{component}{Should all predictor variables, predictor variables for the
-conditional model, the zero-inflated part of the model, the dispersion
-term or the instrumental variables be returned? Applies to models
-with zero-inflated and/or dispersion formula, or to models with instrumental
-variable (so called fixed-effects regressions). May be abbreviated. Note that the
-\emph{conditional} component is also called \emph{count} or \emph{mean}
-component, depending on the model.}
+\item{component}{Which type of parameters to return, such as parameters for
+the conditional model, the zero-inflated part of the model, the dispersion
+term, the instrumental variables or marginal effects be returned? Applies to
+models with zero-inflated and/or dispersion formula, or to models with
+instrumental variables (so called fixed-effects regressions), or models with
+marginal effects (from \strong{mfx}). See details in section \emph{Model Components}
+.May be abbreviated. Note that the \emph{conditional} component also refers to the
+\emph{count} or \emph{mean} component - names may differ, depending on the modeling
+package. There are three convenient shortcuts (not applicable to \emph{all} model
+classes):
+\itemize{
+\item \code{component = "all"} returns all possible parameters.
+\item If \code{component = "location"}, location parameters such as \code{conditional},
+\code{zero_inflated}, \code{smooth_terms}, or \code{instruments} are returned (everything
+that are fixed or random effects - depending on the \code{effects} argument -
+but no auxiliary parameters).
+\item For \code{component = "distributional"} (or \code{"auxiliary"}), components like
+\code{sigma}, \code{dispersion}, \code{beta} or \code{precision} (and other auxiliary
+parameters) are returned.
+}}
 
 \item{summary}{Logical, indicates whether the full posterior samples
 (\code{summary = FALSE})) or the summarized centrality indices of
@@ -124,8 +73,9 @@ measure of central tendency.}
 
 \item{...}{Currently not used.}
 
-\item{effects}{Should parameters for fixed effects, random effects
-or both be returned? Only applies to mixed models. May be abbreviated.}
+\item{effects}{Should variables for fixed effects (\code{"fixed"}), random effects
+(\code{"random"}) or both (\code{"all"}) be returned? Only applies to mixed models. May
+be abbreviated.}
 
 \item{iterations}{Number of posterior draws.}
 
@@ -158,6 +108,56 @@ posteriors are only extracted from the first numerator model (i.e.,
 model stored in the \code{BFBayesFactor} object, index it directly, e.g.
 \code{foo(model[2])}, \code{foo(1/model[5])}, etc.
 See also \code{\link[bayestestR:weighted_posteriors]{bayestestR::weighted_posteriors()}}.
+}
+
+\section{Model components}{
+
+Possible values for the \code{component} argument depend on the model class.
+Following are valid options:
+\itemize{
+\item \code{"all"}: returns all model components, applies to all models, but will only
+have an effect for models with more than just the conditional model component.
+\item \code{"conditional"}: only returns the conditional component, i.e. "fixed effects"
+terms from the model. Will only have an effect for models with more than
+just the conditional model component.
+\item \code{"smooth_terms"}: returns smooth terms, only applies to GAMs (or similar
+models that may contain smooth terms).
+\item \code{"zero_inflated"} (or \code{"zi"}): returns the zero-inflation component.
+\item \code{"dispersion"}: returns the dispersion model component. This is common
+for models with zero-inflation or that can model the dispersion parameter.
+\item \code{"instruments"}: for instrumental-variable or some fixed effects regression,
+returns the instruments.
+\item \code{"nonlinear"}: for non-linear models (like models of class \code{nlmerMod} or
+\code{nls}), returns staring estimates for the nonlinear parameters.
+\item \code{"correlation"}: for models with correlation-component, like \code{gls}, the
+variables used to describe the correlation structure are returned.
+\item \code{"location"}: returns location parameters such as \code{conditional},
+\code{zero_inflated}, \code{smooth_terms}, or \code{instruments} (everything that are
+fixed or random effects - depending on the \code{effects} argument - but no
+auxiliary parameters).
+\item \code{"distributional"} (or \code{"auxiliary"}): components like \code{sigma}, \code{dispersion},
+\code{beta} or \code{precision} (and other auxiliary parameters) are returned.
+}
+
+\strong{Special models}
+
+Some model classes also allow rather uncommon options. These are:
+\itemize{
+\item \strong{mhurdle}: \code{"infrequent_purchase"}, \code{"ip"}, and \code{"auxiliary"}
+\item \strong{BGGM}: \code{"correlation"} and \code{"intercept"}
+\item \strong{BFBayesFactor}, \strong{glmx}: \code{"extra"}
+\item \strong{averaging}:\code{"conditional"} and \code{"full"}
+\item \strong{mjoint}: \code{"survival"}
+\item \strong{mfx}: \code{"precision"}, \code{"marginal"}
+\item \strong{betareg}, \strong{DirichletRegModel}: \code{"precision"}
+\item \strong{mvord}: \code{"thresholds"} and \code{"correlation"}
+\item \strong{clm2}: \code{"scale"}
+\item \strong{selection}: \code{"selection"}, \code{"outcome"}, and \code{"auxiliary"}
+}
+
+For models of class \code{brmsfit} (package \strong{brms}), even more options are
+possible for the \code{component} argument, which are not all documented in detail
+here.
 }
 
 \examples{

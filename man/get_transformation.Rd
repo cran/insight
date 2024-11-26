@@ -4,10 +4,14 @@
 \alias{get_transformation}
 \title{Return function of transformed response variables}
 \usage{
-get_transformation(x, verbose = TRUE)
+get_transformation(x, include_all = FALSE, verbose = TRUE)
 }
 \arguments{
-\item{x}{A regression model.}
+\item{x}{A regression model or a character string of the formulation of the
+(response) variable.}
+
+\item{include_all}{Logical, if \code{TRUE}, does not only check the response
+variable, but all model terms.}
 
 \item{verbose}{Logical, if \code{TRUE}, prints a warning if the transformation
 could not be determined.}
@@ -24,7 +28,8 @@ transformation was applied, both list-elements \verb{$transformation} and
 This functions checks whether any transformation, such as log- or
 exp-transforming, was applied to the response variable (dependent variable)
 in a regression formula, and returns the related function that was used for
-transformation.
+transformation. See \code{\link[=find_transformation]{find_transformation()}} for an overview of supported
+transformations that are detected.
 }
 \examples{
 # identity, no transformation
@@ -42,4 +47,8 @@ log(0.3)
 # inverse function is exp()
 get_transformation(model)$inverse(0.3)
 exp(0.3)
+
+# get transformations for all model terms
+model <- lm(mpg ~ log(wt) + I(gear^2) + exp(am), data = mtcars)
+get_transformation(model, include_all = TRUE)
 }

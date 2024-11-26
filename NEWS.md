@@ -1,3 +1,76 @@
+# insight 1.0.0
+
+## Breaking changes
+
+* All deprecated arguments have been removed.
+
+* The `table_width` argument in `export_table()` now defaults to `"auto"`.
+
+## General
+
+* `get_transformation()` can now deal with any power-transformation, and also
+  returns results for divisions (scaled response) and Box-Cox transformations.
+
+* `find_transformation()` and `get_transformation()` now also detects use of
+  divisions, like `x/3` or Box-Cox transformations (like `(x^lambda - 1) / lambda`).
+
+* `find_transformation()` and `get_transformation()` get a `include_all` argument,
+  to check all model terms for transformations.
+
+* `get_dispersion()` is now an exported function.
+
+* Updated `get_varcov()` (and related documentation) to support new covariance
+  matrix estimation methods from the **sandwich** package.
+
+* New function `validate_argument()` as a replacement for `match.arg()` with
+  more informative error message.
+
+* The function to calculate the corrections for likelihood-values when the
+  response-variable is transformed is now exported as `get_likelihood_adjustment()`.
+
+* `export_table()` can now split tables into more than three tables when
+  `table_width` is used (formerly, the maximum number of split tables was three).
+
+* Changed (improved) formatting for parameter tables in `export_table()`, when
+  `format = "html"`. Rows are indented, and group headers are emphasized in
+  italic.
+
+* `formula_ok()` now also checks for syntactically invalid variable names.
+  Furthermore, argument `checks` now allows to specify for which possibly
+  problematic formula notation should be checked.
+
+* `format_value()` gains a `decimal_point` argument, to change the decimal point
+  in output conversion.
+
+* `format_bf()` with `stars = TRUE` uses the `°` symbol for inferiority
+  (evidence *against* the comparison).
+
+* Added support for `coxph.panel` models.
+
+* Added support for models of class `asym` (package *panelr*).
+
+* Overhaul of documentation for the package-functions.
+
+## Bug fix
+
+* `clean_parameters()` now uses the correct labels for the random effects
+  variances (`"SD/Cor"` has changed to `"Var/Cov"`).
+
+* When `get_data()` could not properly evaluate the subset of a data set, it
+  now returns an informative warning and no longer errors.
+
+* Fixed inaccuracy in `get_sigma()` for models of class *brmsfit*.
+
+* Fixed issues in `get_variance()`  for models of class *brmsfit* when the
+  sigma-parameter was directly modeled.
+
+* Fixed issue in `compact_character()` and `compact_list()` for date-variables.
+
+* Fixed edge case in `find_transformation()` for simple log-transformation of
+  the response variable.
+
+* Fixed issue for `model_info.averaging()`.
+
 # insight 0.20.5
 
 ## General

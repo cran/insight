@@ -11,6 +11,7 @@ CMD
 Coloured
 DOI
 DirichletReg
+DirichletRegModel
 Dom
 ESS
 Elff
@@ -23,6 +24,7 @@ HDI
 Heisig
 Heteroskedasticity
 IC
+IDE's
 Ieno
 Kenward
 MCMCglmm
@@ -70,9 +72,11 @@ brmsfit
 btergm
 ci
 cglm
+clm
 cloglog
 clubSandwich
 cmprsk
+codebook
 colour
 coloured
 comparator
@@ -100,6 +104,7 @@ glm
 glmm
 glmmTMB
 glmtoolbox
+glmx
 hglm
 htest
 https
@@ -130,6 +135,7 @@ mfx
 mgcv
 mhurdle
 mira
+mjoint
 mmrm
 modelled
 modelling
@@ -143,6 +149,7 @@ nonnest
 occurence
 optimizers
 patilindrajeets
+panelr
 phylolm
 plm
 poisson

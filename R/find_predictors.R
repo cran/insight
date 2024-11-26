@@ -1,24 +1,35 @@
 #' @title Find names of model predictors
 #' @name find_predictors
 #'
-#' @description Returns the names of the predictor variables for the
-#'    different parts of a model (like fixed or random effects, zero-inflated
-#'    component, ...). Unlike [find_parameters()], the names from
-#'    `find_predictors()` match the original variable names from the data
-#'    that was used to fit the model.
+#' @description Returns the names of the predictor variables for the different
+#' parts of a model (like fixed or random effects, zero-inflated component,
+#' ...). Unlike [`find_parameters()`], the names from `find_predictors()` match
+#' the original variable names from the data that was used to fit the model.
 #'
 #' @param x A fitted model.
-#' @param effects Should variables for fixed effects, random effects
-#'    or both be returned? Only applies to mixed models. May be abbreviated.
-#' @param component Should all predictor variables, predictor variables for the
-#'   conditional model, the zero-inflated part of the model, the dispersion
-#'   term or the instrumental variables be returned? Applies to models
-#'   with zero-inflated and/or dispersion formula, or to models with instrumental
-#'   variable (so called fixed-effects regressions). May be abbreviated. Note that the
-#'   *conditional* component is also called *count* or *mean*
-#'   component, depending on the model.
-#' @param flatten Logical, if `TRUE`, the values are returned
-#'    as character vector, not as list. Duplicated values are removed.
+#' @param effects Should variables for fixed effects (`"fixed"`), random effects
+#' (`"random"`) or both (`"all"`) be returned? Only applies to mixed models. May
+#' be abbreviated.
+#' @param component Which type of parameters to return, such as parameters for
+#' the conditional model, the zero-inflated part of the model, the dispersion
+#' term, the instrumental variables or marginal effects be returned? Applies to
+#' models with zero-inflated and/or dispersion formula, or to models with
+#' instrumental variables (so called fixed-effects regressions), or models with
+#' marginal effects (from **mfx**). See details in section _Model Components_
+#' .May be abbreviated. Note that the *conditional* component also refers to the
+#' *count* or *mean* component - names may differ, depending on the modeling
+#' package. There are three convenient shortcuts (not applicable to *all* model
+#' classes):
+#' - `component = "all"` returns all possible parameters.
+#' - If `component = "location"`, location parameters such as `conditional`,
+#'   `zero_inflated`, `smooth_terms`, or `instruments` are returned (everything
+#'   that are fixed or random effects - depending on the `effects` argument -
+#'   but no auxiliary parameters).
+#' - For `component = "distributional"` (or `"auxiliary"`), components like
+#'   `sigma`, `dispersion`, `beta` or `precision` (and other auxiliary
+#'   parameters) are returned.
+#' @param flatten Logical, if `TRUE`, the values are returned as character
+#' vector, not as list. Duplicated values are removed.
 #' @param verbose Toggle warnings.
 #' @param ... Currently not used.
 #'
@@ -37,6 +48,10 @@
 #'   for models with zero-inflation or that can model the dispersion parameter.
 #' - `"instruments"`: for instrumental-variable or some fixed effects regression,
 #'   returns the instruments.
+#' - `"nonlinear"`: for non-linear models (like models of class `nlmerMod` or
+#'   `nls`), returns staring estimates for the nonlinear parameters.
+#' - `"correlation"`: for models with correlation-component, like `gls`, the
+#'   variables used to describe the correlation structure are returned.
 #' - `"location"`: returns location parameters such as `conditional`,
 #'   `zero_inflated`, `smooth_terms`, or `instruments` (everything that are
 #'   fixed or random effects - depending on the `effects` argument - but no
@@ -44,9 +59,51 @@
 #' - `"distributional"` (or `"auxiliary"`): components like `sigma`, `dispersion`,
 #'   `beta` or `precision` (and other auxiliary parameters) are returned.
 #'
+#' **Special models**
+#'
+#' Some model classes also allow rather uncommon options. These are:
+#' - **mhurdle**: `"infrequent_purchase"`, `"ip"`, and `"auxiliary"`
+#' - **BGGM**: `"correlation"` and `"intercept"`
+#' - **BFBayesFactor**, **glmx**: `"extra"`
+#' - **averaging**:`"conditional"` and `"full"`
+#' - **mjoint**: `"survival"`
+#' - **mfx**: `"precision"`, `"marginal"`
+#' - **betareg**, **DirichletRegModel**: `"precision"`
+#' - **mvord**: `"thresholds"` and `"correlation"`
+#' - **clm2**: `"scale"`
+#' - **selection**: `"selection"`, `"outcome"`, and `"auxiliary"`
+#'
+#' For models of class `brmsfit` (package **brms**), even more options are
+#' possible for the `component` argument, which are not all documented in detail
+#' here.
+#'
+#' @section Parameters, Variables, Predictors and Terms:
+#' There are four functions that return information about the variables in a
+#' model: `find_predictors()`, `find_variables()`, `find_terms()` and
+#' `find_parameters()`. There are some differences between those functions,
+#' which are explained using following model. Note that some, but not all of
+#' those functions return information about the *dependent* and *independent*
+#' variables. In this example, we only show the differences for the independent
+#' variables.
+#' ```
+#' model <- lm(mpg ~ factor(gear), data = mtcars)
+#' ```
+#' - `find_terms(model)` returns the model terms, i.e. how the variables were
+#'   used in the model, e.g. applying transformations like `factor()`, `poly()`
+#'   etc. `find_terms()` may return a variable name multiple times in case of
+#'   multiple transformations. The return value would be `"factor(gear)"`.
+#' - `find_parameters(model)` returns the names of the model parameters
+#'   (coefficients). The return value would be `"(Intercept)"`, `"factor(gear)4"`
+#'   and `"factor(gear)5"`.
+#' - `find_variables()` returns the original variable names. `find_variables()`
+#'   returns each variable name only once. The return value would be `"gear"`.
+#' - `find_predictors()` is comparable to `find_variables()` and also returns
+#'   the original variable names, but excluded the *dependent* (response)
+#'   variables. The return value would be `"gear"`.
+#'
 #' @return A list of character vectors that represent the name(s) of the
 #' predictor variables. Depending on the combination of the arguments
-#' `effects` and `component`, the returned list has following elements:
+#' `effects` and `component`, the returned list can have following elements:
 #'
 #' - `conditional`, the "fixed effects" terms from the model
 #' - `random`, the "random effects" terms from the model
@@ -59,6 +116,10 @@
 #'   the instrumental variables
 #' - `correlation`, for models with correlation-component like `gls`, the
 #'   variables used to describe the correlation structure
+#' - `nonlinear`, for non-linear models (like models of class `nlmerMod` or
+#'   `nls`), the staring estimates for the nonlinear parameters
+#' - `smooth_terms` returns smooth terms, only applies to GAMs (or similar
+#'   models that may contain smooth terms)
 #'
 #' @examples
 #' data(mtcars)
@@ -72,13 +133,19 @@ find_predictors <- function(x, ...) {
 #' @rdname find_predictors
 #' @export
 find_predictors.default <- function(x,
-                                    effects = c("fixed", "random", "all"),
-                                    component = c("all", "conditional", "zi", "zero_inflated", "dispersion", "instruments", "correlation", "smooth_terms"), # nolint
+                                    effects = "fixed",
+                                    component = "all",
                                     flatten = FALSE,
                                     verbose = TRUE,
                                     ...) {
-  effects <- match.arg(effects)
-  component <- match.arg(component)
+  effects <- validate_argument(effects, c("fixed", "random", "all"))
+  component <- validate_argument(
+    component,
+    c(
+      "all", "conditional", "zi", "zero_inflated", "dispersion", "instruments",
+      "correlation", "smooth_terms"
+    )
+  )
 
   f <- find_formula(x, verbose = verbose)
   is_mv <- is_multivariate(f)
@@ -207,17 +274,17 @@ find_predictors.bfsl <- function(x, flatten = FALSE, verbose = TRUE, ...) {
 }
 
 
-#' @rdname find_predictors
 #' @export
 find_predictors.afex_aov <- function(x,
-                                     effects = c("fixed", "random", "all"),
-                                     component = c("all", "conditional", "zi", "zero_inflated", "dispersion", "instruments", "correlation", "smooth_terms"), # nolint
+                                     effects = "fixed",
                                      flatten = FALSE,
                                      verbose = TRUE,
                                      ...) {
-  effects <- match.arg(effects)
+  effects <- validate_argument(effects, c("fixed", "random", "all"))
 
-  if (effects == "all") effects <- c("fixed", "random")
+  if (effects == "all") {
+    effects <- c("fixed", "random")
+  }
 
   l <- list(
     fixed = c(names(attr(x, "between")), names(attr(x, "within"))),

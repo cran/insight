@@ -5,6 +5,9 @@ knitr::opts_chunk$set(
   warning = FALSE,
   message = FALSE
 )
+if (!requireNamespace("datawizard", quietly = TRUE)) {
+  knitr::opts_chunk$set(eval = FALSE)
+}
 
 ## -----------------------------------------------------------------------------
 library(insight)
@@ -131,5 +134,27 @@ export_table(
     list(c("Footer line A\n", "blue"), c("Second line\n\n", "green")),
     list(c("Footer line I\n", "yellow"), c("Second line\n\n", "blue"))
   )
+)
+
+## -----------------------------------------------------------------------------
+data(efc, package = "datawizard")
+# prepare a data set, in this example a codebook of the EFC dataset
+out <- datawizard::data_codebook(efc[, 1:3])
+out$.row_id <- NULL
+
+export_table(
+  out,
+  table_width = 70, # fix width to 70 chars
+  empty_line = "-", # empty lines (separator rows) indicated by "-"
+  cross = "+" # use "+" where vertical and horizontal table lines cross
+)
+
+## -----------------------------------------------------------------------------
+export_table(
+  out,
+  table_width = 70,
+  empty_line = "-",
+  cross = "+",
+  remove_duplicates = TRUE
 )
 

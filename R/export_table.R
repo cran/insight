@@ -1,4 +1,11 @@
-#' Data frame and Tables Pretty Formatting
+#' @title Data frame and Tables Pretty Formatting
+#' @name export_table
+#'
+#' @description Function to export data frames into tables, which can be printed
+#' to the console, or displayed in markdown or HTML format (and thereby, exported
+#' to other formats like Word or PDF). The table width is automatically adjusted
+#' to fit into the width of the display device (e.g., width of console). Use
+#' the `table_width` argument to control this behaviour.
 #'
 #' @param x A data frame. May also be a list of data frames, to export multiple
 #'   data frames into multiple tables.
@@ -20,17 +27,15 @@
 #'   new text line under the table. If `x` is a list of data frames, `footer`
 #'   may be a list of table captions, one for each table.
 #' @param align Column alignment. For markdown-formatted tables, the default
-#'   `align = NULL` will right-align numeric columns, while all other
-#'   columns will be left-aligned. If `format = "html"`, the default is
-#'   left-align first column and center all remaining. May be a string to
-#'   indicate alignment rules for the complete table, like `"left"`,
-#'   `"right"`, `"center"` or `"firstleft"` (to left-align first
-#'   column, center remaining); or maybe a string with abbreviated alignment
-#'   characters, where the length of the string must equal the number of columns,
-#'   for instance, `align = "lccrl"` would left-align the first column, center
-#'   the second and third, right-align column four and left-align the fifth
-#'   column. For HTML-tables, may be one of `"center"`, `"left"` or
-#'   `"right"`.
+#'   `align = NULL` will right-align numeric columns, while all other columns
+#'   will be left-aligned. If `format = "html"`, the default is left-align first
+#'   column and center all remaining. May be a string to indicate alignment
+#'   rules for the complete table, like `"left"`, `"right"`, `"center"` or
+#'   `"firstleft"` (to left-align first column, center remaining); or a string
+#'   with abbreviated alignment characters, where the length of the string must
+#'   equal the number of columns. For instance, `align = "lccrl"` would
+#'   left-align the first column, center the second and third, right-align
+#'   column four and left-align the fifth column.
 #' @param by Name of column in `x` that indicates grouping for tables.
 #'   Only applies when `format = "html"`. `by` is passed down to
 #'   `gt::gt(groupname_col = by)`.
@@ -41,12 +46,22 @@
 #'   a named numeric vector, value names are matched against column names, and
 #'   for each match, the specified width is used (see 'Examples'). Only applies
 #'   to text-format (see `format`).
-#' @param table_width Numeric, or `"auto"`, indicating the width of the complete
-#'   table. If `table_width = "auto"` and the table is wider than the current
-#'   width (i.e. line length) of the console (or any other source for textual
-#'   output, like markdown files), the table is split into two parts. Else,
-#'   if `table_width` is numeric and table rows are larger than `table_width`,
-#'   the table is split into two parts.
+#' @param table_width Numeric,`"auto"`, `NULL` or `Inf`, indicating the width of
+#'   the complete table.
+#'   - If `table_width = "auto"` (default) and the table is wider than the
+#'   current width (i.e. line length) of the console (or any other source for
+#'   textual output, like markdown files), the table is split into multiple
+#'   parts.
+#'   - Else, if `table_width` is numeric and table rows are larger than
+#'   `table_width`, the table is split into multiple parts. For each new table,
+#'   the first column is repeated for better orientation.
+#'   - Use `NULL` or `Inf` to turn off automatic splitting of the table.
+#'   - `options(easystats_table_width = <value>)` can be used to set a default
+#'   width for tables.
+#' @param remove_duplicates Logical, if `TRUE` and table is split into multiple
+#'   parts, duplicated ("empty") rows will be removed. If `FALSE`, empty rows
+#'   will be preserved. Only applies when `table_width` is *not* `NULL` (or
+#'   `Inf`) *and* table is split into multiple parts.
 #' @param ... Currently not used.
 #' @inheritParams format_value
 #' @inheritParams get_data
@@ -59,7 +74,13 @@
 #'
 #' @inherit format_table seealso
 #'
-#' @return A data frame in character format.
+#' @return If `format = "text"` (or `NULL`), a formatted character string is
+#' returned. `format = "markdown"` (or `"md"`) returns a character string of
+#' class `knitr_kable`, which renders nicely in markdown files. `format = "html"`
+#' returns an `gt` object (created by the **gt** package), which - by default -
+#' is displayed in the IDE's viewer pane or default browser. This object can
+#' be further modified with the various gt-functions.
+#'
 #' @examples
 #' export_table(head(iris))
 #' export_table(head(iris), cross = "+")
@@ -118,7 +139,8 @@ export_table <- function(x,
                          align = NULL,
                          by = NULL,
                          zap_small = FALSE,
-                         table_width = NULL,
+                         table_width = "auto",
+                         remove_duplicates = FALSE,
                          verbose = TRUE,
                          ...) {
   # check args
@@ -196,7 +218,9 @@ export_table <- function(x,
       empty_line = empty_line,
       indent_groups = indent_groups,
       indent_rows = indent_rows,
-      table_width = table_width
+      table_width = table_width,
+      remove_duplicated_lines = remove_duplicates,
+      verbose = verbose
     )
   } else if (is.list(x)) {
     # table from list of data frames -----------------------------------------
@@ -268,7 +292,9 @@ export_table <- function(x,
         empty_line = empty_line,
         indent_groups = indent_groups,
         indent_rows = indent_rows,
-        table_width = table_width
+        table_width = table_width,
+        remove_duplicated_lines = remove_duplicates,
+        verbose = verbose
       )
     })
 
@@ -349,7 +375,9 @@ print.insight_table <- function(x, ...) {
                           empty_line = NULL,
                           indent_groups = NULL,
                           indent_rows = NULL,
-                          table_width = NULL) {
+                          table_width = NULL,
+                          remove_duplicated_lines = FALSE,
+                          verbose = TRUE) {
   tabledata <- as.data.frame(x)
 
   # check width argument, for format value. cannot have
@@ -438,7 +466,9 @@ print.insight_table <- function(x, ...) {
         col_names = col_names,
         col_width = width,
         col_align = col_align,
-        table_width = table_width
+        table_width = table_width,
+        remove_duplicated_lines = remove_duplicated_lines,
+        verbose = verbose
       )
     } else if (format == "markdown") {
       # markdown is a bit different...
@@ -480,7 +510,9 @@ print.insight_table <- function(x, ...) {
                                 col_names = NULL,
                                 col_width = NULL,
                                 col_align = NULL,
-                                table_width = NULL) {
+                                table_width = NULL,
+                                remove_duplicated_lines = FALSE,
+                                verbose = TRUE) {
   # align table, if requested. unlike the generic aligments that have been done
   # previously, we now look for column-specific alignments. we furthermore save
   # the alignments in "col_align", which we may need later when we set a fixed
@@ -545,17 +577,15 @@ print.insight_table <- function(x, ...) {
   }
 
 
-  # we can split very wide table into maximum three parts
-  # this is currently hardcoded, not flexible, so we cannot allow
-  # more than three parts of one wide table
-  final2 <- NULL
-  final3 <- NULL
+  # we can split very wide tables
+  final_extra <- NULL
+  overlength_warning <- FALSE
 
+  # check if user requested automatic width-adjustment of tables,
+  # or if a given width is required
+  table_width_adjustment <- identical(table_width, "auto") || (!is.null(table_width) && !is.infinite(table_width) && is.numeric(table_width)) # nolint
 
-  # check if user requested automatic width-adjustment of tables, or if a
-  # given width is required
-
-  if (identical(table_width, "auto") || (!is.null(table_width) && is.numeric(table_width))) {
+  if (table_width_adjustment) {
     # define the length of a table line. if specific table width is defined
     # (i.e. table_width is numeric), use that to define length of table lines.
     # else, if "auto", check the current width of the user console and use that
@@ -564,60 +594,99 @@ print.insight_table <- function(x, ...) {
     if (is.numeric(table_width)) {
       line_width <- table_width
     } else {
-      line_width <- options()$width
+      line_width <- getOption("easystats_table_width", getOption("width", 80))
     }
 
     # width of first table row of complete table. Currently, "final" is still
     # a matrix, so we need to paste the columns of the first row into a string
-    row_width <- nchar(paste0(final[1, ], collapse = sep), type = "width")
+    row_width <- nchar(paste(final[1, ], collapse = sep), type = "width")
 
     # possibly first split - all table columns longer than "line_width"
     # (i.e. first table row) go into a second string
     if (row_width > line_width) {
-      i <- 1
-      # determine how many columns fit into the first line
-      while (nchar(paste0(final[1, 1:i], collapse = sep), type = "width") < line_width) {
-        i <- i + 1
+      final_extra <- list(final)
+      e <- 1
+      while (nchar(paste(utils::tail(final_extra, 1)[[1]][1, ], collapse = sep), type = "width") > line_width && e <= length(final_extra)) { # nolint
+        .final_temp <- final_extra[[e]]
+
+        i <- 1
+        # determine how many columns fit into the first line
+        while (nchar(paste(.final_temp[1, 1:i], collapse = sep), type = "width") < line_width) {
+          i <- i + 1
+        }
+        # copy first column, and all columns that did not fit into the first line
+        # into the second table matrix
+        if (i < ncol(.final_temp)) {
+          if (i > 1) {
+            final_extra[[e]] <- .final_temp[, 1:(i - 1), drop = FALSE]
+          } else {
+            # if first column is very long, i = 1, and then indexing 1:(i-1)
+            # doesn't work. Just copy first column, and give a warning about
+            # overlengthy columns
+            final_extra[[e]] <- .final_temp[, 1, drop = FALSE]
+            overlength_warning <- TRUE
+          }
+          # check if only the first column was copied, and no other columns -
+          # if so, we will repeatedly only copy column one and move all other
+          # columns in the next table part (where this happens again)
+          # in this case, *don't* copy first column again
+          if (i > 2) {
+            # repeat first column in each table, for better orientation
+            copy_range <- c(1, i:ncol(.final_temp))
+          } else if (i == 2) {
+            # here we have a very wide first column, so don't repeat it -
+            # else, subsequent columns won't fit into table
+            copy_range <- i:ncol(.final_temp)
+          } else {
+            # here we have an overlengthy first column - make sure we don't
+            # process this column multiple times, so skip it here
+            copy_range <- 2:ncol(.final_temp)
+          }
+          final_extra[[e + 1]] <- .final_temp[, copy_range, drop = FALSE]
+        }
+        e <- e + 1
       }
-      # copy first column, and all columns that did not fit into the first line
-      # into the second table matrix
-      if (i > 2 && i < ncol(final)) {
-        final2 <- final[, c(1, i:ncol(final))]
-        final <- final[, 1:(i - 1)]
+
+      final <- final_extra[[1]]
+      if (length(final_extra) > 1) {
+        final_extra <- final_extra[-1]
+      } else {
+        final_extra <- NULL
       }
     }
+  }
 
-    # width of first table row of remaing second table part
-    row_width <- nchar(paste0(final2[1, ], collapse = sep), type = "width")
-
-    # possibly second split - all table columns longer than "line_width"
-    # (i.e. first table row) go into a third string - we repeat the same
-    # procedure as above
-    if (row_width > line_width) {
-      i <- 1
-      while (nchar(paste0(final2[1, 1:i], collapse = sep), type = "width") < line_width) {
-        i <- i + 1
-      }
-      if (i > 2 && i < ncol(final2)) {
-        final3 <- final2[, c(1, i:ncol(final2))]
-        final2 <- final2[, 1:(i - 1)]
-      }
-    }
+  if (overlength_warning && verbose) {
+    format_warning("The table contains very wide columns that don't fit into the available display-width of the console. Splitting tables into multiple parts did not have the desired effect.") # nolint
   }
 
   # Transform table matrix into a string value that can be printed
-  rows <- .table_parts(NULL, final, header, sep, cross, empty_line)
+  rows <- .table_parts(
+    rows = NULL,
+    final = final,
+    header = header,
+    sep = sep,
+    cross = cross,
+    empty_line = empty_line,
+    table_width_adjustment = table_width_adjustment,
+    remove_duplicated_lines = remove_duplicated_lines
+  )
 
-  # if we have over-lengthy tables that are split into two parts,
-  # print second table here
-  if (!is.null(final2)) {
-    rows <- .table_parts(paste0(rows, "\n"), final2, header, sep, cross, empty_line)
-  }
-
-  # if we have over-lengthy tables that are split into two parts,
-  # print second table here
-  if (!is.null(final3)) {
-    rows <- .table_parts(paste0(rows, "\n"), final3, header, sep, cross, empty_line)
+  # if we have over-lengthy tables that are split into parts,
+  # print extra table here
+  if (!is.null(final_extra)) {
+    for (fex in final_extra) {
+      rows <- .table_parts(
+        rows = paste0(rows, "\n"),
+        final = fex,
+        header = header,
+        sep = sep,
+        cross = cross,
+        empty_line = empty_line,
+        table_width_adjustment = table_width_adjustment,
+        remove_duplicated_lines = remove_duplicated_lines
+      )
+    }
   }
 
   # if caption is available, add a row with a headline
@@ -660,13 +729,20 @@ print.insight_table <- function(x, ...) {
 
 # helper to prepare table body for text output ---------------------
 
-.table_parts <- function(rows, final, header, sep, cross, empty_line) {
+.table_parts <- function(rows,
+                         final,
+                         header,
+                         sep,
+                         cross,
+                         empty_line,
+                         table_width_adjustment,
+                         remove_duplicated_lines = FALSE) {
   # "final" is a matrix here. we now paste each row into a character string,
   # add separator chars etc.
   for (row in seq_len(nrow(final))) {
     # create a string for each row, where cells from original matrix are
     # separated by the separator char
-    final_row <- paste0(final[row, ], collapse = sep)
+    final_row <- paste(final[row, ], collapse = sep)
     # check if we have an empty row, and if so, fill with an
     # "empty line separator", if requested by user
     if (!is.null(empty_line) && !any(nzchar(trim_ws(final[row, ])))) {
@@ -677,7 +753,7 @@ print.insight_table <- function(x, ...) {
         # the empty line, which is just empty cells with separator char,
         # will now be replaced by the "empty line char", so we have a
         # clean separator line
-        paste0(rep_len(empty_line, nchar(final_row, type = "width")), collapse = ""),
+        paste(rep_len(empty_line, nchar(final_row, type = "width")), collapse = ""),
         cross, sep, final_row,
         is_last_row = row == nrow(final)
       )
@@ -691,7 +767,7 @@ print.insight_table <- function(x, ...) {
       # check whether user wants to have a "cross" char where vertical and
       # horizontal lines (from header line) cross.
       header_line <- .insert_cross(
-        paste0(rep_len(header, nchar(final_row, type = "width")), collapse = ""),
+        paste(rep_len(header, nchar(final_row, type = "width")), collapse = ""),
         cross, sep, final_row,
         is_last_row = row == nrow(final)
       )
@@ -700,7 +776,70 @@ print.insight_table <- function(x, ...) {
     }
   }
 
+  # we table is split into multiple parts, we remove duplicated separator lines
+  if (table_width_adjustment) {
+    # split single character back into rows again
+    out <- unlist(strsplit(rows, "\\n"), use.names = FALSE)
+    # find out where we have consecutive duplicated rows
+    consecutive_dups <- which(out[-1] == out[-length(out)])
+    if (length(consecutive_dups)) {
+      # if second to last line is a separator line, *and* we usually also have
+      # a final line, remove that one
+      if (.is_separator_line(out[length(out) - 1], empty_line, cross, sep)) {
+        consecutive_dups <- unique(c(consecutive_dups, length(out) - 1))
+      }
+      # copy consecutive duplicated rows into temporary object
+      tmp <- out[consecutive_dups]
+      # remove separator and cross signs
+      if (!is.null(empty_line) && nzchar(empty_line)) {
+        tmp <- gsub(empty_line, "", tmp, fixed = TRUE)
+      }
+      if (!is.null(cross) && nzchar(cross)) {
+        tmp <- gsub(cross, "", tmp, fixed = TRUE)
+      }
+      if (!is.null(sep) && nzchar(sep)) {
+        tmp <- gsub(sep, "", tmp, fixed = TRUE)
+      }
+      # now check which rows are empty (lines) AND consecutive duplicated
+      # remove those from "out"
+      remove_dups <- consecutive_dups[-nzchar(tmp)]
+      # if all consecutive duplicates were empty
+      if (!length(remove_dups)) {
+        remove_dups <- consecutive_dups
+      }
+      # remove duplicated lines, or make them "empty"?
+      if (remove_duplicated_lines) {
+        out <- out[-remove_dups]
+      } else if (!is.null(empty_line) && nzchar(empty_line)) {
+        # when consecutive duplicated rows are removed, the different table
+        # parts may have different height (number of rows). To avoid confusion,
+        # it is possible to preserve the height of each table part by setting
+        # remove_duplicates = FALSE
+        out[remove_dups] <- gsub(empty_line, " ", out[remove_dups], fixed = TRUE)
+        if (!is.null(sep) && nzchar(sep) && !is.null(cross) && nzchar(cross)) {
+          out[remove_dups] <- gsub(trim_ws(cross), trim_ws(sep), out[remove_dups], fixed = TRUE)
+        }
+      }
+      # collapse back into single string
+      rows <- paste0(paste(out, collapse = "\n"), "\n")
+    }
+  }
+
   rows
+}
+
+
+.is_separator_line <- function(x, empty_line, cross, sep) {
+  if (!is.null(empty_line) && nzchar(empty_line)) {
+    x <- gsub(empty_line, "", x, fixed = TRUE)
+  }
+  if (!is.null(cross) && nzchar(cross)) {
+    x <- gsub(cross, "", x, fixed = TRUE)
+  }
+  if (!is.null(sep) && nzchar(sep)) {
+    x <- gsub(sep, "", x, fixed = TRUE)
+  }
+  !nzchar(x)
 }
 
 
@@ -793,10 +932,6 @@ print.insight_table <- function(x, ...) {
 
   # indent
   final[grp_rows, 1] <- paste0(whitespace, final[grp_rows, 1])
-
-  # find rows that should not be indented
-  non_grp_rows <- seq_len(nrow(final))
-  non_grp_rows <- non_grp_rows[!non_grp_rows %in% grp_rows]
 
   # remove indent token
   final[, 1] <- gsub("# ", "", final[, 1], fixed = TRUE)
@@ -948,7 +1083,10 @@ print.insight_table <- function(x, ...) {
 
   # indent groups?
   if (!is.null(indent_rows) && any(grepl("# ", final[, 1], fixed = TRUE))) {
-    final <- .indent_rows_html(final, indent_rows)
+    highlight_rows <- grep("# ", final[, 1], fixed = TRUE)
+    final <- .indent_rows_html(final, indent_rows, "\U00A0\U00A0")
+  } else {
+    highlight_rows <- NULL
   }
 
 
@@ -994,23 +1132,35 @@ print.insight_table <- function(x, ...) {
   footer <- gt::tab_source_note(header, source_note = gt::html(footer))
   out <- gt::cols_align(footer, align = "center")
 
-  # align columns
-  if (!is.null(out[["_boxhead"]]) && !is.null(out[["_boxhead"]]$column_align)) {
-    if (align == "firstleft") {
-      out[["_boxhead"]]$column_align[1] <- "left"
-    } else {
-      col_align <- NULL
-      for (i in 1:nchar(align)) {
-        col_align <- c(
-          col_align,
-          switch(substr(align, i, i),
-            l = "left",
-            r = "right",
-            "center"
-          )
-        )
-      }
-      out[["_boxhead"]]$column_align <- col_align
+  # emphasize header of row groups?
+  if (!is.null(highlight_rows) && length(highlight_rows)) {
+    out <- gt::tab_style(
+      out,
+      style = gt::cell_text(style = "oblique"),
+      locations = gt::cells_body(columns = 1, rows = highlight_rows)
+    )
+  }
+
+  # emphasize row groups labels? when we have group_by_columns
+  if (!is.null(group_by_columns)) {
+    out <- gt::tab_style(
+      out,
+      style = gt::cell_text(style = "oblique"),
+      locations = gt::cells_row_groups()
+    )
+  }
+
+  # custom alignment of columns
+  if (align == "firstleft") {
+    out <- gt::cols_align(out, "left", 1)
+  } else {
+    for (i in 1:nchar(align)) {
+      col_align <- switch(substr(align, i, i),
+        l = "left",
+        r = "right",
+        "center"
+      )
+      out <- gt::cols_align(out, col_align, i)
     }
   }
 

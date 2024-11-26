@@ -146,6 +146,12 @@ model_info.anova <- function(x, verbose = TRUE, ...) {
 
 
 #' @export
+model_info.asym <- function(x, verbose = TRUE, ...) {
+  .make_family(x, verbose = verbose, ...)
+}
+
+
+#' @export
 model_info.mclogit <- function(x, verbose = TRUE, ...) {
   .make_family(
     x,
@@ -725,7 +731,7 @@ model_info.brmsfit <- function(x, ...) {
         logit.link = .x$link == "logit",
         multi.var = TRUE,
         link.fun = .x$link,
-        dispersion = !is_empty_object(insight::find_formula(x)$sigma),
+        dispersion = !is_empty_object(find_formula(x, verbose = FALSE)$sigma),
         ...
       )
     })
@@ -736,7 +742,7 @@ model_info.brmsfit <- function(x, ...) {
       logit.link = faminfo$link == "logit",
       multi.var = FALSE,
       link.fun = faminfo$link,
-      dispersion = !is_empty_object(insight::find_formula(x)$sigma),
+      dispersion = !is_empty_object(find_formula(x, verbose = FALSE)$sigma),
       ...
     )
   }
@@ -886,10 +892,10 @@ model_info.summary.lm <- model_info.Arima
 #' @export
 model_info.averaging <- function(x, ...) {
   if (is.null(attributes(x)$modelList)) {
-    format_warning("Can't calculate covariance matrix. Please use 'fit = TRUE' in 'model.avg()'.")
+    format_warning("Can't access model information. Please use 'fit = TRUE' in 'model.avg()'.")
     return(NULL)
   }
-  model_info.default(x = attributes(x)$modelList[[1]])
+  model_info(x = attributes(x)$modelList[[1]])
 }
 
 
@@ -1159,7 +1165,7 @@ model_info.glmmTMB <- function(x, ...) {
     hurdle = grepl("truncated", faminfo$family, fixed = TRUE),
     logit.link = faminfo$link == "logit",
     link.fun = faminfo$link,
-    dispersion = !is.null(find_formula(x)$dispersion),
+    dispersion = !is.null(find_formula(x, verbose = FALSE)$dispersion),
     glmmtmb_zeroinf = zero_inflated,
     ...
   )

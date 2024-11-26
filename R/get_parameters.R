@@ -8,7 +8,7 @@
 #' - [Estimated marginal means][get_parameters.emmGrid] (**emmeans**)
 #' - [Generalized additive models][get_parameters.gamm] (**mgcv**, **VGAM**, ...)
 #' - [Marginal effects models][get_parameters.betamfx] (**mfx**)
-#' - [Mixed models][get_parameters.glmm] (**lme4**, **glmmTMB**, **GLMMadaptive**, ...)
+#' - [Mixed models][get_parameters.glmmTMB] (**lme4**, **glmmTMB**, **GLMMadaptive**, ...)
 #' - [Zero-inflated and hurdle models][get_parameters.zeroinfl] (**pscl**, ...)
 #' - [Models with special components][get_parameters.betareg] (**betareg**, **MuMIn**, ...)
 #' - [Hypothesis tests][get_parameters.htest] (`htest`)
@@ -152,8 +152,8 @@ get_parameters.bfsl <- function(x, ...) {
 
 
 #' @export
-get_parameters.selection <- function(x, component = c("all", "selection", "outcome", "auxiliary"), ...) {
-  component <- match.arg(component)
+get_parameters.selection <- function(x, component = "all", ...) {
+  component <- validate_argument(component, c("all", "selection", "outcome", "auxiliary"))
   s <- summary(x)
   rn <- row.names(s$estimate)
   estimates <- as.data.frame(s$estimate, row.names = FALSE)

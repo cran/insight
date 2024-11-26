@@ -35,6 +35,18 @@ test_that("lm: sandwich", {
     sandwich::vcovOPG(mod),
     tolerance = 1e-5
   )
+
+  # examples from ?vcovBS
+  skip_on_cran()
+  data("PetersenCL", package = "sandwich")
+  m <- lm(y ~ x, data = PetersenCL)
+
+  set.seed(1234)
+  expect_equal(
+    get_varcov(m, vcov = "jackknife", vcov_args = list(cluster = PetersenCL$firm)),
+    sandwich::vcovBS(m, cluster = ~firm, type = "jackknife"),
+    tolerance = 1e-5
+  )
 })
 
 test_that("lm: clubSandwich", {
@@ -70,10 +82,9 @@ test_that("warning: not yet supported", {
 test_that("verbose and deprecated arguments", {
   mod <- lm(mpg ~ hp, data = mtcars)
   v1 <- suppressWarnings(get_varcov(mod, robust = TRUE))
-  v2 <- suppressWarnings(get_varcov(mod, robust = TRUE))
+  v2 <- suppressWarnings(get_varcov(mod))
   expect_equal(v1, v2, tolerance = 1e-4, ignore_attr = TRUE)
-  expect_warning(get_varcov(mod, robust = TRUE), regexp = "deprecated")
-  expect_warning(get_varcov(mod, robust = TRUE, verbose = FALSE), NA)
+  expect_warning(get_varcov(mod, robust = TRUE), regexp = "no longer supported")
 })
 
 
