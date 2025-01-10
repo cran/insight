@@ -193,6 +193,15 @@ get_sigma <- function(x, ci = NULL, verbose = TRUE) {
 }
 
 
+.get_sigma.geeglm <- function(x, ...) {
+  out <- .safe(stats::sigma(x))
+  if (is.data.frame(out)) {
+    out <- out$Estimate
+  }
+  out
+}
+
+
 .get_sigma.mjoint <- function(x, ...) {
   .safe(x$coef$sigma2[[1]])
 }
@@ -252,7 +261,6 @@ get_sigma <- function(x, ci = NULL, verbose = TRUE) {
 }
 
 
-
 # default handling ---------------
 
 .get_sigma.default <- function(x, verbose = TRUE, ...) {
@@ -289,7 +297,6 @@ get_sigma <- function(x, ci = NULL, verbose = TRUE) {
 }
 
 
-
 # Methods -----------------------------------------------------------------
 
 .get_sigma_ci <- function(x, ci = 0.95, ...) {
@@ -308,11 +315,13 @@ get_sigma <- function(x, ci = NULL, verbose = TRUE) {
 }
 
 
-
 #' @export
-as.numeric.insight_aux <- function(x, ...) {
-  if (is.null(x) || is.na(x) || is.infinite(x)) {
+as.double.insight_aux <- function(x, ...) {
+  if (is.null(x) || all(is.na(x)) || all(is.infinite(x)) || !is.numeric(x)) {
     return(NULL)
   }
   mean(x, na.rm = TRUE)
 }
+
+#' @export
+as.numeric.insight_aux <- as.double.insight_aux

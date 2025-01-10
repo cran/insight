@@ -1,3 +1,33 @@
+# insight 1.01
+
+## General
+
+* Support for models of class `oohbchoice` (package *DCchoice*).
+
+* `format_table()` gets a `stars_only` argument, to format p-value columns to
+  contain only significance stars.
+
+* `get_predicted()` for brms-models with categorical family now includes the
+  data of the data grid in the returned predictions, for better orientation.
+
+## Bug fixes
+
+* Fixed issues due to latest *mice* updates.
+
+* Fixed typo in `get_parameters.glmmadmb()`, which was erroneously renamed into
+  `get_parameters.glmmTMBadmb()`.
+
+* Fixed issues in `find_predictors()` and `has_intercept()` for *brms* models
+  with `0 + Intercept` formula notation.
+
+* Fixed issues in `get_statistic()` for models of class `fixest` from
+  negative-binomial families.
+
+* Fixed issue with `as.numeric()` method for `get_sigma()`.
+
+* `get_datagrid()` now only returns valid levels when `include_random = TRUE`
+  and group-level factor in random effects is numeric.
+
 # insight 1.0.0
 
 ## Breaking changes

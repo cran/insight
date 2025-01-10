@@ -44,6 +44,7 @@
 #'   cases, use `stars = c("pd", "BF")` to add stars to both columns, or
 #'   `stars = "BF"` to only add stars to the Bayes factor and exclude the `pd`
 #'   column. Currently, following columns are recognized: `"BF"`, `"pd"` and `"p"`.
+#' @param stars_only If `TRUE`, return significant stars only (and no p-values).
 #' @param ... Arguments passed to or from other methods.
 #' @inheritParams format_p
 #' @inheritParams format_value
@@ -79,6 +80,7 @@
 format_table <- function(x,
                          pretty_names = TRUE,
                          stars = FALSE,
+                         stars_only = FALSE,
                          digits = 2,
                          ci_width = "auto",
                          ci_brackets = TRUE,
@@ -136,7 +138,7 @@ format_table <- function(x,
 
 
   # P values ----
-  x <- .format_p_values(x, stars = stars, p_digits = p_digits)
+  x <- .format_p_values(x, stars = stars, p_digits = p_digits, stars_only = stars_only)
 
 
   # Main CI and Prediction Intervals ----
@@ -167,8 +169,6 @@ format_table <- function(x,
     gsub("_partial$", "", names(x)[endsWith(names(x), "_partial")]),
     " (partial)"
   )
-
-
 
 
   # metafor ----
@@ -223,16 +223,13 @@ format_table <- function(x,
 }
 
 
-
-
-
 # sub-routines ---------------
 
 
 # Format various p-values, coming from different easystats-packages
 # like bayestestR (p_ROPE, p_MAP) or performance (p_Chi2)
 
-.format_p_values <- function(x, p_digits, stars = FALSE) {
+.format_p_values <- function(x, p_digits, stars = FALSE, stars_only = FALSE) {
   # Specify stars for which column (#656)
   if (is.character(stars)) {
     starlist <- list(p = FALSE)
@@ -246,6 +243,7 @@ format_table <- function(x,
       x[[pv]] <- format_p(
         x[[pv]],
         stars = starlist[["p"]],
+        stars_only = stars_only,
         name = NULL,
         missing = "",
         digits = p_digits
@@ -263,6 +261,7 @@ format_table <- function(x,
       x[[stats]] <- format_p(
         x[[stats]],
         stars = starlist[["p"]],
+        stars_only = stars_only,
         name = NULL,
         missing = "",
         digits = p_digits
@@ -372,7 +371,6 @@ format_table <- function(x,
 }
 
 
-
 .format_aov_columns <- function(x) {
   if ("Deviance_error" %in% names(x)) {
     x$Deviance_error <- format_value(x$Deviance_error, protect_integers = TRUE)
@@ -383,7 +381,6 @@ format_table <- function(x,
   }
   x
 }
-
 
 
 .format_freq_stats <- function(x) {
@@ -428,7 +425,6 @@ format_table <- function(x,
 
   x
 }
-
 
 
 .format_main_ci_columns <- function(x,
@@ -504,7 +500,6 @@ format_table <- function(x,
 }
 
 
-
 .format_other_ci_columns <- function(x, att, ci_digits, zap_small, ci_width = "auto", ci_brackets = TRUE) {
   other_ci_low <- names(x)[endsWith(names(x), "_CI_low")]
   other_ci_high <- names(x)[endsWith(names(x), "_CI_high")]
@@ -552,7 +547,6 @@ format_table <- function(x,
 }
 
 
-
 .format_broom_ci_columns <- function(x,
                                      ci_digits,
                                      zap_small,
@@ -588,7 +582,6 @@ format_table <- function(x,
 }
 
 
-
 .format_rope_columns <- function(x, zap_small, ci_width = "auto", ci_brackets = TRUE) {
   if (all(c("ROPE_low", "ROPE_high") %in% names(x))) {
     x$ROPE_low <- format_ci(
@@ -605,7 +598,6 @@ format_table <- function(x,
   }
   x
 }
-
 
 
 .format_std_columns <- function(x, other_ci_colname, digits, zap_small) {
@@ -635,7 +627,6 @@ format_table <- function(x,
 
   x
 }
-
 
 
 .format_bayes_columns <- function(x,
@@ -716,7 +707,6 @@ format_table <- function(x,
 }
 
 
-
 .format_performance_columns <- function(x, digits, ic_digits, zap_small, use_symbols) {
   if (isTRUE(use_symbols) && .unicode_symbols()) {
     if ("R2" %in% names(x)) names(x)[names(x) == "R2"] <- "R\u00b2"
@@ -795,7 +785,6 @@ format_table <- function(x,
 }
 
 
-
 .format_symbols <- function(x, use_symbols) {
   if (isTRUE(use_symbols) && .unicode_symbols()) {
     colnames(x) <- gsub("Delta", "\u0394", colnames(x), ignore.case = TRUE)
@@ -817,7 +806,6 @@ format_table <- function(x,
 }
 
 
-
 # helper ---------------------
 
 
@@ -829,7 +817,6 @@ format_table <- function(x,
   }
   x
 }
-
 
 
 .additional_arguments <- function(x, value, default) {
@@ -847,7 +834,6 @@ format_table <- function(x,
 
   out
 }
-
 
 
 .unicode_symbols <- function() {

@@ -40,6 +40,10 @@
 #'   type (for instance, to a factor).
 #' * Other strings are passed directly to the `type` argument of the `predict()`
 #'   method supplied by the modelling package.
+#' * Specifically for models of class `brmsfit` (package *brms*), the `predict`
+#'   argument can be any valid option for the `dpar` argument, to predict
+#'   distributional parameters (such as `"sigma"`, `"beta"`, `"kappa"`, `"phi"`
+#'   and so on, see `?brms::brmsfamily`).
 #' * When `predict = NULL`, alternative arguments such as `type` will be captured
 #'   by the `...` ellipsis and passed directly to the `predict()` method supplied
 #'   by the modelling package. Note that this might result in conflicts with
@@ -292,7 +296,6 @@ get_predicted.data.frame <- function(x, data = NULL, verbose = TRUE, ...) {
 }
 
 
-
 # LM and GLM --------------------------------------------------------------
 # =========================================================================
 
@@ -367,8 +370,6 @@ get_predicted.lm <- function(x,
 get_predicted.glm <- get_predicted.lm
 
 
-
-
 # rms -------------------------------------------------------------------
 # =======================================================================
 
@@ -378,7 +379,6 @@ get_predicted.glm <- get_predicted.lm
 
 #' @export
 get_predicted.lrm <- get_predicted.default
-
 
 
 # MASS: rlm -----------------------------------------------------
@@ -396,8 +396,6 @@ get_predicted.rlm <- get_predicted.default
 
 #' @export
 get_predicted.survreg <- get_predicted.lm
-
-
 
 
 # survival: coxph -------------------------------------------------------
@@ -453,8 +451,6 @@ get_predicted.coxph <- function(x,
   # 4. step: final preparation
   .get_predicted_out(out$predictions, my_args = my_args, ci_data = out$ci_data)
 }
-
-
 
 
 # bife ------------------------------------------------------------------
@@ -574,8 +570,6 @@ get_predicted.rma <- function(x,
 }
 
 
-
-
 # afex ------------------------------------------------------------------
 # =======================================================================
 
@@ -599,8 +593,6 @@ get_predicted.afex_aov <- function(x, data = NULL, ...) {
 
   out
 }
-
-
 
 
 # phylolm ---------------------------------------------------------------
@@ -652,7 +644,6 @@ get_predicted.phylolm <- function(x,
 }
 
 
-
 # ====================================================================
 # Utils --------------------------------------------------------------
 # ====================================================================
@@ -671,8 +662,6 @@ get_predicted.phylolm <- function(x,
   }
   re.form
 }
-
-
 
 
 # back-transformation ------------------------------------------------------
@@ -761,8 +750,6 @@ get_predicted.phylolm <- function(x,
 }
 
 
-
-
 # -------------------------------------------------------------------------
 
 .get_predicted_out <- function(predictions, my_args = NULL, ci_data = NULL, ...) {
@@ -802,8 +789,6 @@ get_predicted.phylolm <- function(x,
   class(predictions) <- c("get_predicted", class(predictions))
   predictions
 }
-
-
 
 
 # Bootstrap ==============================================================
@@ -848,13 +833,12 @@ get_predicted.phylolm <- function(x,
 }
 
 
-
-
 # -------------------------------------------------------------------------
 
 .get_predicted_centrality_from_draws <- function(x,
                                                  iter,
                                                  centrality_function = base::mean,
+                                                 datagrid = NULL,
                                                  ...) {
   # outcome: ordinal/multinomial/multivariate produce a 3D array of predictions,
   # which we stack in "long" format
@@ -870,6 +854,16 @@ get_predicted.phylolm <- function(x,
       Predicted = apply(iter_stacked, 1, centrality_function),
       stringsAsFactors = FALSE
     )
+    # for ordinal etc. outcomes, we need to include the data from the grid, too
+    if (!is.null(datagrid)) {
+      # due to reshaping predictions into long format, we to repeat the
+      # datagrid multiple times, to have same number of rows
+      times <- nrow(predictions) / nrow(datagrid)
+      if (nrow(predictions) %% times == 0) {
+        datagrid <- do.call(rbind, replicate(times, datagrid, simplify = FALSE))
+        predictions <- cbind(predictions[1:2], datagrid, predictions[3])
+      }
+    }
     iter <- as.data.frame(iter_stacked)
     # outcome with a single level
   } else {
@@ -887,16 +881,11 @@ get_predicted.phylolm <- function(x,
 }
 
 
-
 # -------------------------------------------------------------------------
 
-.create_newmods_rma <- function(x, data, ...) {
+.create_newmods_rma <- function(x, data, ...) {}
 
-}
-
-.create_newscale_rma <- function(x, data, ...) {
-
-}
+.create_newscale_rma <- function(x, data, ...) {}
 
 .get_blup_rma <- function(x, data, ci = NULL, ...) {
   if (is.element(x$test, c("knha", "adhoc", "t"))) {

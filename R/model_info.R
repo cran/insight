@@ -365,7 +365,6 @@ model_info.mlogit <- model_info.logistf
 model_info.gmnl <- model_info.logistf
 
 
-
 # Phylo logit and poisson family ------------------------------------
 
 #' @export
@@ -390,7 +389,6 @@ model_info.phyloglm <- function(x, verbose = TRUE, ...) {
     ...
   )
 }
-
 
 
 # Models with ordinal family ------------------------------------
@@ -526,7 +524,6 @@ model_info.crch <- model_info.tobit
 model_info.survreg <- model_info.tobit
 
 
-
 # Models with family in object ----------------------------------
 
 
@@ -644,7 +641,6 @@ model_info.riskRegression <- model_info.coxph
 model_info.comprisk <- model_info.coxph
 
 
-
 # Zero-Inflated Models ------------------------------
 
 #' @export
@@ -724,6 +720,9 @@ model_info.brmsfit <- function(x, ...) {
   faminfo <- stats::family(x)
   if (is_multivariate(x)) {
     lapply(faminfo, function(.x) {
+      ## TODO: check for multivariate, if we need "x" or ".x"
+      form <- find_formula(x, verbose = FALSE)
+      is_dispersion <- !is_empty_object(form$sigma) || !is_empty_object(form$kappa)
       .make_family(
         x = x,
         fitfam = .x$family,
@@ -731,18 +730,20 @@ model_info.brmsfit <- function(x, ...) {
         logit.link = .x$link == "logit",
         multi.var = TRUE,
         link.fun = .x$link,
-        dispersion = !is_empty_object(find_formula(x, verbose = FALSE)$sigma),
+        dispersion = is_dispersion,
         ...
       )
     })
   } else {
+    form <- find_formula(x, verbose = FALSE)
+    is_dispersion <- !is_empty_object(form$sigma) || !is_empty_object(form$kappa)
     .make_family(
       x = x,
       fitfam = faminfo$family,
       logit.link = faminfo$link == "logit",
       multi.var = FALSE,
       link.fun = faminfo$link,
-      dispersion = !is_empty_object(find_formula(x, verbose = FALSE)$sigma),
+      dispersion = is_dispersion,
       ...
     )
   }
@@ -763,6 +764,35 @@ model_info.stanmvreg <- function(x, ...) {
       ...
     )
   })
+}
+
+
+#' @export
+model_info.oohbchoice <- function(x, ...) {
+  link <- switch(x$distribution,
+    normal = ,
+    "log-normal" = stats::gaussian()$link,
+    logistic = ,
+    "log-logistic" = stats::binomial()$link,
+    "log"
+  )
+
+  fam <- switch(x$distribution,
+    normal = ,
+    "log-normal" = "gaussian",
+    logistic = ,
+    "log-logistic" = "binomial",
+    "weibull"
+  )
+
+  .make_family(
+    x = x,
+    fitfam = fam,
+    zero.inf = FALSE,
+    logit.link = link == "logit",
+    link.fun = link,
+    ...
+  )
 }
 
 
@@ -944,7 +974,6 @@ model_info.gamm <- function(x, ...) {
   class(x) <- c(class(x), c("glm", "lm"))
   NextMethod()
 }
-
 
 
 #' @export
@@ -1398,8 +1427,6 @@ model_info.bfsl <- function(x, verbose = TRUE, ...) {
 model_info.marginaleffects <- function(x, ...) {
   model_info(attributes(x)$model)
 }
-
-
 
 
 # not yet supported -------------------------------

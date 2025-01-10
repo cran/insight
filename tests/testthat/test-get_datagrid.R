@@ -212,7 +212,6 @@ test_that("get_datagrid - models", {
 
 test_that("get_datagrid - emmeans", {
   skip_if_not_installed("emmeans")
-  skip_on_cran()
 
   data("mtcars")
 
@@ -258,7 +257,6 @@ test_that("get_datagrid - emmeans", {
 
 test_that("get_datagrid - marginaleffects", {
   skip_if_not_installed("marginaleffects")
-  skip_on_cran()
 
   data("mtcars")
 
@@ -285,8 +283,6 @@ test_that("get_datagrid - marginaleffects", {
   expect_identical(dim(res2), c(6L, 2L))
   expect_true(all(c(4, 6, 8) %in% res2[[2]]))
   expect_true(all(c(50, 100) %in% res2[[1]]))
-
-
 
 
   mod <- lm(mpg ~ wt + hp + qsec, data = mtcars)
@@ -397,4 +393,22 @@ test_that("get_datagrid - multiple weight variables", {
     ),
     tolerance = 1e-3
   )
+})
+
+
+test_that("get_datagrid - include_random works with numeric group factors", {
+  skip_if_not_installed("glmmTMB")
+  data(mtcars)
+  mtcars$vs <- as.factor(mtcars$vs)
+  model <- glmmTMB::glmmTMB(
+    mpg ~ vs + (1 | cyl),
+    data = mtcars
+  )
+  out <- get_datagrid(model, include_random = TRUE)
+  expect_identical(
+    out$cyl,
+    structure(c(1L, 1L, 2L, 2L, 3L, 3L), levels = c("4", "6", "8"), class = "factor")
+  )
+  out <- get_datagrid(model, include_random = FALSE)
+  expect_identical(out$cyl, c(NA, NA))
 })

@@ -1,4 +1,5 @@
 skip_on_cran()
+skip_on_os("mac")
 skip_if_not_installed("mice")
 skip_if_not_installed("nnet")
 
@@ -18,6 +19,8 @@ test_that("param", {
   out2 <- get_statistic(pooled)
   out1$Estimate <- round(out1$Estimate, 4)
   out2$Statistic <- round(out2$Statistic, 4)
+  expect_equal(out1$Response, c("6", "6", "6", "8", "8", "8"))
+  expect_equal(out2$Response, c("6", "6", "6", "8", "8", "8"))
   expect_snapshot(out1)
   expect_snapshot(out2)
   expect_identical(find_parameters(pooled), list(conditional = c("(Intercept)", "disp", "hp")))

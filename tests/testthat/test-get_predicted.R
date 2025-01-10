@@ -184,7 +184,6 @@ test_that("robust vcov", {
 })
 
 
-
 test_that("MASS::rlm", {
   skip_if_not_installed("MASS")
   mod <- MASS::rlm(mpg ~ hp + am, data = mtcars)
@@ -193,7 +192,6 @@ test_that("MASS::rlm", {
   p <- data.frame(p)
   expect_true("CI_low" %in% colnames(p))
 })
-
 
 
 # Mixed --------------------------------------------------------------
@@ -445,6 +443,38 @@ test_that("get_predicted - rstanarm", {
 })
 
 
+test_that("get_predicted - brms, auxiliary", {
+  skip_on_cran()
+  skip_if_not_installed("brms")
+  skip_if_not_installed("httr2")
+
+  m <- insight::download_model("brms_sigma_2")
+  dg <- get_datagrid(m, reference = "grid", include_random = TRUE)
+  out <- get_predicted(m, data = dg, predict = "sigma")
+  expect_equal(
+    as.numeric(out),
+    c(
+      1.02337, 0.82524, 0.58538, 0.74573, 0.66292, 1.0336, 0.94714,
+      0.74541, 0.71533, 0.7032, 0.63151, 0.65244, 0.58731, 0.45177,
+      0.75789
+    ),
+    tolerance = 1e-4
+  )
+})
+
+
+test_that("get_predicted - brms, categorical family", {
+  skip_on_cran()
+  skip_if_not_installed("brms")
+  skip_if_not_installed("httr2")
+
+  m <- insight::download_model("brms_categorical_1_fct")
+  out <- get_predicted(m, data = get_datagrid(m))
+  expect_identical(ncol(out), 4L)
+  expect_identical(nrow(out), 30L)
+  expect_named(out, c("Row", "Response", "mpg", "Predicted"))
+})
+
 
 # FA / PCA ----------------------------------------------------------------
 # =========================================================================
@@ -563,7 +593,7 @@ test_that("bugfix: used to fail with matrix variables", {
   foo <- function() {
     mtcars2 <- mtcars
     mtcars2$wt <- scale(mtcars2$wt)
-    return(lm(mpg ~ wt + cyl + gear + disp, data = mtcars2))
+    lm(mpg ~ wt + cyl + gear + disp, data = mtcars2)
   }
   pred <- get_predicted(foo())
   expect_s3_class(pred, c("get_predicted", "numeric"))
@@ -584,6 +614,7 @@ test_that("bugfix: used to fail with matrix variables", {
   pred2 <- get_predicted(m2)
   expect_equal(pred, pred2, ignore_attr = TRUE)
 })
+
 
 test_that("brms: `type` in ellipsis used to produce the wrong intervals", {
   skip_on_cran()
@@ -620,9 +651,12 @@ test_that("brms: `type` in ellipsis used to produce the wrong intervals", {
   )
   x <- as.data.frame(get_predicted(model, ci = 0.95))
   # Test shape
-  expect_identical(c(nrow(x), ncol(x)), c(96L, 1006L))
+  expect_identical(c(nrow(x), ncol(x)), c(96L, 1010L))
   # Test whether median point-estimate indeed different from default (mean)
   expect_gt(max(x$Predicted - get_predicted(model, centrality_function = stats::median)$Predicted), 0)
+  # predictions include variables from data grid
+  x <- get_predicted(model, ci = 0.95)
+  expect_named(x, c("Row", "Response", "cyl", "mpg", "vs", "carb", "Predicted"))
 })
 
 
