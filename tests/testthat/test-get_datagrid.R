@@ -38,8 +38,51 @@ test_that("get_datagrid - terciles, quartiles, mean-sd", {
   expect_identical(attributes(dg)$adjusted_for, c("Petal.Length", "Species"))
 
   dg <- insight::get_datagrid(m, "Petal.Width = [terciles]")
+  expect_equal(dg$Petal.Width, unname(quantile(iris$Petal.Width, probs = (0:3) / 3)), tolerance = 1e-4)
+  expect_identical(attributes(dg)$adjusted_for, c("Petal.Length", "Species"))
+
+  dg <- insight::get_datagrid(m, "Petal.Width = [terciles2]")
   expect_equal(dg$Petal.Width, unname(quantile(iris$Petal.Width, probs = (1:2) / 3)), tolerance = 1e-4)
   expect_identical(attributes(dg)$adjusted_for, c("Petal.Length", "Species"))
+
+  dg <- insight::get_datagrid(m, "Petal.Width = [fivenum]")
+  expect_equal(dg$Petal.Width, unname(quantile(iris$Petal.Width)), tolerance = 1e-4)
+  expect_identical(attributes(dg)$adjusted_for, c("Petal.Length", "Species"))
+
+  set.seed(123)
+  dg <- insight::get_datagrid(m, "Petal.Width = [sample 8]")
+  set.seed(123)
+  expect_equal(dg$Petal.Width, sample(iris$Petal.Width, 8), tolerance = 1e-4)
+
+  expect_error(
+    insight::get_datagrid(m, "Petal.Width = [sample a]"),
+    regex = "must be followed"
+  )
+
+  dg <- insight::get_datagrid(m, "Species=[setosa]")
+  expect_identical(dim(dg), c(1L, 3L))
+
+  dg <- insight::get_datagrid(m, "Species=[setosa,versicolor]")
+  expect_identical(dim(dg), c(2L, 3L))
+
+  expect_error(
+    insight::get_datagrid(m, "Species=[setosa,wersicolor]"),
+    regex = "should either indicate"
+  )
+
+  expect_error(
+    insight::get_datagrid(m, "Species=[petosa]"),
+    regex = "should either indicate"
+  )
+
+  skip_if_not_installed("ggeffects")
+  skip_if_not_installed("datawizard")
+  data(efc, package = "ggeffects")
+  efc$c161sex <- datawizard::to_factor(efc$c161sex)
+  efc$e16sex <- datawizard::to_factor(efc$e16sex)
+  model <- lm(neg_c_7 ~ barthtot + c160age * c161sex, data = efc)
+  out <- insight::get_datagrid(model, by = c("c160age=[pretty]", "c161sex"))
+  expect_identical(out$c160age, c(20, 40, 60, 80, 20, 40, 60, 80))
 })
 
 # bracket tokens
@@ -411,4 +454,36 @@ test_that("get_datagrid - include_random works with numeric group factors", {
   )
   out <- get_datagrid(model, include_random = FALSE)
   expect_identical(out$cyl, c(NA, NA))
+})
+
+
+test_that("get_datagrid - include_random works with interacting random effects", {
+  skip_if_not_installed("glmmTMB")
+  data(mtcars)
+  mtcars[c("cyl", "gear", "vs")] <- lapply(mtcars[c("cyl", "gear", "vs")], as.factor)
+  model <- glmmTMB::glmmTMB(mpg ~ hp + (1 | cyl:gear:vs), data = mtcars)
+  out <- insight::get_datagrid(model, by = c("cyl", "gear", "vs"))
+  expect_named(out, c("cyl", "gear", "vs", "hp"))
+  expect_identical(dim(out), c(18L, 4L))
+  out <- get_predicted(model, data = out, allow.new.levels = TRUE)
+  expect_identical(dim(as.data.frame(out)), c(18L, 3L))
+  expect_equal(
+    as.numeric(out),
+    c(
+      20.66442, 20.66442, 17.99213, 20.66442, 19.67974, 20.66442,
+      21.59251, 20.91067, 22.51425, 19.88026, 18.87143, 20.66442, 22.66211,
+      18.64211, 20.66442, 23.89897, 20.66442, 20.66442
+    ),
+    tolerance = 1e-3
+  )
+})
+
+
+test_that("get_datagrid - informative error when by not found", {
+  data(iris)
+  m <- lm(Sepal.Length ~ Species + Petal.Length, data = iris)
+  expect_error(
+    insight::get_datagrid(m, by = list(Sepal.Something = c(10, 40, 50))),
+    regex = "was not found"
+  )
 })
