@@ -1,7 +1,7 @@
 Type: Package
 Package: insight
 Title: Easy Access to Model Information for Various Model Objects
-Version: 1.0.2
+Version: 1.1.0
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -97,7 +97,7 @@ Suggests: AER, afex, aod, ape, BayesFactor, bayestestR, bbmle,
         robustlmm, rpart, rstanarm (>= 2.21.1), rstantools (>= 2.1.0),
         rstudioapi, sandwich, serp, speedglm, splines, statmod, survey,
         survival, svylme, testthat, tinytable (>= 0.1.0), TMB,
-        truncreg, tweedie, VGAM, WeightIt, withr
+        truncreg, tune, tweedie, VGAM, WeightIt, withr
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
@@ -107,7 +107,7 @@ Config/testthat/parallel: true
 Config/Needs/website: easystats/easystatstemplate
 Config/Needs/check: stan-dev/cmdstanr
 NeedsCompilation: no
-Packaged: 2025-02-06 09:37:25 UTC; mail
+Packaged: 2025-03-01 10:19:58 UTC; DL
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>),
   Dominique Makowski [aut, ctb] (<https://orcid.org/0000-0001-5375-9967>),
   Indrajeet Patil [aut, ctb] (<https://orcid.org/0000-0003-1995-6531>),
@@ -123,4 +123,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>),
   Rémi Thériault [ctb] (<https://orcid.org/0000-0003-4315-6788>),
   Alex Reinhart [ctb] (<https://orcid.org/0000-0002-6658-514X>)
 Repository: CRAN
-Date/Publication: 2025-02-06 13:20:02 UTC
+Date/Publication: 2025-03-01 23:10:06 UTC

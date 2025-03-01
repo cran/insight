@@ -1,4 +1,34 @@
-# insight 1.02
+# insight 1.1.0
+
+## Breaking Changes
+
+* `get_datagrid()` no longer creates fractional parts when creating a range of
+  values for numeric variables that are integers.
+
+## Changes
+
+* `get_datagrid()` now includes a dummy column for model weights (values `NA`),
+  to work with models that used weights.
+
+* `get_datagrid()` gets a `digits` argument, to round numeric representative
+  values.
+
+* Argument `ci_digits` defaults to `digits` in `format_table()`.
+
+* `format_table()` gets a `select` argument, which can be used to select columns
+  and column layout in a glue-like style.
+
+* `find_response()` now also works for _tidymodels_ workflows.
+
+* `get_transformation()` and `find_transformation()` now also detect
+  log-transformation with logarithmic base.
+
+## Bug fixes
+
+* Fixed issue in `find_formula()`, `find_response()` and `find_predictors()` for
+  multinomial `gam` models from package *mgcv*.
+
+# insight 1.0.2
 
 ## Changes
 
@@ -20,7 +50,7 @@
 * Fixed issue in `get_varcov()` for models of class `brmsfit` that included
   monotonic effects.
 
-# insight 1.01
+# insight 1.0.1
 
 ## General
 
