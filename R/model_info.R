@@ -3,6 +3,11 @@
 #'
 #' @description Retrieve information from model objects.
 #'
+#' @param response If `x` is a multivariate response model, `model_info()`
+#' returns a list of information for each response variable. Set `response` to
+#' the number of a specific response variable, or provide the name of the
+#' response variable in `response`, to return the information for only one
+#' response.
 #' @param verbose Toggle off warnings.
 #' @inheritParams find_predictors
 #' @inheritParams link_inverse
@@ -38,12 +43,18 @@
 #' * `is_zero_inflated`: model has zero-inflation component
 #' * `is_hurdle`: model has zero-inflation component and is a hurdle-model (truncated family distribution)
 #' * `is_dispersion`: model has dispersion component (not only dispersion _parameter_)
+#' * `is_wiener`: model is a *brms* decision-making (sequential sampling) model
+#'   with Wiener process (also called drift diffusion model)
+#' * `is_rtchoice`: model is a *brms* decision-making (sequential sampling) model,
+#'   which models outcomes that consists of two components (reaction times and
+#'   choice).
 #' * `is_mixed`: model is a mixed effects model (with random effects)
 #' * `is_multivariate`: model is a multivariate response model (currently only works for _brmsfit_ and _vglm/vgam_ objects)
 #' * `is_trial`: model response contains additional information about the trials
 #' * `is_bayesian`: model is a Bayesian model
 #' * `is_gam`: model is a generalized additive model
 #' * `is_anova`: model is an Anova object
+#' * `is_meta`: model is a meta-analysis object
 #' * `is_ttest`: model is an an object of class `htest`, returned by `t.test()`
 #' * `is_correlation`: model is an an object of class `htest`, returned by `cor.test()`
 #' * `is_ranktest`: model is an an object of class `htest`, returned by `cor.test()`
@@ -55,6 +66,8 @@
 #' * `is_proptest`: model is an an object of class `htest`, returned by `prop.test()`
 #' * `is_binomtest`: model is an an object of class `htest`, returned by `binom.test()`
 #' * `is_chi2test`: model is an an object of class `htest`, returned by `chisq.test()`
+#' * `is_ftest`: model is an an object of class `htest`, and test-statistic
+#'   is an F-statistic.
 #' * `is_xtab`: model is an an object of class `htest` or `BFBayesFactor`, and
 #'   test-statistic stems from a contingency table (i.e. `chisq.test()` or
 #'   `BayesFactor::contingencyTableBF()`).
@@ -715,11 +728,12 @@ model_info.stanreg <- function(x, ...) {
 }
 
 
+#' @rdname model_info
 #' @export
-model_info.brmsfit <- function(x, ...) {
+model_info.brmsfit <- function(x, response = NULL, ...) {
   faminfo <- stats::family(x)
   if (is_multivariate(x)) {
-    lapply(faminfo, function(.x) {
+    out <- lapply(faminfo, function(.x) {
       ## TODO: check for multivariate, if we need "x" or ".x"
       form <- find_formula(x, verbose = FALSE)
       is_dispersion <- !is_empty_object(form$sigma) || !is_empty_object(form$kappa)
@@ -731,9 +745,15 @@ model_info.brmsfit <- function(x, ...) {
         multi.var = TRUE,
         link.fun = .x$link,
         dispersion = is_dispersion,
+        brms_custom_name = faminfo$name,
         ...
       )
     })
+    if (is.null(response)) {
+      out
+    } else {
+      out[[response]]
+    }
   } else {
     form <- find_formula(x, verbose = FALSE)
     is_dispersion <- !is_empty_object(form$sigma) || !is_empty_object(form$kappa)
@@ -744,6 +764,7 @@ model_info.brmsfit <- function(x, ...) {
       multi.var = FALSE,
       link.fun = faminfo$link,
       dispersion = is_dispersion,
+      brms_custom_name = faminfo$name,
       ...
     )
   }
@@ -751,9 +772,9 @@ model_info.brmsfit <- function(x, ...) {
 
 
 #' @export
-model_info.stanmvreg <- function(x, ...) {
+model_info.stanmvreg <- function(x, response = NULL, ...) {
   faminfo <- stats::family(x)
-  lapply(faminfo, function(.x) {
+  out <- lapply(faminfo, function(.x) {
     .make_family(
       x = x,
       fitfam = .x$family,
@@ -764,6 +785,11 @@ model_info.stanmvreg <- function(x, ...) {
       ...
     )
   })
+  if (is.null(response)) {
+    out
+  } else {
+    out[[response]]
+  }
 }
 
 

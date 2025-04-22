@@ -25,15 +25,16 @@
 #' @details
 #'
 #' The `Effects` column indicate if a parameter is a *fixed* or *random* effect.
-#' The `Component` can either be *conditional* or *zero_inflated*. For models
-#' with random effects, the `Group` column indicates the grouping factor of the
-#' random effects. For multivariate response models from **brms** or
-#' **rstanarm**, an additional *Response* column is included, to indicate
-#' which parameters belong to which response formula. Furthermore,
-#' *Cleaned_Parameter* column is returned that contains "human readable"
-#' parameter names (which are mostly identical to `Parameter`, except for for
-#' models from **brms** or **rstanarm**, or for specific terms like smooth-
-#' or spline-terms).
+#' The `Component` column refers to special model components like *conditional*,
+#' *zero_inflated*, or *dispersion*. For models from package **brms**, the
+#' various distributional parameters are also included in this column. For
+#' models with random effects, the `Group` column indicates the grouping factor
+#' of the random effects. For multivariate response models from **brms** or
+#' **rstanarm**, an additional *Response* column is included, to indicate which
+#' parameters belong to which response formula. Furthermore, *Cleaned_Parameter*
+#' column is returned that contains "human readable" parameter names (which are
+#' mostly identical to `Parameter`, except for for models from **brms** or
+#' **rstanarm**, or for specific terms like smooth- or spline-terms).
 #'
 #' @examplesIf require("curl", quietly = TRUE) && curl::has_internet() && require("brms")
 #' \donttest{
@@ -61,28 +62,32 @@ clean_parameters.default <- function(x, group = "", ...) {
       "fixed"
     }
 
-    com <- if (grepl("zero_inflated", i, fixed = TRUE)) {
-      "zero_inflated"
-    } else if (grepl("dispersion", i, fixed = TRUE)) {
-      "dispersion"
-    } else if (grepl("nonlinear", i, fixed = TRUE)) {
-      "nonlinear"
-    } else if (grepl("instruments", i, fixed = TRUE)) {
-      "instruments"
-    } else if (grepl("extra", i, fixed = TRUE)) {
-      "extra"
-    } else if (grepl("scale", i, fixed = TRUE)) {
-      "scale"
-    } else if (grepl("marginal", i, fixed = TRUE)) {
-      "marginal"
-    } else if (grepl("intercept", i, fixed = TRUE)) {
-      "intercept"
-    } else if (grepl("correlation", i, fixed = TRUE)) {
-      "correlation"
-    } else {
-      "conditional"
+    # which components do we possibly have for that model? This should match
+    # those possible components returned by `find_parameters()`, see
+    # @section Model components in `find_predictors.R`, or
+    # `.get_elements("fixed", "all")`
+    components <- c(
+      "zero_inflated", "dispersion", "nonlinear", "instruments", "phi", "mu",
+      "extra", "scale", "marginal", "intercept", "correlation", "ip", "tau",
+      "beta", "precision", "selection", "auxiliary", "outcome", "full",
+      "infrequent_purchase", "delta", "shape", "survival"
+    )
+
+    # iterate all components
+    com <- NULL
+    for (cm in components) {
+      if (grepl(cm, i, fixed = TRUE)) {
+        com <- cm
+        break
+      }
     }
 
+    # finally, if not found, default to "conditional"
+    if (is.null(com)) {
+      com <- "conditional"
+    }
+
+    # check for smooth terms
     fun <- if (grepl("smooth", i, fixed = TRUE)) {
       "smooth"
     } else {
@@ -324,7 +329,7 @@ clean_parameters.brmsfit <- function(x, ...) {
   }
 
   out <- do.call(rbind, l)
-  out <- .remove_empty_columns_from_pars(.clean_brms_params(out, is_mv, ...))
+  out <- .remove_empty_columns_from_pars(.clean_brms_params(x, out, is_mv, ...))
   .fix_random_effect_smooth(x, out)
 }
 
@@ -428,8 +433,9 @@ clean_parameters.mlm <- function(x, ...) {
       "fixed"
     }
 
-    com <- if (grepl("zero_inflated", i, fixed = TRUE)) {
-      "zero_inflated"
+    # we must start with "conditional one", so it's not confused with "conditional"
+    com <- if (grepl("conditional", i, fixed = TRUE) || i == "random") {
+      "conditional"
     } else if (grepl("sigma", i, fixed = TRUE)) {
       "sigma"
     } else if (grepl("priors", i, fixed = TRUE)) {
@@ -438,22 +444,12 @@ clean_parameters.mlm <- function(x, ...) {
       "car"
     } else if (grepl("smooth_terms", i, fixed = TRUE)) {
       "smooth_terms"
-    } else if (grepl("alpha", i, fixed = TRUE)) {
-      "distributional"
-    } else if (grepl("beta", i, fixed = TRUE)) {
-      "distributional"
-    } else if (grepl("mix", i, fixed = TRUE)) {
-      "distributional"
-    } else if (grepl("shiftprop", i, fixed = TRUE)) {
-      "distributional"
-    } else if (grepl("shape", i, fixed = TRUE)) {
-      "distributional"
-    } else if (grepl("auxiliary", i, fixed = TRUE)) {
-      "distributional"
     } else if (grepl("dispersion", i, fixed = TRUE)) {
       "dispersion"
+    } else if (endsWith(i, "_random")) {
+      gsub("_random$", "", i)
     } else {
-      "conditional"
+      i
     }
 
     fun <- if (grepl("smooth", i, fixed = TRUE)) {
@@ -461,7 +457,6 @@ clean_parameters.mlm <- function(x, ...) {
     } else {
       ""
     }
-
 
     data.frame(
       Parameter = pars[[i]],
@@ -477,7 +472,7 @@ clean_parameters.mlm <- function(x, ...) {
 }
 
 
-.clean_brms_params <- function(out, is_mv, ...) {
+.clean_brms_params <- function(x, out, is_mv, ...) {
   dots <- list(...)
   out$Cleaned_Parameter <- out$Parameter
 
@@ -507,15 +502,23 @@ clean_parameters.mlm <- function(x, ...) {
     }
   }
 
+  # retrieve auxiliary components
+  dpars <- find_auxiliary(x)
+
+  # handle auxiliary components
+  for (i in dpars) {
+    aux_params <- startsWith(out$Cleaned_Parameter, paste0("b_", i, "_"))
+    out$Component[aux_params & out$Component == "conditional"] <- i
+  }
 
   smooth_function <- grepl(pattern = "(bs_|bs_zi_)", out$Cleaned_Parameter)
   if (any(smooth_function)) {
     out$Function[smooth_function] <- "smooth"
   }
 
-
+  # clean auxiliary
+  out$Cleaned_Parameter <- gsub(pattern = paste0("^(", paste0("b_", dpars, "_", collapse = "|"), ")"), "", out$Cleaned_Parameter)
   # clean fixed effects, conditional and zero-inflated
-
   out$Cleaned_Parameter <- gsub(pattern = "^b_(?!zi_)(.*)\\.(\\d)\\.$", "\\1[\\2]", out$Cleaned_Parameter, perl = TRUE)
   out$Cleaned_Parameter <- gsub(pattern = "^b_zi_(.*)\\.(\\d)\\.$", "\\1[\\2]", out$Cleaned_Parameter)
   out$Cleaned_Parameter <- gsub(pattern = "^(b_|bs_|bsp_|bcs_)(?!zi_)(.*)", "\\2", out$Cleaned_Parameter, perl = TRUE)
@@ -550,6 +553,9 @@ clean_parameters.mlm <- function(x, ...) {
       # we want to have same behaviour as for frequentist models,
       # including levels of grouop factors
       r_levels <- gsub("__zi", "", r_levels, fixed = TRUE)
+      for (i in dpars) {
+        r_levels <- gsub(paste0("__", i), "", r_levels, fixed = TRUE)
+      }
       out$Level[rand_eff] <- r_levels
       # fix labelling of SD and correlation component
       sd_cor <- grepl("SD/Cor:", out$Group, fixed = TRUE)
@@ -559,14 +565,29 @@ clean_parameters.mlm <- function(x, ...) {
     } else {
       r_grps <- gsub("^r_(.*)\\[(.*),(.*)\\]", "\\3: \\1", out$Cleaned_Parameter[rand_eff])
     }
+
     r_pars <- gsub("__zi", "", r_pars, fixed = TRUE)
     r_grps <- gsub("__zi", "", r_grps, fixed = TRUE)
+
+    for (i in dpars) {
+      r_pars <- gsub(paste0("__", i), "", r_pars, fixed = TRUE)
+      r_grps <- gsub(paste0("__", i), "", r_grps, fixed = TRUE)
+    }
 
     out$Cleaned_Parameter[rand_eff] <- r_pars
     out$Group[rand_eff] <- r_grps
   }
 
   # clean remaining parameters
+
+  sigma_params <- startsWith(out$Cleaned_Parameter, "sigma_")
+  if (length(sigma_params)) {
+    out$Cleaned_Parameter <- gsub("^sigma_(.*)", "\\1", out$Cleaned_Parameter)
+    # remove double "sigma_" in cleaned parameter names, which we have for
+    # random slope-intercept correlations
+    out$Cleaned_Parameter <- gsub("sigma_", "", out$Cleaned_Parameter, fixed = TRUE)
+    out$Component[sigma_params] <- "sigma"
+  }
 
   priors <- startsWith(out$Cleaned_Parameter, "prior_")
   if (length(priors)) {
@@ -589,7 +610,11 @@ clean_parameters.mlm <- function(x, ...) {
 
   # fix intercept names
 
-  intercepts <- which(out$Cleaned_Parameter %in% c("Intercept", "zi_Intercept"))
+  intercepts <- which(
+    out$Cleaned_Parameter %in%
+      c("Intercept", "zi_Intercept") |
+      endsWith(out$Cleaned_Parameter, "_Intercept")
+  )
 
   if (!is_empty_object(intercepts)) {
     out$Cleaned_Parameter[intercepts] <- "(Intercept)"

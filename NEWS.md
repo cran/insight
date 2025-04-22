@@ -1,3 +1,82 @@
+# insight 1.2.0
+
+## Breaking Changes
+
+* The handling of `brms` models in `find_parameters()`, `find_formula()` or
+  `clean_parameters()` (and other functions) should now systematically take
+  the many possible distributional parameters into account, identifying the
+  different types of them, and assigning them to own values in the
+  `Component` columns. *insight* should now be flexible enough to also cope
+  with user-defined variables that have been modelled as distributional
+  parameters.
+
+* To be consistent with the naming pattern from package `brms`, all elements
+  related to distributional parameters now returns exactly that "dpar" name.
+  This means that, for instance, `find_formula()` no longer returns an element
+  named `$zero_inflated`, but instead `$zi`. This only applies to models from
+  `brms`! All other packages are not affected by this breaking change.
+
+## Changes
+
+* `find_random()` and `find_random_slopes()` now also extract random effects
+  names from auxiliary components.
+
+* `find_random()` and `find_random_slopes()` now include random effects from the
+  dispersion component for models from package *glmmTMB*.
+
+* `clean_parameters()` for brms-models now assigns auxiliary parameters to their
+  related `Component` and overwrites former assignments to `"conditional"`.
+
+* `format_table()` now includes more effect sizes when formatting column names.
+
+* `get_datagrid()` now allows named vectors for arguments `length` and `range`,
+  to match values with target variables defined in `by`.
+
+* `get_datagrid()` gets a `protect_integer` argument, to allow a spread of
+  values from minimum to maximum of length `length`, also for integer values.
+
+* `export_table()` gets an argument `column_names`, to change the column names
+  of the exported table.
+
+* `model_info()` gains a `response` argument for classes that can be multivariate
+  response models that return multiple lists of model information (currently,
+  Stan models from *rstanarm* and *brms*). If not `NULL`, only the information
+  for one of the response variables is returned.
+
+* Creating a range of values in a `get_datagrid()` using `by` was now simplified
+  and works like regular R syntax, e.g. `by = "mpg = 20:50"`.
+
+* `get_predicted()` for models of class `brmsfit` now supports Wiener models
+  or similar so called "decision models", that simultaneously model, e.g.,
+  reaction times and (discrete) choices.
+
+* `get_predicted()` no longer throws warnings for models of class `brmsfit`
+  when distributional are predicted.
+
+* `find_offset()` gets an `as_term` argument, which returns the offset as term,
+  including possible transformations.
+
+* Token-option `"quartiles2"` was removed and option `"quartiles"` now produces
+  the three quartile values (lower hinge, median, upper hinge). The former
+  option of `"quartiles"` that included minimum and maximum was identical to the
+  already existing `"fivenum"` option.
+
+* New function `find_auxiliary()`, which is a small helper to extract all
+  distributional parameters that were used in models from package *brms*.
+
+* `display()`, `print_md()` and `print_html()` get methods for matrix- and
+  array objects.
+
+* Cleaning / revising package documentation.
+
+## Bug fixes
+
+* `null_model()` now correctly calculates the null-model based on the data that
+  was used to fit the model (model frame), which can lead to different results
+  when the original data contained missing values.
+
+* Fixed issue for `get_predicted()` with multivariate response models.
+
 # insight 1.1.0
 
 ## Breaking Changes

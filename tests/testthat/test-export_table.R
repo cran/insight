@@ -171,13 +171,12 @@ test_that("export_table, table_width, remove duplicated empty lines", {
   expect_snapshot(print(export_table(out, table_width = 60, empty_line = "-", sep = " | ", remove_duplicates = TRUE)))
   expect_snapshot(print(export_table(out, table_width = 60, empty_line = "-", cross = "+", remove_duplicates = TRUE)))
 
-  skip_if_not_installed("ggeffects")
-  data(efc, package = "ggeffects")
-  out <- datawizard::data_codebook(efc[, 1:4])
+  data(efc_insight, package = "insight")
+  out <- datawizard::data_codebook(efc_insight[, 1:4])
   out$.row_id <- NULL
   expect_snapshot(print(export_table(out, table_width = 60, remove_duplicates = TRUE, empty_line = "-", cross = "+")))
   expect_snapshot(print(export_table(out, table_width = 60, remove_duplicates = FALSE, empty_line = "-", cross = "+")))
-  out <- datawizard::data_codebook(efc[, 1:3])
+  out <- datawizard::data_codebook(efc_insight[, 1:3])
   out$.row_id <- NULL
   expect_snapshot(print(export_table(out, table_width = 60, remove_duplicates = TRUE, empty_line = "-", cross = "+")))
   expect_snapshot(print(export_table(out, table_width = 60, remove_duplicates = FALSE, empty_line = "-", cross = "+")))
@@ -254,4 +253,33 @@ test_that("export_table, gt, complex with group indention", {
     )
   ))
   expect_snapshot(as.character(out))
+})
+
+test_that("export_table, new column names", {
+  data(iris)
+  x <- as.data.frame(iris[1:5, ])
+  out <- export_table(x, column_names = letters[1:5])
+  expect_identical(
+    strsplit(out, "\n")[[1]][1],
+    "   a |    b |    c |    d |      e"
+  )
+  out <- export_table(x, column_names = c(Species = "a"))
+  expect_identical(
+    strsplit(out, "\n")[[1]][1],
+    "Sepal.Length | Sepal.Width | Petal.Length | Petal.Width |      a"
+  )
+
+  # errors
+  expect_error(
+    export_table(x, column_names = letters[1:4]),
+    regex = "Number of names"
+  )
+  expect_error(
+    export_table(x, column_names = c(Species = "a", abc = "b")),
+    regex = "Not all names"
+  )
+  expect_error(
+    export_table(x, column_names = c(Species = "a", "b")),
+    regex = "is a named vector"
+  )
 })

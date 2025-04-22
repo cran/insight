@@ -25,7 +25,7 @@
   # needed for singularity check
   check_if_installed("performance", reason = "to check for singularity")
 
-  faminfo <- model_info(model, verbose = FALSE)
+  faminfo <- model_info(model, response = 1, verbose = FALSE)
 
   # check argument
   approx_method <- match.arg(approximation, c("lognormal", "delta", "trigamma", "observation_level"))
@@ -602,7 +602,10 @@
     # single sigma parameter. in this case, we can't calculate residual
     # variance and return NULL
     if (inherits(model, "brmsfit")) {
-      params <- find_parameters(model)$conditional
+      params <- unlist(
+        compact_list(find_parameters(model)[c("conditional", "sigma")]),
+        use.names = FALSE
+      )
       sigma_params <- grepl("b_sigma", params, fixed = TRUE)
       if (sum(sigma_params) > 1) {
         if (verbose) {
