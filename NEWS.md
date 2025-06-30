@@ -1,3 +1,40 @@
+# insight 1.3.1
+
+## Changes
+
+* New function `get_model()` to extract the model object from an arbitrary
+  object, if the model object is stored as attribute of the parent object.
+
+* The `range` argument in `get_datagrid()` gets a new option, `"pretty"`, to
+  create a range of pretty values.
+
+* `get_predicted()` now supports models of class `glmtoolbox::glmee`.
+
+* `get_predicted()` supports predicting the class membership for models from
+  package *brms* with `mixture()` family, using `predict = "classificaton"`.
+
+* `get_predicted()` supports predicting the outcome by class membership for
+  models from package *brms* with `mixture()` family, using `predict = "link"`.
+
+* `get_residuals()` gets a method for objects from `parameters::factor_analysis()`,
+  `psych::fa()`, `psych::omega()` and `psych::principal()`.
+
+* `model_info()` returns `$is_mixture` to identify finite mixture models.
+
+* Better support for models of class `sdmTMB`.
+
+* Improve efficiency of `clean_parameters()` for more complex *brms* models.
+
+## Bug fixes
+
+* Fixed issue in `get_df()` for models from package *afex*.
+
+* Fixed issue in `clean_names()` for *brms* models with `mm()` in formula.
+
+* Fixed issue in `get_data()` for *brms* models with `mmc()` in formula.
+
+* Fixed issue in `get_statistic()` for objects of class `aov`.
+
 # insight 1.3.0
 
 ## Breaking Changes
