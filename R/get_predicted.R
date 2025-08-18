@@ -178,6 +178,10 @@
 #' `iter <- as.data.frame(get_predicted(model))`, and their iterations can be
 #' reshaped into a long format by `bayestestR::reshape_iterations(iter)`.
 #'
+#' @section Hypothesis tests:
+#' There is limited support for hypothesis tests, i.e. objects of class `htest`:
+#' - `chisq.test()`: returns the expected values of the contingency table.
+#'
 #' @seealso [get_datagrid()]
 #'
 #' @examplesIf require("boot")
@@ -468,6 +472,29 @@ get_predicted.coxph <- function(x,
 
   # 4. step: final preparation
   .get_predicted_out(out$predictions, my_args = my_args, ci_data = out$ci_data)
+}
+
+
+#' @export
+get_predicted.coxme <- function(x,
+                                data = NULL,
+                                predict = "expectation",
+                                ci = NULL,
+                                iterations = NULL,
+                                verbose = TRUE,
+                                ...) {
+  if (!is.null(data)) {
+    format_error("The `coxme` package does not yet support the `newdata` argument for predictions. Hence, the `data` argument must be `NULL`.")
+  }
+  get_predicted.default(
+    x = x,
+    data = NULL,
+    predict = predict,
+    ci = ci,
+    iterations = iterations,
+    verbose = verbose,
+    ...
+  )
 }
 
 

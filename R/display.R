@@ -18,8 +18,12 @@
 #' @return Depending on `format`, either an object of class `gt_tbl`,
 #' `tinytable`, or a character vector of class `knitr_kable`.
 #'
-#' @examplesIf requireNamespace("gt")
+#' @examplesIf all(check_if_installed(c("gt", "tinytable"), quietly = TRUE))
 #' display(iris[1:5, ], format = "html")
+#'
+#' display(iris[1:5, ], format = "tt")
+#'
+#' display(iris[1:5, ], format = "markdown")
 #' @export
 display <- function(object, ...) {
   UseMethod("display")
@@ -82,36 +86,69 @@ print_html.data.frame <- function(x, ...) {
 display.matrix <- display.data.frame
 
 #' @export
-display.array <- display.data.frame
-
-#' @export
 print_md.matrix <- function(x, ...) {
-  # to data frame
-  x <- as.data.frame(x)
-  # add row names
-  x <- cbind(Row = rownames(x), x)
-  # some cleanup
-  rownames(x) <- NULL
-  colnames(x)[1] <- ""
+  # prepare matrix for printing
+  x <- .prepare_matrix_print(x, col_names = "")
   # export table now
   export_table(x, format = "markdown", ...)
 }
 
 #' @export
 print_html.matrix <- function(x, ...) {
-  # to data frame
-  x <- as.data.frame(x)
-  # add row names
-  x <- cbind(Row = rownames(x), x)
-  # some cleanup
-  rownames(x) <- NULL
-  colnames(x)[1] <- ""
+  # prepare matrix for printing
+  x <- .prepare_matrix_print(x, col_names = "Value")
   # export table now
   print_html.data.frame(x, ...)
 }
+
+
+# array --------------------------------------------------------------
+
+#' @export
+display.array <- display.data.frame
 
 #' @export
 print_md.array <- print_md.matrix
 
 #' @export
 print_html.array <- print_html.matrix
+
+
+# table --------------------------------------------------------------
+
+#' @export
+display.table <- display.data.frame
+
+#' @export
+print_md.table <- function(x, ...) {
+  # prepare matrix for printing
+  x <- .prepare_matrix_print(x, col_names = "")
+  # export table now
+  export_table(x, format = "markdown", ...)
+}
+
+#' @export
+print_html.table <- function(x, ...) {
+  # prepare matrix for printing
+  x <- .prepare_matrix_print(x, col_names = "Value")
+  # export table now
+  print_html.data.frame(x, ...)
+}
+
+
+# utils --------------------------------------------------------------
+
+.prepare_matrix_print <- function(x, col_names = "Value") {
+  # to data frame
+  if (inherits(x, "table")) {
+    x <- as.data.frame.matrix(x)
+  } else {
+    x <- as.data.frame(x)
+  }
+  # add row names
+  x <- cbind(Row = rownames(x), x)
+  # some cleanup
+  rownames(x) <- NULL
+  colnames(x)[1] <- col_names
+  x
+}

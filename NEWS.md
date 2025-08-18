@@ -1,3 +1,49 @@
+# insight 1.4.0
+
+## Breaking changes
+
+* `apply_table_theme()` was removed, since it was an experimental feature that
+  is no longer used in any package.
+
+## Changes
+
+* `display()`, `print_md()` and `print_html()` get a `.table` method.
+
+* `get_predicted()` now supports `chisq.test()`, and returns the expected
+  frequencies.
+
+* `export_table()` gains better support for the _tinytable_ package. Use
+  `format = "tt"` to export tables into the tinytable-format. This can also
+  be used with grouped tables, i.e. `by = "group"`.
+
+* `export_table()` gains arguments `row_groups` and `column_groups`, to
+  group rows and columns in the exported table. Column groups currently only
+  work for `format = "tt"`.
+
+* If arguments `title`, `subtitle` and `footer` in `export_table()` are set to
+  an empty string `""`, no titles/subtitles/footers are printed, even if present
+  as attributes.
+
+* Added a `.lavaan` method for `is_converged()`.
+
+* The formerly internal function to extract various information about mixed
+  models is now exported as `get_mixed_info()`.
+
+## Bug fixes
+
+* Fixed issue with models of class `selection` with multiple response
+  variables.
+
+* Fixed issue in `get_datagrid()` for factors with `=` in their levels.
+
+* Fixed issue in `find_random()` for multivariate response models of class `brms`
+  with special response options.
+
+* Fixed issue in several functions for certain betareg-models that contained
+  a `"mu"` component instead of `"mean"`.
+
+* Fixed CRAN check issues on M1 Macs.
+
 # insight 1.3.1
 
 ## Changes
