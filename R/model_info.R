@@ -1502,7 +1502,8 @@ model_info.bfsl <- function(x, verbose = TRUE, ...) {
 
 #' @export
 model_info.marginaleffects <- function(x, ...) {
-  model_info(attributes(x)$model)
+  check_if_installed("marginaleffects", minimum_version = "0.29.0")
+  model_info(marginaleffects::components(x, "model"))
 }
 
 

@@ -1,3 +1,28 @@
+# insight 1.4.1
+
+## Changes
+
+* `get_varcov()` now supports robust variance-covariance matrices for models
+  of class `glmmTMB` (package *glmmTMB*). The argument `vcov` can be used to
+  specify the robust variance-covariance matrix function. Furthermore, the
+  `component` argument gains the `"full"` option, to return the full
+  variance-covariance matrix, including the random effects (theta parameters).
+
+* `format_table()` now also formats ROPE columns for superiority and inferiority.
+
+* `format_table()` protects integer columns for non-specific column types.
+
+* The `numerics` argument in `get_datagrid()` gains two new options, `"integer"`
+  and `"mode"`, to either return the rounded mean or the most frequent value of
+  a numeric vector.
+
+* Modified code base to address changes in the *marginaleffects* package from
+  version 0.29.0 onwards.
+
+## Bug fixes
+
+* Fixed issue with `find_formula()` with *mhurdle* models.
+
 # insight 1.4.0
 
 ## Breaking changes

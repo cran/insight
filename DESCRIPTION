@@ -1,7 +1,7 @@
 Type: Package
 Package: insight
 Title: Easy Access to Model Information for Various Model Objects
-Version: 1.4.0
+Version: 1.4.1
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -84,21 +84,21 @@ Suggests: AER, afex, aod, ape, BayesFactor, bayestestR, bbmle,
         cobalt, coxme, cplm, crch, curl, datawizard (>= 1.2.0), dbarts,
         effectsize, emmeans, epiR, estimatr, feisr, fixest (>= 0.11.2),
         fungible, fwb, gam, gamlss, gamlss.data, gamm4, gbm, gee,
-        geepack, geoR, GLMMadaptive, glmmTMB (>= 1.1.10), glmtoolbox,
+        geepack, geoR, GLMMadaptive, glmmTMB (>= 1.1.12), glmtoolbox,
         gmnl, grDevices, gt, httptest2, httr2, interp, ivreg, JM,
         knitr, lavaan, lavaSearch2, lfe, lme4, lmerTest, lmtest,
-        logistf, logitr, marginaleffects (>= 0.26.0), MASS, Matrix,
+        logistf, logitr, marginaleffects (>= 0.29.0), MASS, Matrix,
         mclogit, mclust, MCMCglmm, merTools, metaBMA, metadat, metafor,
-        metaplus, mgcv, mice (>= 3.17.0), mlogit, mmrm, modelbased (>=
-        0.9.0), multgee, MuMIn, mvtnorm, nestedLogit, nlme, nnet,
-        nonnest2, ordinal, panelr, parameters, parsnip, pbkrtest,
-        performance, phylolm, plm, PROreg (>= 1.3.0), pscl, psych,
-        quantreg, Rcpp, RcppEigen, rmarkdown, rms, robustbase,
-        robustlmm, rpart, rstanarm (>= 2.21.1), rstantools (>= 2.1.0),
-        rstudioapi, RWiener, sandwich, sdmTMB, sampleSelection, serp,
-        speedglm, splines, statmod, survey, survival, svylme, testthat,
-        tinytable (>= 0.8.0), TMB, truncreg, tune, tweedie, VGAM,
-        WeightIt, withr
+        metaplus, mgcv, mhurdle, mice (>= 3.17.0), mlogit, mmrm,
+        modelbased (>= 0.9.0), multgee, MuMIn, mvtnorm, nestedLogit,
+        nlme, nnet, nonnest2, ordinal, panelr, parameters (>= 0.28.0),
+        parsnip, pbkrtest, performance, phylolm, plm, PROreg (>=
+        1.3.0), pscl, psych, quantreg, Rcpp, RcppEigen, rmarkdown, rms,
+        robustbase, robustlmm, rpart, rstanarm (>= 2.21.1), rstantools
+        (>= 2.1.0), rstudioapi, RWiener, sandwich, sdmTMB,
+        sampleSelection, serp, speedglm, splines, statmod, survey,
+        survival, svylme, testthat, tinytable (>= 0.13.0), TMB,
+        truncreg, tune, tweedie, VGAM, WeightIt, withr
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
@@ -108,7 +108,7 @@ Config/testthat/parallel: true
 Config/Needs/website: easystats/easystatstemplate
 Config/Needs/check: stan-dev/cmdstanr
 NeedsCompilation: no
-Packaged: 2025-08-18 19:39:49 UTC; DL
+Packaged: 2025-08-29 08:23:26 UTC; Daniel
 Author: Daniel Lüdecke [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-8895-3206>),
   Dominique Makowski [aut, ctb] (ORCID:
@@ -130,4 +130,4 @@ Author: Daniel Lüdecke [aut, cre] (ORCID:
   Rémi Thériault [ctb] (ORCID: <https://orcid.org/0000-0003-4315-6788>),
   Alex Reinhart [ctb] (ORCID: <https://orcid.org/0000-0002-6658-514X>)
 Repository: CRAN
-Date/Publication: 2025-08-18 23:40:02 UTC
+Date/Publication: 2025-08-29 10:40:02 UTC

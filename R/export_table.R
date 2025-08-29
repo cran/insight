@@ -301,7 +301,6 @@ export_table <- function(x,
 
     # convert data frame into specified output format
     out <- do.call(.export_table, c(list(x = x), export_args, list(...)))
-
   } else if (is.list(x)) {
     # table from list of data frames -----------------------------------------
 
@@ -857,14 +856,14 @@ print.insight_table <- function(x, ...) {
   # if caption is available, add a row with a headline
   if (!is.null(caption) && caption[1] != "") {
     # if we have a colour value, make coloured ansi-string
-    if (length(caption) == 2 && .is_valid_colour(caption[2])) {
-      caption <- .colour(caption[2], caption[1])
+    if (length(caption) == 2 && .is_valid_color(caption[2])) {
+      caption <- .color(caption[1], caption[2])
     }
     if (is.null(subtitle)) {
       subtitle <- ""
-    } else if (length(subtitle) == 2 && .is_valid_colour(subtitle[2])) {
+    } else if (length(subtitle) == 2 && .is_valid_color(subtitle[2])) {
       # if we have a colour value, make coloured ansi-string
-      subtitle <- .colour(subtitle[2], subtitle[1])
+      subtitle <- .color(subtitle[1], subtitle[2])
     }
 
     # paste everything together and remove unnecessary double spaces
@@ -1066,8 +1065,8 @@ print.insight_table <- function(x, ...) {
     return(rows)
   }
   # if we have a colour value, make coloured ansi-string
-  if (length(footer) == 2 && .is_valid_colour(footer[2])) {
-    footer <- .colour(footer[2], footer[1])
+  if (length(footer) == 2 && .is_valid_color(footer[2])) {
+    footer <- .color(footer[1], footer[2])
   }
   paste0(rows, footer[1])
 }
@@ -1387,16 +1386,15 @@ print.insight_table <- function(x, ...) {
 # --------------------------------------------------------
 
 .format_html_table <- function(
-  final,
-  caption = NULL,
-  subtitle = NULL,
-  footer = NULL,
-  align = "center",
-  group_by = NULL,
-  row_groups = NULL,
-  column_groups = NULL,
-  ...
-) {
+    final,
+    caption = NULL,
+    subtitle = NULL,
+    footer = NULL,
+    align = "center",
+    group_by = NULL,
+    row_groups = NULL,
+    column_groups = NULL,
+    ...) {
   check_if_installed("gt")
 
   if (is.null(align)) {
@@ -1508,7 +1506,11 @@ print.insight_table <- function(x, ...) {
     out <- gt::cols_align(out, "left", 1)
   } else {
     for (i in 1:nchar(align)) {
-      col_align <- switch(substr(align, i, i), l = "left", r = "right", "center")
+      col_align <- switch(substr(align, i, i),
+        l = "left",
+        r = "right",
+        "center"
+      )
       out <- gt::cols_align(out, col_align, i)
     }
   }

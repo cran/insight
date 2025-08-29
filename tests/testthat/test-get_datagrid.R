@@ -331,7 +331,7 @@ test_that("get_datagrid - emmeans", {
 
 
 test_that("get_datagrid - marginaleffects", {
-  skip_if_not_installed("marginaleffects")
+  skip_if_not_installed("marginaleffects", minimum_version = "0.29.0")
 
   data("mtcars")
 
@@ -367,7 +367,7 @@ test_that("get_datagrid - marginaleffects", {
     newdata = marginaleffects::datagrid(qsec = range)
   )
   res <- get_datagrid(myme)
-  expect_true(all(c("wt", "mpg", "hp", "qsec") %in% colnames(res)))
+  expect_true(all(c("wt", "hp", "qsec") %in% colnames(res)))
   expect_true(all(c("contrast_hp", "contrast_wt") %in% colnames(res)))
 })
 
@@ -688,6 +688,31 @@ withr::with_environment(
 )
 
 
+test_that("get_datagrid - functions mode and integer", {
+  skip_if_not_installed("modelbased")
+  skip_if_not_installed("datawizard")
+  data(efc, package = "modelbased")
+  efc <- datawizard::to_factor(efc, c("c161sex", "c172code", "e16sex", "e42dep"))
+  levels(efc$c172code) <- c("low", "mid", "high")
+  m <- lm(neg_c_7 ~ c12hour + barthtot + e42dep + c161sex * c172code, data = efc)
+
+  # mode
+  out <- get_datagrid(m, by = c("c161sex", "c172code"), numerics = "mode")
+  expect_true(all(out$c12hour == 168))
+
+  # integer
+  out <- get_datagrid(m, by = c("c161sex", "c172code"), numerics = "integer")
+  expect_true(all(out$c12hour == 42))
+
+  # function does not exist
+  expect_error(
+    get_datagrid(m, by = c("c161sex", "c172code"), numerics = "abc"),
+    regex = "The function specified in `numerics` (abc)",
+    fixed = TRUE
+  )
+})
+
+
 test_that("get_datagrid - multivariate", {
   skip_on_cran()
   skip_if_not_installed("curl")
@@ -718,4 +743,61 @@ test_that("get_datagrid - '=' in factor levels", {
     as.character(out$sizegroup),
     c("under26", "under26", "under26", "26<=34", "26<=34", "26<=34", ">34", ">34", ">34")
   )
+})
+
+
+skip_if_not_installed("withr")
+
+withr::with_environment(
+  new.env(),
+  test_that("get_datagrid - marginaleffects, avg_slopes, Bayesian", {
+    skip_on_cran()
+    skip_if_not_installed("curl")
+    skip_if_offline()
+    skip_if_not_installed("brms")
+    skip_if_not_installed("BH")
+    skip_if_not_installed("RcppEigen")
+    skip_if_not_installed("marginaleffects", minimum_version = "0.29.0")
+    skip_if_not_installed("httr2")
+    skip_if_not_installed("modelbased", minimum_version = "0.13.0")
+
+    data(efc, package = "modelbased")
+    efc <- datawizard::to_factor(efc, c("c161sex", "c172code", "e16sex", "e42dep"))
+    levels(efc$c172code) <- c("low", "mid", "high")
+    efc <<- efc
+
+    m <- suppressWarnings(download_model("brms_linear_1"))
+
+    out <- marginaleffects::avg_slopes(m, variables = "c12hour", by = "c172code")
+    dg <- get_datagrid(out)
+    expect_identical(dim(dg), c(3L, 3L))
+    expect_named(dg, c("term", "contrast", "c172code"))
+
+    out <- marginaleffects::avg_slopes(m, variables = "c12hour")
+    dg <- get_datagrid(out)
+    expect_identical(dim(dg), c(1L, 2L))
+    expect_named(dg, c("term", "contrast"))
+  })
+)
+
+
+test_that("get_datagrid - marginaleffects, avg_slopes, non-Bayesian", {
+  skip_if_not_installed("marginaleffects", minimum_version = "0.29.0")
+  data("mtcars")
+  mtcars$cyl <- factor(mtcars$cyl)
+
+  mod <- glm(am ~ cyl + hp + wt,
+    family = binomial("logit"),
+    data = mtcars
+  )
+
+  mfx1 <- marginaleffects::avg_slopes(mod, variables = "hp")
+  dg <- get_datagrid(mfx1)
+  expect_identical(dim(dg), c(1L, 2L))
+  expect_named(dg, c("term", "contrast"))
+
+  mfx2 <- marginaleffects::avg_slopes(mod, variables = "hp", by = "am")
+  dg <- get_datagrid(mfx2)
+  expect_identical(dim(dg), c(2L, 3L))
+  expect_named(dg, c("term", "contrast", "am"))
 })

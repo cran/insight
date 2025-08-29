@@ -137,6 +137,8 @@
 #' @param numerics Type of summary for numeric values *not* specified in `by`.
 #'   Can be `"all"` (will duplicate the grid for all unique values), any
 #'   function (`"mean"`, `"median"`, ...) or a value (e.g., `numerics = 0`).
+#'   Special functions are `"mode"`, which will set the numeric variable to its
+#'   most common value, and `"integer"`, which returns the rounded mean.
 #' @param preserve_range In the case of combinations between numeric variables
 #'   and factors, setting `preserve_range = TRUE` will drop the observations
 #'   where the value of the numeric variable is originally not present in the
@@ -159,7 +161,7 @@
 #' @param protect_integers Defaults to `TRUE`. Indicates whether integers (whole
 #'   numbers) should be treated as integers (i.e., prevent adding any in-between
 #'   round number values), or - if `FALSE` - as regular numeric variables. Only
-#'   applies when:
+#'   applies to focal predictors (specified in `by`) and when:
 #'
 #'   1. `range = "range"` (the default), or if `range = "grid"` and the
 #'   first predictor in `by` is an integer;
@@ -886,7 +888,7 @@ get_datagrid.datagrid <- get_datagrid.visualisation_matrix
 #' eml1 <- emmeans::emmeans(mod, pairwise ~ cyl | hp, at = list(hp = c(100, 150)))
 #' get_datagrid(eml1) # not a "true" grid
 #'
-#' @examplesIf insight::check_if_installed("marginaleffects", quietly = TRUE, minimum_version = "0.25.0")
+#' @examplesIf insight::check_if_installed("marginaleffects", quietly = TRUE, minimum_version = "0.29.0")
 #' mfx1 <- marginaleffects::slopes(mod, variables = "hp")
 #' get_datagrid(mfx1) # not a "true" grid
 #'
@@ -929,10 +931,15 @@ get_datagrid.emm_list <- function(x, ...) {
 
 #' @export
 get_datagrid.slopes <- function(x, ...) {
-  cols_newdata <- colnames(attr(x, "newdata"))
+  check_if_installed("marginaleffects", minimum_version = "0.29.0")
+  by_cols <- unique(c(
+    marginaleffects::components(x, "variable_names_by"),
+    marginaleffects::components(x, "variable_names_by_hypothesis"),
+    marginaleffects::components(x, "variable_names_predictors")
+  ))
   cols_contrast <- colnames(x)[grep("^contrast_?", colnames(x))]
   cols_misc <- c("term", "by", "hypothesis")
-  cols_grid <- union(union(cols_newdata, cols_contrast), cols_misc)
+  cols_grid <- union(union(by_cols, cols_contrast), cols_misc)
 
   data.frame(x)[, intersect(colnames(x), cols_grid), drop = FALSE]
 }
@@ -1138,9 +1145,20 @@ get_datagrid.comparisons <- get_datagrid.slopes
     } else if (numerics %in% c("all", "combination")) {
       # all values in the variable are preserved
       out <- unique(x)
+    } else if (numerics == "mode") {
+      out <- .mode_value(x)
+    } else if (numerics == "integer") {
+      out <- round(mean(x, na.rm = TRUE))
     } else {
       # we have a function in "numerics", which is applied here
-      out <- eval(parse(text = paste0(numerics, "(x)")))
+      out <- .safe(do.call(numerics, list(x)))
+      # sanity check
+      if (is.null(out)) {
+        format_error(paste0(
+          "The function specified in `numerics` (", numerics, ") does not return any value.",
+          " Please check the spelling, or report the bug at <https://github.com/easystats/insight/issues>."
+        ))
+      }
     }
   } else if (factors %in% c("all", "combination")) {
     out <- unique(x)
