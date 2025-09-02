@@ -1,6 +1,6 @@
-361f38e7004107514ff1dcc54fe8c0b3 *DESCRIPTION
+dcfab59f15ebabd557e867c49a4ccffd *DESCRIPTION
 ac937b6070037c8a10d9acd8098b9dd7 *NAMESPACE
-abe4177f56d29b2399b9ef3008ec2fe6 *NEWS.md
+0b7433deec6404f70967eaf455704ff0 *NEWS.md
 49598b4ae7338528dfea3f4c422b903a *R/all_equal_models.R
 57420d8a7a88223887d7fe2945b31ead *R/check_if_installed.R
 16065c1d782285a915b3f7c4e573a21e *R/clean_names.R
@@ -77,7 +77,7 @@ be5ebb12d9426208e9075a54738f4d53 *R/get_parameters_mfx.R
 905ad64fcf424382fb924a6d563b33f7 *R/get_parameters_mixed.R
 cad22b6a97e66621e3174a102bfedf9d *R/get_parameters_others.R
 683d9ebd39e0d6767c9c385eb6d1961f *R/get_parameters_zi.R
-f78757ea0cd7b2bfbb37e2ba84a416da *R/get_predicted.R
+bb069af3d3fa71dba2b1e89c1316c688 *R/get_predicted.R
 5490dff8215f76484ef46f5786882d37 *R/get_predicted_args.R
 922303cce0add75a74162cc2c96643c3 *R/get_predicted_bayesian.R
 9c45207cca8456f4c8e1a46cfd53a0e5 *R/get_predicted_ci.R
@@ -141,9 +141,9 @@ afddd259e6c3339626922df87f3c3004 *data/efc_insight.rda
 fed293a745c7a75939e2f2156aaa9afe *data/fish.RData
 b2ef4148f3d981813f57432a2c54184d *inst/CITATION
 44c75d8e47df30c0f464228b97a62bef *inst/WORDLIST
-ce2983ed260eab75e3b341c2a99ff425 *inst/doc/display.R
-331887456c352a56290641f0cfde6362 *inst/doc/display.Rmd
-35bff930759cd37c0a43e603e7deaf58 *inst/doc/display.html
+1733b6341eafd57dcca9b80b51d65293 *inst/doc/display.R
+5829b57cd46bf577062b316809fc8edd *inst/doc/display.Rmd
+47b78b97d17d3123ea5da74923f74d05 *inst/doc/display.html
 5fe19d14506bb0fbe364441af01381fc *inst/doc/export.R
 e7168c95a4d4fe86ecf082a87e6b274f *inst/doc/export.Rmd
 abf42e0b17e2988f05c437bab7f9447d *inst/doc/export.html
@@ -283,7 +283,7 @@ b20cd1eb166e22f9ffc945cd6679c218 *tests/testthat/test-aov.R
 bf2e6517c955b70b97a47c1dbdd7100a *tests/testthat/test-averaging.R
 be14c66bd2f235d807efa797fc4ac5f6 *tests/testthat/test-backticks.R
 fdf6892dcdeb8580d0f20614609e219f *tests/testthat/test-betabin.R
-fe621971f1c98734f4bfe899be607196 *tests/testthat/test-betareg.R
+bb53c2a04b71a2b0aabb7b6f23d0cabd *tests/testthat/test-betareg.R
 864a5015ec67fb13800a40fff35f9aaa *tests/testthat/test-bias_correction.R
 abd434ae8822de4ea52e2bcb90e54758 *tests/testthat/test-bife.R
 ddec3d84f6d3c4a92e38cfd18ac317a0 *tests/testthat/test-bigglm.R
@@ -462,7 +462,7 @@ f3b47d0173ecf8766b55f80463114872 *tests/testthat/test-utilities.R
 8d075a8f5d4f43d144af4cf8d97a05bc *tests/testthat/test-vglm.R
 745d44f57f2bd93877c9bd2a3eff22cb *tests/testthat/test-weightit.R
 ae111fbb1d0d11091f9e40652e47fbeb *tests/testthat/test-zeroinfl.R
-331887456c352a56290641f0cfde6362 *vignettes/display.Rmd
+5829b57cd46bf577062b316809fc8edd *vignettes/display.Rmd
 e7168c95a4d4fe86ecf082a87e6b274f *vignettes/export.Rmd
 5510005f44f37895b290a81e0647db55 *vignettes/export_table.png
 b3d6e26817614fc39933f2c801d2e074 *vignettes/figure3a.png
