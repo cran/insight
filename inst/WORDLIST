@@ -127,6 +127,7 @@ joss
 knitr
 labelling
 lavaan
+lcmm
 lme
 lmodel
 lmtest
@@ -147,6 +148,7 @@ mhurdle
 mira
 mjoint
 mmrm
+modelbased
 modelled
 modelling
 multcomp

@@ -8,7 +8,9 @@
 #' @param null_as_ones Logical, if `TRUE`, will return a vector of `1`
 #'   if no weights were specified in the model (as if the weights were all set
 #'   to 1).
-#' @param ... Currently not used.
+#' @param ... Used for objects from package **survey**, to pass the `source`
+#'   argument to [`get_data()`]. See related documentation of that argument
+#'   for further details.
 #'
 #' @return The weighting variable, or `NULL` if no weights were specified.
 #' If the weighting variable should also be returned (instead of `NULL`)
@@ -98,11 +100,13 @@ get_weights.default <- function(x, remove_na = FALSE, null_as_ones = FALSE, ...)
 get_weights.brmsfit <- function(x, remove_na = FALSE, null_as_ones = FALSE, ...) {
   w <- unique(find_weights(x))
 
+  # we need "ignore_weights" so we can avoid calling get_weights again
+  # when we call "get_data" - which internally may call "get_weights()"
   if (!is.null(w)) {
     if (length(w) > 1L) {
-      return(get_data(x, verbose = FALSE)[w])
+      return(get_data(x, ignore_weights = TRUE, verbose = FALSE)[w])
     }
-    w <- get_data(x, verbose = FALSE)[[w]]
+    w <- get_data(x, ignore_weights = TRUE, verbose = FALSE)[[w]]
   }
 
   if (!is.null(w) && all(w == 1L)) {
@@ -125,6 +129,33 @@ get_weights.brmsfit <- function(x, remove_na = FALSE, null_as_ones = FALSE, ...)
 get_weights.btergm <- function(x, null_as_ones = FALSE, ...) {
   x@weights
 }
+
+#' @export
+get_weights.survey.design <- function(x, null_as_ones = FALSE, ...) {
+  # we need "ignore_weights" so we can avoid calling get_weights again
+  # when we call "get_data" - which internally may call "get_weights()"
+  w <- .safe(get_data(x, ignore_weights = TRUE, ...)[[find_weights(x, ...)]])
+  if (is.null(w) && null_as_ones) {
+    w <- rep.int(1, n_obs(x))
+  }
+
+  w
+}
+
+#' @export
+get_weights.survey.design2 <- get_weights.survey.design
+
+#' @export
+get_weights.svyglm <- get_weights.survey.design
+
+#' @export
+get_weights.svyolr <- get_weights.survey.design
+
+#' @export
+get_weights.svycoxph <- get_weights.survey.design
+
+#' @export
+get_weights.svysurvreg <- get_weights.survey.design
 
 
 #' @export

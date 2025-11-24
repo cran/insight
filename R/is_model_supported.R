@@ -1,3 +1,5 @@
+# fmt: skip file
+
 #' @title Checks if a regression model object is supported by the insight package
 #' @name is_model_supported
 #'
@@ -61,7 +63,8 @@ supported_models <- function() {
     "dep.effect", "DirichletRegModel", "draws", "drc",
 
     # e ----------------------------
-    "eglm", "elm", "epi.2by2", "ergm", "emmGrid",
+    "eglm", "elm", "epi.2by2", "ergm", "emmGrid", "externX", "externVar",
+    "estimate_means", "estimate_slopes", "estimate_contrasts",
 
     # f ----------------------------
     "fdm", "feis", "felm", "feglm", "fitdistr", "fixest", "flexsurvreg",
@@ -85,7 +88,7 @@ supported_models <- function() {
     # l ----------------------------
     "lavaan", "lm", "lm_robust", "lme", "lmrob", "lmRob", "lmerMod",
     "lmerModLmerTest", "lmodel2", "logitmfx", "logitor", "logistf", "logitr",
-    "LORgee", "lqm", "lqmm", "lrm",
+    "LORgee", "lqm", "lqmm", "lrm", "lcmm",
 
     # m ----------------------------
     "manova", "MANOVA", "margins", "marginaleffects", "marginaleffects.summary",
@@ -113,7 +116,7 @@ supported_models <- function() {
     "Sarlm", "scam", "selection", "sem", "semLm", "semLme", "SemiParBIV", "serp",
     "slm", "speedlm", "speedglm", "stanfit", "stanmvreg", "stanreg", "summary.lm",
     "survfit", "survreg", "svy_vglm", "svychisq", "svyglm", "svyolr", "svy2lme",
-    "seqanova.svyglm", "sdmTMB", "systemfit",
+    "svycoxph", "seqanova.svyglm", "sdmTMB", "systemfit", "svysurvreg",
 
     # t ----------------------------
     "t1way", "tobit", "trimcibt", "truncreg",

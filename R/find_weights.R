@@ -5,7 +5,9 @@
 #'   model.
 #'
 #' @param x A fitted model.
-#' @param ... Currently not used.
+#' @param ... Used for objects from package **survey**, to pass the `source`
+#'   argument to [`get_data()`]. See related documentation of that argument
+#'   for further details.
 #'
 #' @return The name of the weighting variable as character vector, or `NULL`
 #'   if no weights were specified.
@@ -25,18 +27,20 @@ find_weights <- function(x, ...) {
 find_weights.default <- function(x, ...) {
   tryCatch(
     {
-      call_string <- safe_deparse(get_call(x))
-      if (!is.null(call_string)) {
-        w <- safe_deparse(parse(text = call_string)[[1]]$weights)
-
-        # edge case, users use "eval(parse())" to parse weight variables
-        if (grepl("eval(parse(", w, fixed = TRUE)) {
-          w <- eval(parse(text = trim_ws(gsub("eval\\(parse\\((.*)=(.*)\\)\\)", "\\2", w))))
-        }
-
-        if (is_empty_object(w) || w == "NULL") w <- NULL
-      } else {
+      model_call <- get_call(x)
+      if (is.null(model_call)) {
         w <- NULL
+      } else {
+        w <- safe_deparse(model_call$weights)
+        # edge case, users use "eval(parse())" to parse weight variables
+        if (!is.null(w) && grepl("eval(parse(", w, fixed = TRUE)) {
+          w <- eval(parse(
+            text = trim_ws(gsub("eval\\(parse\\((.*)=(.*)\\)\\)", "\\2", w))
+          ))
+        }
+        if (is_empty_object(w) || w == "NULL") {
+          w <- NULL
+        }
       }
       w
     },
@@ -52,7 +56,10 @@ find_weights.brmsfit <- function(x, ...) {
   f <- find_formula(x, verbose = FALSE)
 
   if (is_multivariate(f)) {
-    resp <- unlist(lapply(f, function(i) safe_deparse(i$conditional[[2L]])), use.names = FALSE)
+    resp <- unlist(
+      lapply(f, function(i) safe_deparse(i$conditional[[2L]])),
+      use.names = FALSE
+    )
   } else {
     resp <- safe_deparse(f$conditional[[2L]])
   }
@@ -66,7 +73,9 @@ find_weights.brmsfit <- function(x, ...) {
   })))
 
   w <- trim_ws(sub("(.*)\\|(\\s+)weights\\((.*)\\)", "\\3", resp))
-  if (is_empty_object(w)) w <- NULL
+  if (is_empty_object(w)) {
+    w <- NULL
+  }
   w
 }
 
@@ -77,26 +86,50 @@ find_weights.model_fit <- function(x, ...) {
 }
 
 
+# survey package methods -------------------------------------
+
 #' @export
-find_weights.merMod <- function(x, ...) {
-  tryCatch(
-    {
-      w <- safe_deparse(parse(text = safe_deparse(x@call))[[1]]$weights)
+find_weights.survey.design <- function(x, ...) {
+  dots <- list(...)
+  if (is.null(dots$source)) {
+    source <- "environment"
+  } else {
+    source <- dots$source
+  }
+  source <- .check_data_source_arg(source)
+  out <- .safe(all.vars(get_call(x)$weights))
 
-      # edge case, users use "eval(parse())" to parse weight variables
-      if (grepl("eval(parse(", w, fixed = TRUE)) {
-        w <- eval(parse(text = trim_ws(gsub("eval\\(parse\\((.*)=(.*)\\)\\)", "\\2", w))))
-      }
+  # if we want to recover data from environment, we use the standard string
+  # for weights, so it is compatible to `get_data()`
+  if (source == "environment" && length(out)) {
+    return("(weights)")
+  }
 
-      if (is_empty_object(w) || w == "NULL") w <- NULL
-      w
-    },
-    error = function(e) {
-      NULL
-    }
-  )
+  if (!length(out)) {
+    out <- NULL
+  }
+  out
 }
 
+#' @export
+find_weights.survey.design2 <- find_weights.survey.design
+
+#' @export
+find_weights.svyglm <- function(x, ...) {
+  find_weights(x$survey.design, ...)
+}
+
+#' @export
+find_weights.svyolr <- find_weights.svyglm
+
+#' @export
+find_weights.svycoxph <- find_weights.svyglm
+
+#' @export
+find_weights.svysurvreg <- find_weights.svyglm
+
+
+# mixed models -------------------------------------
 
 #' @export
 find_weights.lme <- function(x, ...) {

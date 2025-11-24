@@ -167,6 +167,16 @@ get_modelmatrix.svyglm <- function(x, ...) {
 }
 
 #' @export
+get_modelmatrix.svyolr <- get_modelmatrix.svyglm
+
+#' @export
+get_modelmatrix.svycoxph <- get_modelmatrix.svyglm
+
+#' @export
+get_modelmatrix.svysurvreg <- get_modelmatrix.svyglm
+
+
+#' @export
 get_modelmatrix.brmsfit <- function(x, ...) {
   formula_rhs <- safe_deparse(find_formula(x, verbose = FALSE)$conditional[[3]])
   # exception: for null-models, we need different handling, else `reformulate()`
@@ -195,21 +205,11 @@ get_modelmatrix.rlm <- function(x, ...) {
   # `rlm` objects can inherit to model.matrix.lm, but that function does
   # not accept the `data` argument for `rlm` objects
   if (is.null(dots$data)) {
-    mf <- stats::model.frame(x,
-      xleve = x$xlevels,
-      ...
-    )
+    mf <- stats::model.frame(x, xleve = x$xlevels, ...)
   } else {
-    mf <- stats::model.frame(x,
-      xleve = x$xlevels,
-      data = dots$data,
-      ...
-    )
+    mf <- stats::model.frame(x, xleve = x$xlevels, data = dots$data, ...)
   }
-  mm <- stats::model.matrix.default(x,
-    data = mf,
-    contrasts.arg = x$contrasts
-  )
+  mm <- stats::model.matrix.default(x, data = mf, contrasts.arg = x$contrasts)
   mm
 }
 
@@ -256,7 +256,6 @@ get_modelmatrix.BFBayesFactor <- function(x, ...) {
 
 # helper ----------------
 
-
 .data_in_dots <- function(..., object = NULL, default_data = NULL) {
   dot.arguments <- lapply(match.call(expand.dots = FALSE)[["..."]], function(x) x)
   data_arg <- if ("data" %in% names(dot.arguments)) {
@@ -271,6 +270,12 @@ get_modelmatrix.BFBayesFactor <- function(x, ...) {
 
 .pad_modelmatrix_unpad <- function(x, data, ...) {
   data <- .pad_modelmatrix(x = x, data = data)
+  # replace columns that only contain NA values with 1 - else, model.matrix() fails
+  for (n in names(data)) {
+    if (all(is.na(data[[n]]))) {
+      data[[n]] <- 1
+    }
+  }
   mm <- stats::model.matrix(object = x, data = data, ...)
   .unpad_modelmatrix(mm = mm, data = data)
 }

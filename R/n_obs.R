@@ -48,7 +48,8 @@ n_obs.default <- function(x, ...) {
     },
     error = function(e) {
       FALSE
-    })
+    }
+  )
 
   if (isTRUE(is_binomial)) {
     return(n_obs.glm(x, ...))
@@ -68,7 +69,8 @@ n_obs.glm <- function(x, disaggregate = FALSE, ...) {
     },
     error = function(e) {
       FALSE
-    })
+    }
+  )
 
   .nobs <- stats::nobs(x)
 
@@ -164,11 +166,7 @@ n_obs.lavaan <- function(x, ...) {
 n_obs.selection <- function(x, type = c("all", "observed", "censored"), ...) {
   type <- match.arg(type)
   s <- summary(x)
-  switch(type,
-    all = s$param$nObs,
-    observed = s$param$N1,
-    s$param$N0
-  )
+  switch(type, all = s$param$nObs, observed = s$param$N1, s$param$N0)
 }
 
 
@@ -563,6 +561,24 @@ n_obs.complmrob <- n_obs.cgam
 #' @export
 n_obs.aovlist <- function(x, ...) {
   nrow(stats::model.frame(x))
+}
+
+
+#' @export
+n_obs.lcmm <- function(x, ...) {
+  x$N[5]
+}
+
+
+#' @export
+n_obs.externVar <- function(x, ...) {
+  NULL
+}
+
+
+#' @export
+n_obs.externX <- function(x, ...) {
+  NULL
 }
 
 

@@ -1,10 +1,10 @@
+skip_on_cran()
 skip_if_not_installed("survival")
 skip_if_not_installed("lme4")
 skip_if_not_installed("nlme")
 skip_if_not_installed("bdsmatrix")
 skip_if_not_installed("coxme")
 skip_if_not_installed("withr")
-skip_on_cran()
 
 withr::with_environment(
   new.env(),
@@ -20,12 +20,24 @@ withr::with_environment(
 
     d <<- lung
 
-    m1 <- suppressWarnings(coxme::coxme(Surv(time, status) ~ ph.ecog + age + (1 | inst), d))
-    m2 <- suppressWarnings(coxme::coxme(Surv(time, status) ~ ph.ecog + age + (1 | inst) + (1 | inst2), d))
-    m3 <- suppressWarnings(coxme::coxme(Surv(time, status) ~ rx + (1 + rx | litter), rats))
+    m1 <- suppressWarnings(coxme::coxme(
+      Surv(time, status) ~ ph.ecog + age + (1 | inst),
+      d
+    ))
+    m2 <- suppressWarnings(coxme::coxme(
+      Surv(time, status) ~ ph.ecog + age + (1 | inst) + (1 | inst2),
+      d
+    ))
+    m3 <- suppressWarnings(coxme::coxme(
+      Surv(time, status) ~ rx + (1 + rx | litter),
+      rats
+    ))
 
     expect_identical(clean_names(m1), c("time", "status", "ph.ecog", "age", "inst"))
-    expect_identical(clean_names(m2), c("time", "status", "ph.ecog", "age", "inst", "inst2"))
+    expect_identical(
+      clean_names(m2),
+      c("time", "status", "ph.ecog", "age", "inst", "inst2")
+    )
 
     expect_identical(clean_names(find_terms(m1)$conditional), c("ph.ecog", "age"))
     expect_identical(clean_names(find_terms(m1)$random), "inst")
@@ -45,7 +57,10 @@ withr::with_environment(
         list(random = "inst")
       )
       expect_identical(find_predictors(m2), list(conditional = c("ph.ecog", "age")))
-      expect_identical(find_predictors(m2, effects = "random"), list(random = c("inst", "inst2")))
+      expect_identical(
+        find_predictors(m2, effects = "random"),
+        list(random = c("inst", "inst2"))
+      )
     })
 
     test_that("find_response", {

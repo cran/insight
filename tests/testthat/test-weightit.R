@@ -3,6 +3,10 @@ skip_if_not_installed("WeightIt")
 skip_if_not_installed("cobalt")
 skip_if_not_installed("fwb")
 
+skip("Currently not working")
+## TODO: needs to be fixed?
+## see https://github.com/ngreifer/WeightIt/issues/85
+
 data("lalonde", package = "cobalt")
 
 # Logistic regression ATT weights
@@ -124,7 +128,11 @@ test_that("get_data", {
 
 test_that("get_intercept", {
   expect_equal(get_intercept(fit3), as.vector(stats::coef(fit3)[1]), ignore_attr = TRUE)
-  expect_equal(get_intercept(fit4), as.vector(stats::coef(fit4)[c(1, 5)]), ignore_attr = TRUE)
+  expect_equal(
+    get_intercept(fit4),
+    as.vector(stats::coef(fit4)[c(1, 5)]),
+    ignore_attr = TRUE
+  )
   expect_true(is.na(get_intercept(fit5)))
 })
 

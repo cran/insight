@@ -26,7 +26,12 @@
 #' find_parameters(m)
 #' find_parameters(m, component = "precision")
 #' @export
-find_parameters.averaging <- function(x, component = "conditional", flatten = FALSE, ...) {
+find_parameters.averaging <- function(
+  x,
+  component = "conditional",
+  flatten = FALSE,
+  ...
+) {
   component <- validate_argument(component, c("conditional", "full"))
   cf <- stats::coef(x, full = component == "full")
   out <- list(conditional = text_remove_backticks(names(cf)))
@@ -66,7 +71,11 @@ find_parameters.glmgee <- function(x, component = "all", flatten = FALSE, ...) {
 #' @export
 find_parameters.sdmTMB <- function(x, component = "all", flatten = FALSE, ...) {
   delta_comp <- isTRUE(x$family$delta)
-  valid_comp <- compact_character(c("all", "conditional", ifelse(delta_comp, "delta", "")))
+  valid_comp <- compact_character(c(
+    "all",
+    "conditional",
+    ifelse(delta_comp, "delta", "")
+  ))
   component <- validate_argument(component, valid_comp)
 
   cf <- suppressMessages(stats::coef(x, model = 1))
@@ -122,7 +131,12 @@ find_parameters.betareg <- function(x, component = "all", flatten = FALSE, ...) 
 
 
 #' @export
-find_parameters.DirichletRegModel <- function(x, component = "all", flatten = FALSE, ...) {
+find_parameters.DirichletRegModel <- function(
+  x,
+  component = "all",
+  flatten = FALSE,
+  ...
+) {
   component <- validate_argument(
     component,
     c("all", "conditional", "precision", "location", "distributional", "auxiliary")
@@ -234,6 +248,7 @@ find_parameters.bfsl <- function(x, flatten = FALSE, ...) {
 #' @export
 find_parameters.marginaleffects <- function(x, flatten = FALSE, ...) {
   # Recover dataframe
+  # fmt: skip
   excl <- c(
     "rowid", "type", "estimate", "std.error", "contrast", "term", "dydx",
     "statistic", "p.value", "s.value", "conf.low", "conf.high", "predicted_hi",
@@ -321,3 +336,67 @@ find_parameters.oohbchoice <- function(x, flatten = FALSE, ...) {
     out
   }
 }
+
+
+#' @export
+find_parameters.lcmm <- function(x, component = "all", flatten = FALSE, ...) {
+  coefficients <- stats::coef(x)
+  params <- names(coefficients)[!startsWith(names(coefficients), "cholesky ")]
+  component <- validate_argument(
+    component,
+    c("all", "membership", "longitudinal", "conditional", "beta", "splines", "linear")
+  )
+
+  n_membership <- x$N[1]
+  n_longitudinal <- x$N[2]
+
+  if (x$linktype == 1) {
+    type <- "Beta"
+  } else if (x$linktype == 2) {
+    type <- "I-splines"
+  } else if (x$linktype == 3) {
+    ## TODO: check if this is correct
+  } else {
+    type <- "Linear"
+  }
+
+  out <- list(
+    membership = params[!startsWith(params, type)][seq_len(n_membership)],
+    longitudinal = params[!startsWith(params, type)][
+      (n_membership + 1):(n_membership + n_longitudinal)
+    ],
+    extra = params[startsWith(params, type)]
+  )
+  names(out)[3] <- switch(
+    type,
+    "Beta" = "beta",
+    "I-splines" = "splines",
+    "Linear" = "linear"
+  )
+
+  out <- compact_list(out)
+
+  .filter_parameters(
+    out,
+    effects = "all",
+    component = component,
+    flatten = flatten,
+    recursive = FALSE
+  )
+}
+
+
+#' @export
+find_parameters.externX <- function(x, flatten = FALSE, ...) {
+  coefficients <- stats::coef(x)
+  out <- list(conditional = names(coefficients))
+
+  if (flatten) {
+    unique(unlist(out, use.names = FALSE))
+  } else {
+    out
+  }
+}
+
+#' @export
+find_parameters.externVar <- find_parameters.externX

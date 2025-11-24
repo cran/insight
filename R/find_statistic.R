@@ -1,3 +1,5 @@
+# fmt: skip file
+
 #' @title Find statistic for model
 #' @description Returns the statistic for a regression model (*t*-statistic,
 #'   *z*-statistic, etc.).
@@ -90,6 +92,7 @@ find_statistic.default <- function(x, ...) {
 
   # t-value objects ----------------------------------------------------------
 
+  # fmt: skip
   t.mods <- c(
     "asym",
     "bayesx", "BBreg", "BBmm", "bcplm", "biglm", "bfsl", "blmerMod",
@@ -118,6 +121,7 @@ find_statistic.default <- function(x, ...) {
 
   # z-value objects ----------------------------------------------------------
 
+  # fmt: skip
   z.mods <- c(
     "aareg", "Arima", "averaging",
     "betamfx", "betaor", "betareg", "bife", "bifeAPEs", "bglmerMod",
@@ -125,12 +129,13 @@ find_statistic.default <- function(x, ...) {
     "cglm", "cph", "clm", "clm2", "clmm", "clmm2", "clogit", "coxme", "coxph",
     "coxr", "crch", "crr", "coxph_weightit",
     "deltaMethod", "DirichletRegModel",
-    "ergm",
+    "ergm", "externVar", "externX",
     "feglm", "flexsurvreg",
     "gee", "ggcomparisons", "glimML", "glmm", "glmmadmb", "glmmFit", "glmmLasso",
     "glmmTMB", "glmx", "gmnl", "glmgee",
     "hurdle",
     "lavaan", "loggammacenslmrob", "logitmfx", "logitor", "logitr", "LORgee", "lrm",
+    "lcmm",
     "margins", "marginaleffects", "marginaleffects.summary", "metaplus", "mixor",
     "MixMod", "mjoint", "mle", "mle2", "mlogit", "mblogit", "mclogit", "mmclogit",
     "multinom", "mvmeta", "mvord", "multinom_weightit",
@@ -140,7 +145,7 @@ find_statistic.default <- function(x, ...) {
     "qr", "QRNLMM", "QRLMM",
     "Rchoice", "riskRegression", "robmixglm", "rma", "rma.mv", "rma.uni", "rrvglm",
     "Sarlm", "sem", "SemiParBIV", "serp", "slm", "slopes", "survreg", "svy_vglm",
-    "sdmTMB",
+    "sdmTMB", "svycoxph", "svysurvreg",
     "test_mediation", "tobit",
     "vglm",
     "wbgee",
@@ -354,6 +359,22 @@ find_statistic.default <- function(x, ...) {
     }
   }
 }
+
+
+#' @export
+find_statistic.estimate_means <- function(x, ...) {
+  if ("t" %in% colnames(x)) {
+    return("t-statistic")
+  } else {
+    return("z-statistic")
+  }
+}
+
+#' @export
+find_statistic.estimate_slopes <- find_statistic.estimate_means
+
+#' @export
+find_statistic.estimate_contrasts <- find_statistic.estimate_means
 
 
 # helper ---------------

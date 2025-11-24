@@ -127,8 +127,16 @@ get_parameters.DirichletRegModel <- function(x, component = "all", ...) {
       row.names = NULL
     )
   } else {
-    out1 <- .gather(data.frame(do.call(cbind, cf$beta)), names_to = "Response", values_to = "Estimate")
-    out2 <- .gather(data.frame(do.call(cbind, cf$gamma)), names_to = "Component", values_to = "Estimate")
+    out1 <- .gather(
+      data.frame(do.call(cbind, cf$beta)),
+      names_to = "Response",
+      values_to = "Estimate"
+    )
+    out2 <- .gather(
+      data.frame(do.call(cbind, cf$gamma)),
+      names_to = "Component",
+      values_to = "Estimate"
+    )
     out1$Component <- "conditional"
     out2$Component <- "precision"
     out2$Response <- NA
@@ -206,7 +214,10 @@ get_parameters.clm2 <- function(x, component = "all", ...) {
   params <- data.frame(
     Parameter = rownames(cf),
     Estimate = unname(cf[, "Estimate"]),
-    Component = c(rep("conditional", times = n_intercepts + n_location), rep("scale", times = n_scale)),
+    Component = c(
+      rep("conditional", times = n_intercepts + n_location),
+      rep("scale", times = n_scale)
+    ),
     stringsAsFactors = FALSE,
     row.names = NULL
   )
@@ -249,7 +260,10 @@ get_parameters.mvord <- function(x, component = "all", ...) {
   params <- data.frame(
     Parameter = c(thresholds$Parameter, model_coef$Parameter),
     Estimate = c(unname(thresholds[, "Estimate"]), unname(model_coef[, "Estimate"])),
-    Component = c(rep("thresholds", nrow(thresholds)), rep("conditional", nrow(model_coef))),
+    Component = c(
+      rep("thresholds", nrow(thresholds)),
+      rep("conditional", nrow(model_coef))
+    ),
     Response = c(thresholds$Response, model_coef$Response),
     stringsAsFactors = FALSE,
     row.names = NULL
@@ -308,6 +322,143 @@ get_parameters.mjoint <- function(x, component = "all", ...) {
 }
 
 
+# fmt: skip
+modelbased_coefficient_names <- c(
+  "Mean", "Probability", "Difference", "Ratio", "Rate", "ZI-Probability",
+  "Proportion", "Median", "MAP", "Coefficient", "Odds_ratio"
+)
+
+#' @export
+get_parameters.estimate_means <- function(x, ...) {
+  estimate_col <- .find_modelbased_estimate_col(x)
+
+  data.frame(
+    Parameter = x[[1]],
+    Estimate = x[[estimate_col[1]]],
+    stringsAsFactors = FALSE
+  )
+}
+
+#' @export
+get_parameters.estimate_contrasts <- function(x, ...) {
+  estimate_col <- .find_modelbased_estimate_col(x)
+
+  data.frame(
+    Parameter = paste0(x$Level1, " - ", x$Level2),
+    Estimate = x[[estimate_col[1]]],
+    stringsAsFactors = FALSE
+  )
+}
+
+#' @export
+get_parameters.estimate_slopes <- function(x, ...) {
+  if (colnames(x)[1] != "Slope") {
+    param <- x[[1]]
+  } else {
+    param <- attributes(x)$trend
+  }
+  data.frame(
+    Parameter = param,
+    Estimate = x$Slope,
+    stringsAsFactors = FALSE
+  )
+}
+
+.find_modelbased_estimate_col <- function(x) {
+  estimate_col <- intersect(
+    colnames(x),
+    modelbased_coefficient_names
+  )
+
+  if (!length(estimate_col)) {
+    format_error(
+      "Could not find a column with coefficient estimates in the `modelbased` object."
+    )
+  }
+  estimate_col[1]
+}
+
+
+#' @export
+get_parameters.lcmm <- function(x, component = "all", ...) {
+  component <- validate_argument(
+    component,
+    c("all", "conditional", "membership", "longitudinal", "beta", "splines", "linear")
+  )
+
+  params <- x$best
+  params <- params[
+    !startsWith(names(params), "cholesky ") & !startsWith(names(params), "varcov ")
+  ]
+  comp <- rep("longitudinal", times = length(params))
+
+  if (x$linktype == 1) {
+    comp[startsWith(names(params), "Beta")] <- "beta"
+  } else if (x$linktype == 2) {
+    comp[startsWith(names(params), "I-splines")] <- "splines"
+  } else if (x$linktype == 3) {
+    ## TODO: thresholds
+  } else {
+    comp[startsWith(names(params), "Linear")] <- "linear"
+  }
+
+  # check whether we have membership and longitudinal submodel
+  n_membership <- x$N[1]
+  n_longitudinal <- x$N[2]
+
+  if (n_membership > 0) {
+    comp[seq_len(n_membership)] <- "membership"
+  }
+
+  # check if we have mutilple classes
+  has_classes <- grepl("(.*) (class\\d+)$", names(params))
+  if (any(has_classes)) {
+    grp <- gsub("(.*) (class\\d+)$", "\\2", names(params))
+    grp[!has_classes] <- "link"
+  } else {
+    grp <- NULL
+  }
+
+  out <- data.frame(
+    Parameter = names(params),
+    Estimate = as.vector(params),
+    Component = comp,
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+  # separate, because can be NULL
+  out$Group <- grp
+
+  if (component != "all") {
+    out <- out[out$Component == component, , drop = FALSE]
+  }
+
+  text_remove_backticks(out)
+}
+
+
+#' @export
+get_parameters.externX <- function(x, ...) {
+  params <- x$best
+  params <- params[
+    !startsWith(names(params), "cholesky ") & !startsWith(names(params), "varcov ")
+  ]
+
+  out <- data.frame(
+    Parameter = names(params),
+    Estimate = as.vector(params),
+    Group = gsub("(.*) (class\\d+)$", "\\2", names(params)),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  text_remove_backticks(out)
+}
+
+#' @export
+get_parameters.externVar <- get_parameters.externX
+
+
 #' @export
 get_parameters.systemfit <- function(x, ...) {
   cf <- stats::coef(summary(x))
@@ -332,7 +483,12 @@ get_parameters.systemfit <- function(x, ...) {
 
 
 #' @export
-get_parameters.marginaleffects <- function(x, summary = FALSE, merge_parameters = FALSE, ...) {
+get_parameters.marginaleffects <- function(
+  x,
+  summary = FALSE,
+  merge_parameters = FALSE,
+  ...
+) {
   # check if we have a Bayesian model here
   if (isTRUE(summary)) {
     s <- summary(x)
@@ -359,9 +515,21 @@ get_parameters.marginaleffects <- function(x, summary = FALSE, merge_parameters 
     }
   } else {
     excl <- c(
-      "rowid", "type", "std.error", "contrast", "term", "dydx",
-      "statistic", "p.value", "conf.low", "conf.high", "predicted_hi",
-      "predicted_lo", "eps", "marginaleffects_eps", "predicted"
+      "rowid",
+      "type",
+      "std.error",
+      "contrast",
+      "term",
+      "dydx",
+      "statistic",
+      "p.value",
+      "conf.low",
+      "conf.high",
+      "predicted_hi",
+      "predicted_lo",
+      "eps",
+      "marginaleffects_eps",
+      "predicted"
     )
     out <- as.data.frame(x[, !names(x) %in% excl, drop = FALSE])
     if ("dydx" %in% colnames(x)) {
@@ -395,7 +563,10 @@ get_parameters.deltaMethod <- function(x, ...) {
 
 #' @export
 get_parameters.ggcomparisons <- function(x, merge_parameters = FALSE, ...) {
-  estimate_name <- intersect(colnames(x), c(attr(x, "coef_name"), "Difference", "Mean", "Ratio"))[1]
+  estimate_name <- intersect(
+    colnames(x),
+    c(attr(x, "coef_name"), "Difference", "Mean", "Ratio")
+  )[1]
   estimate_pos <- which(colnames(x) == estimate_name)
   params <- x[, seq_len(estimate_pos - 1), drop = FALSE]
 

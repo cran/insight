@@ -1,8 +1,8 @@
+skip_on_cran()
 skip_if_not_installed("phylolm")
 skip_if_not_installed("ape")
 skip_if_not_installed("MuMIn")
 skip_if_not_installed("withr")
-skip_on_cran()
 
 withr::with_options(
   list(na.action = "na.fail"),
@@ -19,7 +19,8 @@ withr::with_options(
       model = "BM",
       parameters = list(ancestral.state = 0, sigma2 = 10)
     )
-    y <- b0 + b1 * x +
+    y <- b0 +
+      b1 * x +
       phylolm::rTrait(
         n = 1,
         phy = tre,

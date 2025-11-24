@@ -1,3 +1,42 @@
+# insight 1.4.3
+
+## Changes
+
+* Added support for models from package *lcmm* (`lcmm`, `externVar`).
+
+* Support for objects from the *modelbased* package. This includes methods for
+  `get_parameters()`, `get_statistic()`, `get_df()`, `get_varcov()`,
+  `find_formula()`, `find_parameters()`, `find_statistic()`, and `get_call()`.
+
+* Better formatting for p-values-columns from equivalence tests from other
+  packages.
+
+* `format_value()`, `format_number()`, and `export_table()` gain a `big_mark`
+  argument to format numbers with thousands separators (e.g., `1,234,567.89` or
+  `1 234 567.89`). This makes large numbers more readable in tables and formatted
+  output. When `big_mark` is provided, scientific notation is suppressed for
+  large numbers to show the full value with separators.
+
+* Improved support for models from package *survey*. This includes a dedicated
+  `source` argument for methods such as `get_data()`, `get_weights()`,
+  `find_weights()`, or `get_response()`, to specify whether the data should be
+  extracted from the model frame of the survey design object (`"mf"`), which is
+  usually equivalent to the original data, or from the data that can be extracted
+  from the model-object in the environment (`"environment"`) , which usually
+  includes processed variables (like the `"(weights)"` variable for weights).
+
+* `get_df()` now supports Kenward-Roger and Satterthwaite degrees of freedom
+  for models from package *glmmTMB*. This requires package version 1.1.3.
+
+## Bug fixes
+
+* Fix CRAN check failures.
+
+* Fixed issue in `get_data()` for models from package *survey*.
+
+* Fixed issue in `get_modelmatrix()` when the `data` argument was provided
+  and contained columns with only missing values.
+
 # insight 1.4.2
 
 ## Bug fixes
