@@ -1,6 +1,6 @@
-b1344ed5c3d25f132f0c3c8d57431c03 *DESCRIPTION
+fbbf7a77c5f58f50cca54b4a71a55330 *DESCRIPTION
 c1f9ea4dfe0d7d5a976f4fbe17e40b24 *NAMESPACE
-3f14125aa3cceada28a781bad6aa1c67 *NEWS.md
+5424b7a665003e5f94c48dc7159e4221 *NEWS.md
 49598b4ae7338528dfea3f4c422b903a *R/all_equal_models.R
 cc0e3ff99627889013d6e08cdf5ccc12 *R/check_if_installed.R
 012f15e9fcf5e64655fa727160d5b3bf *R/clean_names.R
@@ -51,7 +51,7 @@ be21279bbd87b5901bddadc19d395e2c *R/format_rope.R
 18dd12626d44a184c97bd0e3e2c53a48 *R/format_value.R
 4b8262232a8938102863da51c46618da *R/get_auxiliary.R
 3572c177fecd257adb8efa3db1529178 *R/get_call.R
-3fb87b9008d4ad450662210cbaf31baa *R/get_data.R
+41c4c40e2bcf5e5084e8842ed466066f *R/get_data.R
 a94ce73f3cbc83f579fa6935091cafec *R/get_datagrid.R
 e97b8643b418604cfd5c247a447c1452 *R/get_deviance.R
 2d99bf4faf03c58a5aab0fe6cdd0b25d *R/get_df.R
@@ -106,7 +106,7 @@ f390a04fea3c1fe789b3182ea409d268 *R/has_intercept.R
 9679e9141139c418d8a1e18911915a24 *R/helper_functions.R
 8f4513c2558249ed5366792a2beb84c2 *R/insight-package.R
 40b3e1333c0ea5283077c841d0dd7c5c *R/is_bayesian_model.R
-6d64a2dfa55e5bcd3cd9631cfc5b8d6b *R/is_converged.R
+d6f6b18f933ada01a7f2cf9bb37679de *R/is_converged.R
 276af3a13a28d90181b3ebac71848e5d *R/is_gam_model.R
 5c68a5cc41d62c983e30636064c79eb4 *R/is_mixed_model.R
 8488f803aa587ba1c5761dd84c4305e1 *R/is_model.R
@@ -140,10 +140,10 @@ d54042561b90aafd8a9a202ea63e1e4b *build/partial.rdb
 afddd259e6c3339626922df87f3c3004 *data/efc_insight.rda
 fed293a745c7a75939e2f2156aaa9afe *data/fish.RData
 b2ef4148f3d981813f57432a2c54184d *inst/CITATION
-366f792d97d4f985ea2a0abef9d27264 *inst/WORDLIST
+c97520b22f92626b83b3af84caaa83a5 *inst/WORDLIST
 1733b6341eafd57dcca9b80b51d65293 *inst/doc/display.R
 5829b57cd46bf577062b316809fc8edd *inst/doc/display.Rmd
-a0bb7b01025511f73f10b4644c77fac8 *inst/doc/display.html
+df9a19fe419c5432ff20af08ddeddbf3 *inst/doc/display.html
 5fe19d14506bb0fbe364441af01381fc *inst/doc/export.R
 e7168c95a4d4fe86ecf082a87e6b274f *inst/doc/export.Rmd
 abf42e0b17e2988f05c437bab7f9447d *inst/doc/export.html
@@ -240,7 +240,7 @@ bc43ea543a53980b70e757f2b05ebcab *man/get_sigma.Rd
 9af9a5abd1fd07b1315fab8efd8ad2ff *man/has_intercept.Rd
 a9b6af07ef076a0fafc9bd993b730455 *man/insight-package.Rd
 c91d29be324a51873c5e5cd1b8bd6c09 *man/is_bayesian_model.Rd
-14a6e3faa880c9ce5279a04a3ef1c76b *man/is_converged.Rd
+9b1f796af58ce84f83292f2b3ab66326 *man/is_converged.Rd
 f5bca7f156220dac8e2916d484cd5776 *man/is_empty_object.Rd
 adf3d716c838e557781a422588585e2c *man/is_gam_model.Rd
 2b81d4ebe87c1e9f11c0c5d51c31922c *man/is_mixed_model.Rd
@@ -331,7 +331,7 @@ cb500b2c20264827478120bd873d6b13 *tests/testthat/test-find_smooth.R
 23bb90e7ac262aa2f1b2836f8f94d2c7 *tests/testthat/test-find_transformation.R
 eea5918398de9d71998b5a9cbc55fc7d *tests/testthat/test-find_variables.R
 6f4d99be469a10b927db22cd5722bdd8 *tests/testthat/test-find_weights.R
-3faff6a79d89fc62e095fe44d499cf8f *tests/testthat/test-fixest.R
+11565855a2f46bc65927f5eab2ed4e04 *tests/testthat/test-fixest.R
 6ee5e9302e6ff7e8d514b0350cc4f61f *tests/testthat/test-format.R
 0e12fa96928948b6b35fceea2173c00f *tests/testthat/test-format_capitalize.R
 a0b8c08bf81db1de7110d1968e965576 *tests/testthat/test-format_table.R
@@ -353,7 +353,7 @@ fc72d53fa1a81657d0112487914652d3 *tests/testthat/test-get_deviance.R
 d63e29bf215bbea05ef436d9c6c26aa9 *tests/testthat/test-get_modelmatrix.R
 330fe6c2c4532d940be1152456496028 *tests/testthat/test-get_predicted-clm.R
 1de42f70831c7fc7ba874000753819df *tests/testthat/test-get_predicted-iv.R
-3e8122c2e05d0de326eef252eb111802 *tests/testthat/test-get_predicted.R
+6d3b5a8d7c8d5c11b26992dfa67196e9 *tests/testthat/test-get_predicted.R
 9f3667cc9b747f5bf167717024ca30cc *tests/testthat/test-get_priors.R
 e078707b883ab3170c4f8edaa7e63890 *tests/testthat/test-get_random.R
 0ddeb17fdb5e7ee98ec8a8cd5920e2bd *tests/testthat/test-get_residuals.R
@@ -373,7 +373,7 @@ c5220c717ba964a903218a9fe9c798e7 *tests/testthat/test-gls.R
 929a309dd657960efbab0d742bceffcb *tests/testthat/test-htest.R
 35e2b89ff107cf826fcfa046914e727e *tests/testthat/test-hurdle.R
 3471968a2a04dd44d28dde4fc1e60f49 *tests/testthat/test-is-empty-object.R
-f67c054053126e83beca6cc45fb33764 *tests/testthat/test-is_converged.R
+903fa61d00dd091eef487841a2e8f848 *tests/testthat/test-is_converged.R
 31074b20b361174fba3875f319d3dd95 *tests/testthat/test-is_model_supported.R
 eb2467d42407ba77efe2be3120d184d7 *tests/testthat/test-is_nullmodel.R
 25dff8135f31ceff3f30dd620f33032b *tests/testthat/test-iv_robust.R
@@ -415,7 +415,7 @@ e7d96fbfaba2ee54a7b332905d6fbeb0 *tests/testthat/test-object_has_helpers.R
 802b850c09d45e37fe06b28f8464e079 *tests/testthat/test-offset.R
 d626cb475a0322ff3f6456c5b7957f9f *tests/testthat/test-ols.R
 cef4796edc20651e36b2dd1c35be78c0 *tests/testthat/test-panelr-asym.R
-850d39263ee12821f675a6aa16e409ab *tests/testthat/test-panelr.R
+a0e00eab0ffe6b3b9f7537e1f4a13cf6 *tests/testthat/test-panelr.R
 380dc4c9f62317b7a9b5c22f83348c14 *tests/testthat/test-phylolm.R
 63ca644b462d892e5c9c4336274aa861 *tests/testthat/test-plm.R
 01a9ad837f0f397deca51e1b695e53c4 *tests/testthat/test-polr.R
@@ -456,7 +456,7 @@ bc6482435653a9beb77bd42814c7a95b *tests/testthat/test-survey.R
 e65e4993711d5ae634c33fb6e751f0a0 *tests/testthat/test-survfit.R
 6b6535a6ce63998500706cd684b951c6 *tests/testthat/test-survreg.R
 1752833c5d753f3bde48638d478ac64d *tests/testthat/test-svylme.R
-f613a8dd2c32197ce0343939d65fbef0 *tests/testthat/test-tidymodels.R
+ff15f3f1e1fd7724c713b9592efeb245 *tests/testthat/test-tidymodels.R
 a6a14ecfcc7adac33e0e7a9027259838 *tests/testthat/test-tobit.R
 b402b460e810f18ee48e28cb9a281430 *tests/testthat/test-truncreg.R
 91f31f46bccf437bd0df0391da2194eb *tests/testthat/test-utilities.R
