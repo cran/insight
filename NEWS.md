@@ -1,3 +1,20 @@
+# insight 1.4.5
+
+## Changes
+
+* `find_predictors()`, `find_variables()`, and `get_data()` now work with
+  tidymodels workflow objects (#1161).
+
+* Improve performance for `is_empty_object()` for large data frames (which, in
+  turn, should improve performance of many other functions relying on this
+  helper-function, including from other packages).
+
+## Bug fixes
+
+* Disabled test for the *feisr* package, which currently seems to be broken.
+
+* Fixes issue where `get_datagrid()` failed on random effects with tokens in `by`.
+
 # insight 1.4.4
 
 ## Bug fixes
