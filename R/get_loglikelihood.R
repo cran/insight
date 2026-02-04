@@ -145,8 +145,11 @@ get_loglikelihood.lm <- function(
 
   info <- model_info(x, verbose = FALSE)
   if (info$is_tweedie) {
-    check_if_installed("tweedie")
-    ll <- .loglikelihood_prep_output(x, lls = tweedie::logLiktweedie(x))
+    # we don't call "tweedie::logLiktweedie()" directly, because CRAN complains
+    # about "missing or unexported object".
+    check_if_installed(c("tweedie", "statmod"))
+    f_tweedie_ll <- get("logLiktweedie", asNamespace("tweedie"))
+    ll <- .loglikelihood_prep_output(x, lls = do.call(f_tweedie_ll, list(x)))
   } else if (info$is_linear) {
     ll <- .get_loglikelihood_lm(
       x,

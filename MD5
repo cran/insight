@@ -1,8 +1,8 @@
-0ad2d6e45278a75425e426e9ce98a02f *DESCRIPTION
+7b4f53c8423ecc3e62a74c2dc8cec9da *DESCRIPTION
 4c60bab7cb795836f7a36d14a4b6788f *NAMESPACE
-8839d3252f4ff699a22aa0be42021a77 *NEWS.md
+d53c827071213dff3fa7b69b3fb54fa8 *NEWS.md
 49598b4ae7338528dfea3f4c422b903a *R/all_equal_models.R
-cc0e3ff99627889013d6e08cdf5ccc12 *R/check_if_installed.R
+40a93c717c73ff88f86be1add21466c4 *R/check_if_installed.R
 012f15e9fcf5e64655fa727160d5b3bf *R/clean_names.R
 1e1f37d31ce35fffca5f15850d78906a *R/clean_parameters.R
 ba0406ad53cf5af028dd5c8122ae9c06 *R/color_if.R
@@ -52,7 +52,7 @@ be21279bbd87b5901bddadc19d395e2c *R/format_rope.R
 4b8262232a8938102863da51c46618da *R/get_auxiliary.R
 3572c177fecd257adb8efa3db1529178 *R/get_call.R
 dda52179086e080d2bafcbfdd2ffc5d9 *R/get_data.R
-06ec4fddf308ebc683ff81e2c0338723 *R/get_datagrid.R
+b923a933b85220a949c85570a6bfa8f8 *R/get_datagrid.R
 e97b8643b418604cfd5c247a447c1452 *R/get_deviance.R
 2d99bf4faf03c58a5aab0fe6cdd0b25d *R/get_df.R
 1a8cea6418a330a2eccda674b695cc13 *R/get_df_betwithin.R
@@ -62,7 +62,7 @@ e97b8643b418604cfd5c247a447c1452 *R/get_deviance.R
 4070d53756ae067a169f03b757e2666b *R/get_df_satterthwaite.R
 68cea06358065e67716da2e9d8512c72 *R/get_family.R
 1cc7bc6de2d18e0450f428a9db3746b7 *R/get_intercept.R
-56a7f8c0a732249a2a8150735345683e *R/get_loglikelihood.R
+eeb8cf183d78d076441ddb095d9bc20b *R/get_loglikelihood.R
 9e5aaa18f5b43c6822ce9c675d249a11 *R/get_mixed_info.R
 4a574eae53f91587091ff5ce146e5810 *R/get_model.R
 39c8767d560f9a9abb010a99fdf1edce *R/get_modelmatrix.R
@@ -93,7 +93,7 @@ b4425f7d7b1a8cf2fbd21bb70f5e91b4 *R/get_predicted_mixed.R
 0d4d078c07379d355ac4ec4740f5abf4 *R/get_predictors.R
 73a0c67918a7dec2a3d5db2f2d50d279 *R/get_priors.R
 e276cfe5cd58d950783265eedfc642cc *R/get_random.R
-05053b8a9765241fb7111d6af6291da2 *R/get_residuals.R
+cafe87662468d800d3d8a0517092ce70 *R/get_residuals.R
 286adceeb10b33efacbc80a4eb1d4c8f *R/get_response.R
 caafbb76930537d5a33f993c27c82b89 *R/get_sigma.R
 0e0c7d14338a3bb4f6f5df91518106e3 *R/get_statistic.R
@@ -143,7 +143,7 @@ b2ef4148f3d981813f57432a2c54184d *inst/CITATION
 fd5b12254eded2351424f18ea6dea1fa *inst/WORDLIST
 1733b6341eafd57dcca9b80b51d65293 *inst/doc/display.R
 5829b57cd46bf577062b316809fc8edd *inst/doc/display.Rmd
-514e18f6940be9cb3dca9389ec0263ce *inst/doc/display.html
+85061ab52b161a57bfa75269873e2b4d *inst/doc/display.html
 5fe19d14506bb0fbe364441af01381fc *inst/doc/export.R
 e7168c95a4d4fe86ecf082a87e6b274f *inst/doc/export.Rmd
 f59aeec3d8f3f9e43d5333b1f5d2e842 *inst/doc/export.html
@@ -154,7 +154,7 @@ c86907bce1e963bf7e26ac573267988f *inst/doc/insight.Rmd
 6c70592a3c91ee961537b135a93faa88 *inst/doc/newmodels.Rmd
 8610886e56105fb3d323cb2b8b151c2b *inst/doc/newmodels.html
 d26d89d5ec5cad5be42ee6ed34b82e76 *man/all_models_equal.Rd
-e31a624e974201f808e8132cba328c5b *man/check_if_installed.Rd
+9814ca703394ede0ae42d6426c4587cb *man/check_if_installed.Rd
 c14a5a282d26bede58174052314f1326 *man/clean_names.Rd
 04e272b05ac25c83f5f98032bcc5818e *man/clean_parameters.Rd
 82e391a086d7f6ba9b5fc9c241ce454e *man/color_if.Rd
@@ -348,7 +348,7 @@ baf2260e7226bda303f6b4e04190bcfb *tests/testthat/test-get_auxiliary.R
 c2b18acdfcd3ae12effb98c8f895b7c7 *tests/testthat/test-get_data.R
 bdb07a27afe3596153e31b026c7ee8f8 *tests/testthat/test-get_datagrid.R
 fc72d53fa1a81657d0112487914652d3 *tests/testthat/test-get_deviance.R
-66453c126a7a5fca4a7b30dbd25d3baf *tests/testthat/test-get_loglikelihood.R
+a76418769a2ee17e73fb8539ef2229d5 *tests/testthat/test-get_loglikelihood.R
 15ddb6b531fcd52097deebeb606a9109 *tests/testthat/test-get_model.R
 d63e29bf215bbea05ef436d9c6c26aa9 *tests/testthat/test-get_modelmatrix.R
 330fe6c2c4532d940be1152456496028 *tests/testthat/test-get_predicted-clm.R
@@ -356,14 +356,14 @@ d63e29bf215bbea05ef436d9c6c26aa9 *tests/testthat/test-get_modelmatrix.R
 6d3b5a8d7c8d5c11b26992dfa67196e9 *tests/testthat/test-get_predicted.R
 9f3667cc9b747f5bf167717024ca30cc *tests/testthat/test-get_priors.R
 e078707b883ab3170c4f8edaa7e63890 *tests/testthat/test-get_random.R
-0ddeb17fdb5e7ee98ec8a8cd5920e2bd *tests/testthat/test-get_residuals.R
+8f5b3b3ed7ea54ab47f8fe9cc78b9aa3 *tests/testthat/test-get_residuals.R
 bd2f41795091087e2d149e04e7868100 *tests/testthat/test-get_transformation.R
 cf16fc0f556f60ac68b1e01209e3f415 *tests/testthat/test-get_varcov.R
 50928252c2135f00ec81dc78530a8162 *tests/testthat/test-get_variance.R
 6cd3bf74f84e1500a7fc4d770939241d *tests/testthat/test-get_weights.R
 bf9541af53bdb2c4ab5a23325cec40eb *tests/testthat/test-glm.R
 aa939fe739dfd766a728d43d945141e9 *tests/testthat/test-glm.nb.R
-d6d4b077a64a8ca52de78f3efd956d2f *tests/testthat/test-glmgee.R
+9f68c1bb97d3a5901a8ea9a5c6d51665 *tests/testthat/test-glmgee.R
 4877e3d28bf39c299a016bb5e2703aa5 *tests/testthat/test-glmmPQL.R
 8bc4ad1259a94ec4a44bb03c03eab931 *tests/testthat/test-glmmTMB.R
 bb0ec793b413e9fa6efd041f34fc7c07 *tests/testthat/test-glmrob_base.R
@@ -414,6 +414,8 @@ e8e000c60b197909a286a00e4307ad6c *tests/testthat/test-null_model.R
 e7d96fbfaba2ee54a7b332905d6fbeb0 *tests/testthat/test-object_has_helpers.R
 802b850c09d45e37fe06b28f8464e079 *tests/testthat/test-offset.R
 d626cb475a0322ff3f6456c5b7957f9f *tests/testthat/test-ols.R
+cef4796edc20651e36b2dd1c35be78c0 *tests/testthat/test-panelr-asym.R
+a0e00eab0ffe6b3b9f7537e1f4a13cf6 *tests/testthat/test-panelr.R
 380dc4c9f62317b7a9b5c22f83348c14 *tests/testthat/test-phylolm.R
 77ef8a5148b0e429ea68ca9c29b97e16 *tests/testthat/test-plm.R
 01a9ad837f0f397deca51e1b695e53c4 *tests/testthat/test-polr.R
