@@ -1,3 +1,46 @@
+# insight 1.5.3
+
+## Changes
+
+* `get_df()` now supports the `df_per_obs` argument for models of class `mmrm`,
+  returning one degree of freedom per row of `data` instead of one per
+  coefficient, using the method chosen when fitting the model.
+
+* `model_info()` and `get_predicted()` now recognize the `ddm()`, `lba()` and
+  `rdm()` custom *brms* families from package *cogmod* as reaction-time and
+  choice models (`is_rtchoice`), alongside the already supported `lnr()`. Their
+  predictions are hence split into the `"rt"` and `"response"` components,
+  instead of being returned as a single interleaved vector.
+
+* `get_datagrid()` gains a `weighted` argument, to create a smaller representation
+  of large data grids, where multiple unique combinations of predictors are
+  included only once, and a new `Weight` column indicates how often each
+  combination appears in the original data. The related `n_bins` argument
+  indicates how numeric values are represented in the reduced data grid.
+
+* `format_ci()` gains a `separator` argument, to customize the separator for
+  lower and upper CI values.
+
+* `find_response()`, `find_predictors()`, and `find_variables()` now also work
+  for objects from package *marginaleffects*.
+
+* Preliminary support in `find_parameters()` for objects from package
+  *marginaleffects*.
+
+* `get_variances()` now passes `...` down to `VarCorr()`, which might be useful
+  for Bayesian models (e.g. to return robust estimates using `robust = TRUE`).
+
+* Added a documentation page for available `options`.
+
+* Updated test-files for `htest` objects and fixed deprecated names.
+
+## Bug fixes
+
+* `null_model()` no longer fails for models whose offset is written inline in
+  the formula with a nested-parenthesis expression followed by further terms
+  (e.g. `y ~ x + offset(log(exposure)) + factor(year)`). The offset term is now
+  extracted from the formula's language tree instead of by a paren-blind regex.
+
 # insight 1.5.2
 
 ## Changes

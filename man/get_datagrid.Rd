@@ -17,6 +17,8 @@ get_datagrid(x, ...)
   numerics = "mean",
   length = 10,
   range = "range",
+  weighted = FALSE,
+  n_bins = 5,
   preserve_range = FALSE,
   protect_integers = TRUE,
   digits = 3,
@@ -40,6 +42,8 @@ get_datagrid(x, ...)
   by = "all",
   factors = "reference",
   numerics = "mean",
+  weighted = FALSE,
+  n_bins = 5,
   preserve_range = TRUE,
   reference = x,
   include_smooth = TRUE,
@@ -196,6 +200,26 @@ case, \code{range} must be of same length as numeric target variables. If
 \code{range} is a named vector, values are matched against the names of the
 target variables.}
 
+\item{weighted}{Logical or character. If \code{TRUE}, creates a "weighted" data
+grid, which is a smaller representation of a large data grid. Each unique
+combination of (categorical) predictors is included only once (i.e., one row
+per unique combination of predictors specified in \code{by}). Numeric predictors
+are binned (see argument \code{n_bins}) and each value is recoded into the mean
+value for the related bin. A new \code{Weight} variable is added that indicates
+how often each combination appears in the original data. \code{weighted} can also
+be the name of an existing weighting variable in the data. In this case, the
+new \code{Weight} variable represents the sum of the weights for all observations
+that share the unique combination of predictors.}
+
+\item{n_bins}{Numeric value indicating the number of bins to use for numeric
+predictors when creating a weighted data grid (see \code{weighted}). Defaults to
+5. If a numeric predictor has more unique values than \code{n_bins}, it is divided
+into \code{n_bins} equal-sized intervals, and each value is replaced by the mean
+of its respective bin. If a predictor has fewer unique values than \code{n_bins},
+it is not binned. If \code{n_bins = NULL} or \code{NA}, numeric predictors are not used
+to group the data; instead, they are held constant at their overall mean
+across the dataset.}
+
 \item{preserve_range}{In the case of combinations between numeric variables
 and factors, setting \code{preserve_range = TRUE} will drop the observations
 where the value of the numeric variable is originally not present in the
@@ -350,6 +374,25 @@ get_datagrid(
 )
 
 
+# Weighted data grid ------------------------------------------------------
+data(penguins)
+# Adelie appears 152 times in the data, Chinstrap 68 times and Gentoo 124
+# times. Instead of a three-row data grid, which assumes that each species
+# is present equally often in the data, we now could "weight" each row
+# according to their actual frequency in the data
+get_datagrid(penguins, "species", weighted = TRUE)
+
+# numeric variables are included and "binned"
+get_datagrid(penguins, c("species", "island", "body_mass"), weighted = TRUE)
+
+# numeric variables are included, but set to their mean value
+get_datagrid(
+  penguins,
+  c("species", "island", "body_mass"),
+  n_bins = NULL,
+  weighted = TRUE
+)
+
 # With models ===============================================================
 
 # Fit a linear regression
@@ -367,6 +410,21 @@ plot(data$Sepal.Width, data$Sepal.Length,
   col = data$Petal.Length,
   main = "Relationship at -1 SD, Mean, and + 1 SD of Petal.Length"
 )
+
+# weighted data grid
+model <- lm(Sepal.Length ~ Species + Sepal.Width, data = iris)
+# when `by` is not specified, all predictors are used to create a weighted grid
+get_datagrid(model, weighted = TRUE)
+
+# fewer bins for numeric values
+get_datagrid(model, n_bins = 3, weighted = TRUE)
+
+# weighted data grid
+d <- iris
+d$weights <- abs(rnorm(nrow(d), 1, 0.2))
+
+model <- lm(Sepal.Length ~ Species + Sepal.Width, data = d, weights = weights)
+get_datagrid(model, "Species", weighted = "weights")
 \dontshow{\}) # examplesIf}
 }
 \seealso{

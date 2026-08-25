@@ -1090,6 +1090,7 @@ test_that("find_variables, mo", {
 # get variance
 test_that("get_variance works", {
   mdl <- suppressWarnings(insight::download_model("brms_mixed_9"))
+  skip_if(is.null(mdl))
   out <- get_variance(mdl)
   expect_equal(
     out,
@@ -1105,11 +1106,27 @@ test_that("get_variance works", {
     ignore_attr = TRUE
   )
 
+  out <- get_variance(mdl, robust = TRUE)
+  expect_equal(
+    out,
+    list(
+      var.fixed = 4.91103174480995,
+      var.random = 17.6083462129,
+      var.residual = 10.9304525807216,
+      var.distribution = 10.9304525807216,
+      var.dispersion = 0,
+      var.intercept = c(cyl = 17.6083462129)
+    ),
+    tolerance = 1e-3,
+    ignore_attr = TRUE
+  )
+
   # make sure it's a matrix
   # expect_true(is.matrix(get_modelmatrix(null_model(mdl))))
 
   # works for intercept only models
   mdl <- suppressWarnings(insight::download_model("brms_intercept_1"))
+  skip_if(is.null(mdl))
   out <- get_variance(mdl)
   expect_equal(
     out,
