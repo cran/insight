@@ -1,6 +1,6 @@
-8d3ba2be9ae3f0484c97bd0da9bddc32 *DESCRIPTION
-98a4f2cdb7ef3c73042d4fc7d7e8bd08 *NAMESPACE
-9e52155647113dd475719a9deef0a91b *NEWS.md
+632e31f1785af4fabc330fbae1f57499 *DESCRIPTION
+e6c07db619ccbf8d1f17c5fa72fd8a57 *NAMESPACE
+df7747018050c5cf23a5f538ab8e5823 *NEWS.md
 49598b4ae7338528dfea3f4c422b903a *R/all_equal_models.R
 40a93c717c73ff88f86be1add21466c4 *R/check_if_installed.R
 012f15e9fcf5e64655fa727160d5b3bf *R/clean_names.R
@@ -99,7 +99,7 @@ cafe87662468d800d3d8a0517092ce70 *R/get_residuals.R
 caafbb76930537d5a33f993c27c82b89 *R/get_sigma.R
 bf3c809a39286f0ad3849452d9a8ca41 *R/get_simulated.R
 2a9e252ceef0ee036820fa3cf065456b *R/get_simulated_helper.R
-2fc29eeaad81a80a9824d8e0e5135ec8 *R/get_statistic.R
+c38419f0894e4638a431e3a059915439 *R/get_statistic.R
 84d8c2261a71dece3c0f684698ec17e3 *R/get_transformation.R
 ac2f656a57df65d48ec5cb218cdb95d0 *R/get_varcov.R
 7a3fba22dac7d5130f0579bae79f319a *R/get_varcov_fpc.R
@@ -136,7 +136,7 @@ bdfe4e9e423a3cb8f686ca6e492beef5 *R/text_remove_backticks.R
 636085d17667bacfdabf370e22e999ee *R/utilities.R
 aeefa9c806e1c1d696efbfc35788d668 *R/utils_compact.R
 81c2bcac20c59a61fb4d376af57d4ea2 *R/utils_get_data.R
-2e15f22d720f2de36e8d2b2cb06ce8d0 *R/utils_model_info.R
+a434541545dba946da9516f460c7c9dc *R/utils_model_info.R
 9bb3daa4ce9da745226d9c3623e7d2eb *R/utils_object.R
 41b41e309674f145a29869f86e2f3fc2 *R/validate_argument.R
 dfb57bfe8917e673db77c9177feb5426 *README.md
@@ -148,7 +148,7 @@ b2ef4148f3d981813f57432a2c54184d *inst/CITATION
 55959c2f5c35b1cb821a198de0e5956f *inst/WORDLIST
 1733b6341eafd57dcca9b80b51d65293 *inst/doc/display.R
 5829b57cd46bf577062b316809fc8edd *inst/doc/display.Rmd
-6b0f3818e76511b8e8bd6fb6e9a39042 *inst/doc/display.html
+ff6bc7945b40d6133ed5a33fdbe7bcb3 *inst/doc/display.html
 5fe19d14506bb0fbe364441af01381fc *inst/doc/export.R
 e7168c95a4d4fe86ecf082a87e6b274f *inst/doc/export.Rmd
 f59aeec3d8f3f9e43d5333b1f5d2e842 *inst/doc/export.html
@@ -334,7 +334,7 @@ f2980f7ab90f27c66cb11baf92ce518a *tests/testthat/test-find_predictor_nested_re.R
 e03241d1d52168bc480ac274a7e4891d *tests/testthat/test-find_predictors-strata.R
 64e13d8e95fff916d58896243d9b43c6 *tests/testthat/test-find_random.R
 d25fae6da4aed82c4db4027470c0cf3b *tests/testthat/test-find_response.R
-cb500b2c20264827478120bd873d6b13 *tests/testthat/test-find_smooth.R
+81073ed43c7ee36efacb30d96cccdf4e *tests/testthat/test-find_smooth.R
 9282ffc1324f7c292d36360fb48e9cea *tests/testthat/test-find_terms.R
 23bb90e7ac262aa2f1b2836f8f94d2c7 *tests/testthat/test-find_transformation.R
 eea5918398de9d71998b5a9cbc55fc7d *tests/testthat/test-find_variables.R
@@ -354,14 +354,14 @@ a9c9e0be15efcb633c7fbee0040f1616 *tests/testthat/test-gee.R
 c158d5748ba454476a0efcbd61826e89 *tests/testthat/test-geeglm.R
 baf2260e7226bda303f6b4e04190bcfb *tests/testthat/test-get_auxiliary.R
 c2b18acdfcd3ae12effb98c8f895b7c7 *tests/testthat/test-get_data.R
-e66d589e71aff0d060f28ecaac3d55e8 *tests/testthat/test-get_datagrid.R
+318a0f8e7a9933f1599db713dc4f6c7c *tests/testthat/test-get_datagrid.R
 fc72d53fa1a81657d0112487914652d3 *tests/testthat/test-get_deviance.R
 a76418769a2ee17e73fb8539ef2229d5 *tests/testthat/test-get_loglikelihood.R
 15ddb6b531fcd52097deebeb606a9109 *tests/testthat/test-get_model.R
 d63e29bf215bbea05ef436d9c6c26aa9 *tests/testthat/test-get_modelmatrix.R
 330fe6c2c4532d940be1152456496028 *tests/testthat/test-get_predicted-clm.R
 1de42f70831c7fc7ba874000753819df *tests/testthat/test-get_predicted-iv.R
-e794e1782bd5629c02efcb533a1cbe50 *tests/testthat/test-get_predicted.R
+92b1326601e6e3673d4ee3043d9cb493 *tests/testthat/test-get_predicted.R
 ddd652b3019348de7d364a195e121327 *tests/testthat/test-get_priors.R
 e078707b883ab3170c4f8edaa7e63890 *tests/testthat/test-get_random.R
 6b2d4b3e8670fff22996336c42b5c764 *tests/testthat/test-get_residuals.R
@@ -447,7 +447,7 @@ fd94b168d53cbf7b35ad135401bcde01 *tests/testthat/test-r2_nakagawa_poisson_zi.R
 ad539f48e8230069ca0c39aaecc08104 *tests/testthat/test-r3_4.R
 8e380b0b31ad75c48cf8768b9087c318 *tests/testthat/test-response_data2.R
 87356d3cd264f5351bb036346b0d24cf *tests/testthat/test-rlm.R
-38d84310b947667d629012ef2ffb2673 *tests/testthat/test-rlmer.R
+6ed218b1ec67a628a27a680ac69aa3a8 *tests/testthat/test-rlmer.R
 cbcab803f8549c5c220189a8c8188a06 *tests/testthat/test-rms.R
 079d849e6048ea007e29d8a6e9541e6f *tests/testthat/test-rq.R
 127f2092e5493d7a6c98a6cb41953c2a *tests/testthat/test-rqs.R
