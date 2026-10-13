@@ -27,9 +27,6 @@
     return(NULL)
   }
 
-  # needed for singularity check
-  check_if_installed("performance", reason = "to check for singularity")
-
   faminfo <- model_info(model, response = 1, verbose = FALSE)
 
   # check argument
@@ -349,7 +346,27 @@
   # } else {
   #   sum(sapply(mixed_effects_info$vc[terms], .sigma_sum))
   # }
-  sum(sapply(mixed_effects_info$vc[terms], .sigma_sum))
+  vc_terms <- .vc_random_terms(mixed_effects_info)
+  sum(sapply(mixed_effects_info$vc[vc_terms %in% terms], .sigma_sum))
+}
+
+
+# map each element of VarCorr() to its term in ranef(). lme4 splits
+# uncorrelated terms like (x || g) into several VarCorr() elements ("g",
+# "g.1"), and names nested terms with make.names() ("subgrp.grp"), while
+# ranef() returns one element "g" or "subgrp:grp"
+.vc_random_terms <- function(mixed_effects_info) {
+  vc_names <- names(mixed_effects_info$vc)
+  re_names <- names(mixed_effects_info$re)
+  idx <- match(vc_names, re_names)
+  no_match <- is.na(idx)
+  idx[no_match] <- match(vc_names[no_match], make.names(re_names))
+  no_match <- is.na(idx)
+  idx[no_match] <- match(
+    sub("\\.[0-9]+$", "", vc_names[no_match]),
+    make.names(re_names)
+  )
+  re_names[idx]
 }
 
 
@@ -383,14 +400,17 @@
   if (is.null(sig)) {
     # for brms-models, when sigma is modeled, there is no longer a
     # single sigma parameter. in this case, we can't calculate residual
-    # variance and return NULL
+    # variance and return NULL. intercept-only sigma (`sigma ~ 1`) is
+    # handled in ".get_sigma()", so we only get here when sigma varies
     if (inherits(model, "brmsfit")) {
+      model_params <- find_parameters(model)
       params <- unlist(
-        compact_list(find_parameters(model)[c("conditional", "sigma")]),
+        compact_list(model_params[c("conditional", "sigma")]),
         use.names = FALSE
       )
       sigma_params <- grepl("b_sigma", params, fixed = TRUE)
-      if (sum(sigma_params) > 1) {
+      # random-only sigma (`sigma ~ 0 + (1 | g)`) has no "b_sigma" parameter
+      if (any(sigma_params) || length(model_params$sigma_random)) {
         if (verbose) {
           format_alert(
             "`sigma` is modeled directly, and hence there is no longer a single sigma parameter to calculate the residual variance. Returning `NULL` instead."
@@ -432,17 +452,22 @@
       ),
       .badlink(faminfo$link_function, faminfo$family, verbose = verbose)
     )
-  } else if (faminfo$is_binomial) {
-    # binomial / bernoulli  ----
-    # --------------------------
+  } else if (faminfo$is_binomial || (faminfo$is_ordinal && inherits(model, "glmmTMB"))) {
+    # binomial / bernoulli / cumulative link  ----
+    # -------------------------------------------
 
     # we need this to adjust for "cbind()" outcomes
     y_factor <- .binomial_response_weight(model)
 
     # for observation level approximation, when we don't want the "fixed"
     # residual variance, pi^2/3, but the variance based on the distribution
-    # of the response
-    pmean <- .obs_level_variance(model_null, revar_null)
+    # of the response. Ordinal models have no meaningful pmean (glmmTMB fixes
+    # the null model's intercept to zero, the thresholds absorb it)
+    if (faminfo$is_ordinal) {
+      pmean <- NULL
+    } else {
+      pmean <- .obs_level_variance(model_null, revar_null)
+    }
 
     # sanity check - clmm-models are "binomial" but have no pmean
     if (is.null(pmean) && identical(approx_method, "observation_level")) {
@@ -655,9 +680,9 @@
     # transform mu
     mu <- switch(
       faminfo$family,
-      # beta-alike
+      # beta-alike (betabinomial also allows probit and cloglog links,
+      # so it uses the model's inverse link below)
       beta = ,
-      betabinomial = ,
       ordbeta = stats::plogis(mu),
       # for count models, Nakagawa et al. suggest this transformation
       poisson = ,
@@ -1080,14 +1105,17 @@
 # between-subject-variance (tau 00) ----
 # ----------------------------------------------
 .between_subject_variance <- function(mixed_effects_info) {
-  vars <- lapply(mixed_effects_info$vc, function(i) i[1])
-  # check for uncorrelated random slopes-intercept
-  non_intercepts <- which(sapply(mixed_effects_info$vc, function(i) {
-    !startsWith(dimnames(i)[[1]][1], "(Intercept)")
-  }))
-  if (length(non_intercepts)) {
-    vars <- vars[-non_intercepts]
-  }
+  # the intercept need not be the first term of a block, for example in
+  # nlme::pdBlocked(). Blocks without an intercept have no intercept variance.
+  vars <- lapply(mixed_effects_info$vc, function(i) {
+    pos <- which(startsWith(dimnames(i)[[1]], "(Intercept)"))
+    if (length(pos)) {
+      i[pos[1], pos[1]]
+    } else {
+      NULL
+    }
+  })
+  vars <- compact_list(vars)
 
   sapply(vars, function(i) i)
 }
@@ -1097,7 +1125,16 @@
 # ----------------------------------------------
 .random_slope_variance <- function(model, mixed_effects_info) {
   if (inherits(model, "lme")) {
-    unlist(lapply(mixed_effects_info$vc, function(i) diag(i)[-1]))
+    # every term but the intercept is a random slope, also in blocks
+    # without an intercept
+    unlist(lapply(mixed_effects_info$vc, function(i) {
+      d <- diag(i)
+      if (is.null(names(d))) {
+        d[-1]
+      } else {
+        d[names(d) != "(Intercept)"]
+      }
+    }))
   } else {
     # random slopes for correlated slope-intercept
     out <- unlist(lapply(mixed_effects_info$vc, function(i) diag(i)[-1]))
@@ -1153,10 +1190,14 @@
 # ----------------------------------------------
 .random_slope_intercept_corr <- function(model, mixed_effects_info) {
   if (inherits(model, "lme")) {
-    rho01 <- unlist(sapply(mixed_effects_info$vc, attr, which = "cor_slope_intercept"))
-    if (is.null(rho01)) {
+    rho01 <- unlist(lapply(mixed_effects_info$vc, attr, which = "cor_slope_intercept"))
+    # nested models have the attribute only for blocks with an intercept, so
+    # the fallback is for models that are not nested. Without an intercept,
+    # the "Corr" column holds correlations of slopes.
+    if (!length(rho01) && !.is_nested_lme(model)) {
+      rho01 <- NULL
       vc <- lme4::VarCorr(model)
-      if ("Corr" %in% colnames(vc)) {
+      if ("Corr" %in% colnames(vc) && "(Intercept)" %in% rownames(vc)) {
         re_name <- find_random(model, split_nested = FALSE, flatten = TRUE)
         rho01 <- as.vector(suppressWarnings(stats::na.omit(as.numeric(vc[, "Corr"]))))
         if (length(re_name) == length(rho01)) {

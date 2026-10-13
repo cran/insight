@@ -890,6 +890,7 @@ test_that("zero-inflation stuff works", {
 
 
 test_that("get_predicted works with brms-Wiener (cogmod-RT-choice)", {
+  skip_if_not_installed("cogmod")
   skip_if_not_installed("brms")
   skip_if_not_installed("RWiener")
   skip_if_not_installed("curl")
@@ -906,7 +907,7 @@ test_that("get_predicted works with brms-Wiener (cogmod-RT-choice)", {
     c(
       "Row",
       "Component",
-      "rt",
+      "RT",
       "Error",
       "Condition",
       "Predicted",

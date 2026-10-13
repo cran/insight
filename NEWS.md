@@ -1,3 +1,357 @@
+# insight 1.6.0
+
+## New supported models
+
+* Support for models of class `glmmTMB` fitted with the new `ordinal()`
+  family (*glmmTMB* >= 1.1.15). As for `ordinal::clm()`, the thresholds are
+  returned as conditional parameters ahead of the slopes, with standard errors
+  and statistics obtained via the delta method (the thresholds are estimated on
+  an internal, softmax-parameterized scale), while the intercept, which is
+  fixed to zero by *glmmTMB*, is dropped. `get_predicted()` returns
+  per-category probabilities for `predict = "expectation"` and the most likely
+  category for `predict = "classification"`, and `get_variance()` uses the
+  distribution-specific residual variance of the latent scale, as for
+  `ordinal::clmm()`.
+
+## Changes
+
+* `is_converged()` now supports `CmdStanMCMC` models from *cmdstanr*, with the
+  same checks and thresholds as for other Stan models. The values come from
+  the `$diagnostic_summary()` and `$summary()` methods of the model. Other
+  *cmdstanr* models, for example from `$variational()` or `$optimize()`,
+  return `FALSE` with a message. `stanfit` models from `rstan::read_stan_csv()`
+  store the maximum treedepth outside `control`. For these models,
+  `is_converged()` counts treedepth hits against this stored maximum, not
+  against the default of 10.
+
+* `get_parameters()` for *lavaan* and *blavaan* models gets a `type` argument
+  (in `...`). If `standardize = TRUE` and `type` is given, it is passed to
+  `lavaan::standardizedSolution()` or `blavaan::standardizedPosterior()`, for
+  example `type = "std.lv"` or `type = "std.nox"`. The default is still
+  `"std.all"`.
+
+* `get_variance()` for `nlme::lme()` models now returns `cor.slopes`, the
+  correlations between random slopes, as for *lme4* models. Before, it was
+  missing. This works for nested and non-nested grouping factors with general
+  covariance blocks (`pdSymm` and the default `pdLogChol`). Blocks of class
+  `pdDiag` or `pdIdent` do not estimate correlations, so they add no entry to
+  `cor.slopes`.
+
+* `export_table(format = "html")` passes arguments of `gt::gt()` from `...`
+  to `gt::gt()`, for example `id` or `rowname_col` (#631).
+
+* `is_converged()` now supports models fitted with Stan (`stanfit`, `brmsfit`
+  and `stanreg`). Before, it did not work for these models.
+  It checks divergent transitions, transitions at the maximum treedepth,
+  E-BFMI, R-hat, and bulk and tail effective sample size, with the thresholds
+  of the warnings that *rstan* gives after sampling.
+  E-BFMI is computed as in `rstan::check_hmc_diagnostics()`. The values of the
+  checks are returned in the `diagnostics` attribute. If convergence cannot be
+  assessed, for example for models fitted with variational inference or with
+  `brms::brm_multiple()`, `FALSE` is returned with a message (#619).
+
+* `is_converged()` now supports `coxph` models from *survival*. Before, it did
+  not work for these models. It checks whether the model ran out of
+  iterations and whether a coefficient is possibly infinite, as *survival*
+  does when it fits the model. If a check fails, it returns `FALSE`. The
+  attribute `diagnostics` shows the result of each check and the coefficients
+  that are possibly infinite. For penalized models, the checks do not apply.
+  For models with `ties = "exact"` or `tt()` terms, and in the other cases
+  that the help page lists, `is_converged()` cannot recompute them. In these
+  cases, it returns `FALSE`. Objects of other classes that inherit from
+  `coxph`, such as `survival::clogit()` and `survey::svycoxph()`, are not
+  supported (#1090).
+
+## Bug fixes
+
+* `find_parameters()` and `clean_parameters()` now work for multivariate
+  *brms* models with addition terms in the response, such as `resp_weights()`
+  or `trials()`. Before, `find_parameters()` returned empty elements with
+  wrong response names, and `clean_parameters()` gave an error
+  (easystats/bayestestR#700).
+
+* If you use the hidden `variable` argument with `summary = TRUE`,
+  `get_parameters()` for *brms* models no longer fails with the error
+  `object 'parms' not found`. The summary then has the columns `Parameter` and
+  `Estimate`.
+
+* `get_predicted()` for zero-inflated *glmmTMB* models no longer fails for
+  population-level predictions (`include_random = FALSE`, or a model without
+  random effects) when the data object of the model call was changed or
+  removed after the fit. Also, `get_predicted()` for zero-inflated *glmmTMB*
+  and *pscl* models now accepts new data in the `newdata` argument. Before, it
+  gave the error `formal argument "newdata" matched by multiple actual
+  arguments`.
+
+* `null_model()` now works when the model was fitted inside a function and its
+  call uses a local object other than the data, for example
+  `family = fam`. Before, it returned `NULL` for mixed models and gave an error
+  for other models (easystats/performance#145).
+
+* `find_random_slopes()` no longer reports a grouping factor or a *brms*
+  correlation id as a random slope because its name is part of a slope name.
+  An example is `p` in `(0 + Intercept | p | g)`. For *brms* models, the
+  explicit `Intercept` is no longer a random slope. Before, `get_variance()` warned
+  that random slopes were not present as fixed effects for these models.
+
+* `get_modelmatrix()` with new `data` for *nlme* (`lme`, `gls`), `clmm` and
+  *brms* models returns one row per data row. A row with a missing value or a
+  factor level that the model data does not have holds `NA` values. Before, it
+  was dropped. For *brms* models, an ordered factor given as a character
+  vector in `data` gets the polynomial contrasts of the model.
+
+* `get_predicted()` with new `data` for `lme` and `gls` models returns `NA` for
+  rows with a missing value or a factor level that the model data does not have
+  in a fixed-effect predictor, with a warning. If no row can be predicted, it
+  returns `NULL` with a warning. Before, such a row made `get_predicted()`
+  return the predictions for the model data. If `data` has no grouping column,
+  `lme` models give population-level predictions, as for *lme4* models.
+
+* `get_predicted()` for `lme` and `gls` models uses the `ci` argument, with or
+  without new `data`. As for other models, the default `ci = NULL` returns no
+  intervals or standard errors. Before, the interval level did not follow
+  `ci`. For `lme` models, an explicit `level` argument is passed to
+  `predict()`.
+
+* The confidence intervals of `get_predicted()` for `lme` models, with or
+  without new `data`, use one degree of freedom value for all rows, the
+  smallest of the values per coefficient. Before, the values per coefficient
+  were recycled against the predictions.
+
+* `get_predicted()` with new `data` for `clmm` models returns `NULL` with a
+  warning. Before, it returned the fitted values of the model data,
+  transformed with the inverse link. If `data` has the rows of the model data
+  and all of its predictor columns with the same values, the fitted values are
+  still returned.
+
+* `find_parameters()` for *brms* models again returns the standard deviations
+  of smooth terms (`sds_*`) in the `smooth_terms` element. It also returns the
+  simplex parameters of monotonic effects (`simo_*`) in the `simplex` element.
+  For multivariate models, each response gets only its own parameters
+  (easystats/parameters#1191)
+
+* `get_data()` for `merModList` objects (package *merTools*) gets a `verbose`
+  argument. If `verbose = FALSE`, it gives no warning that the data cannot be
+  accessed.
+
+* `get_variance()` for `nlme::lme()` models with a random-effect block that has
+  no intercept, for example `random = ~ 0 + day | Dog / Side`:
+
+  - For nested grouping factors, `get_variance()` returned `NULL`.
+
+  - Without nested grouping factors, `var.slope` left out the first slope of
+    the block, and `cor.slope_intercept` returned the correlation of two
+    slopes as a slope-intercept correlation.
+
+  `var.slope` of `nlme::lme()` models now leaves out the term named
+  `(Intercept)`, not the first term of a block. So a block whose intercept is
+  not its first term no longer reports the intercept as a slope. Such a block,
+  for example from `nlme::pdBlocked()`, now also has its intercept variance in
+  `var.intercept`.
+
+* `get_variance()` for *lme4* models with uncorrelated random effects, for
+  example `(1 + Days || Subject)`, now includes the random-slope variance in
+  `var.random`. Before, `var.random` included only the random-intercept
+  variance. For nested grouping factors, for example
+  `(1 + Days || grp / subgrp)`, `var.random` was `NULL`. This also changes
+  `performance::r2_nakagawa()` and `performance::icc()` for these models
+  (#304, easystats/performance#428).
+
+* `export_table(format = "html")` for a list of data frames now shows the
+  caption of each data frame as the label of its row group, and the footer of
+  each data frame as a source note. Before, a list `footer` or a mix of
+  captioned and uncaptioned tables gave an error. Of the footers stored as
+  attributes, only the first one was kept, and a list `caption` became one
+  title. If any data frame in the list has a `Component`, `Effects`, `Group`
+  or `Response` column, the old output stays, but a list `footer` no longer
+  gives an error (#631).
+
+* `export_table(format = "html")` for a single data frame with a list footer
+  (a multi-line, colored footer) gave an error. The parts of the footer are
+  now joined into one source note, as in text output.
+
+* `export_table(format = "tt")` for a list of data frames now shows the
+  caption of each data frame as the label of its row group, and the footer of
+  each data frame as a note. Before, the captions were shown as an extra
+  `group` column, the first caption became the title, and only the footer of
+  the first data frame, or only `footer` if given, was kept. A list `caption`,
+  or a mix of `table_title` and `table_caption` attributes, gave an error.
+  An unnamed `column_names` vector names the shown columns. Before, it also
+  needed a name for the `group` column.
+  The old behavior stays if a data frame has one column, no rows, row groups
+  (`indent_rows`) or a `Component`, `Effects`, `Group` or `Response` column,
+  if the data frames have different column names, or if `by`, `row_groups` or
+  `column_groups` is given. For these lists, each element of a list `footer`
+  still gives one note. Each footer changes as for a single data frame. The
+  color is not shown as a note, new lines at the start and end are removed,
+  and an empty footer gives no note.
+
+* `export_table(format = "tt")` for a single data frame now shows a footer as
+  one note. A character vector gives its first string, because the second
+  string is the color, and a list gives its strings joined. Before, each
+  string was a note, so the color of a colored footer was shown as a second
+  note, and a list footer with colors (a multi-line, colored footer) gave an
+  error.
+
+* `get_sigma()`, `get_variance()` and `get_variance_residual()` now support
+  *brms* models where `sigma` has an intercept-only formula, for example
+  `bf(y ~ x, sigma ~ 1)`. Sigma is the mean of the posterior draws of
+  `b_sigma_Intercept`, back-transformed with the link function of `sigma`.
+  Before, `get_sigma()` returned `NULL` and `get_variance()` returned a
+  residual variance of 1. If `sigma` varies, for example with
+  `sigma ~ (1 | g)`, `get_variance()` now returns no residual variance with a
+  message, as it already did for `sigma ~ x` (#967).
+
+* `find_parameters()`, `get_parameters()` and `clean_parameters()` now work for
+  *blavaan* models with multiple groups and equality constraints, for example
+  `group.equal = "loadings"`. Before, `find_parameters()` and
+  `get_parameters()` failed with the error "replacement has length zero".
+  `get_parameters(standardize = TRUE)` now gives the correct names for the
+  posterior draws of all *blavaan* models. Before, the names were shifted,
+  because the standardized draws also include the fixed parameters.
+  `get_parameters()` now also works for *blavaan* models with user-defined
+  parameters (`:=`) and returns their posterior draws. Before, it failed with
+  the error "Arguments must be mcmc objects".
+  `get_data(source = "mf")` now works for *lavaan* and *blavaan* models with
+  multiple groups and returns the grouping variable as a column. Together,
+  these fixes let `parameters::model_parameters()` work for multiple-group
+  *blavaan* models (easystats/parameters#735).
+
+* `get_varcov()` for *fixest* models now supports `vcov = "HC0"`. Before, it
+  gave an error. The result is the same as
+  `fixest::vcov_hetero(ssc = fixest::ssc(K.adj = FALSE))`, the
+  heteroskedasticity-consistent matrix without the small-sample adjustment.
+  For `"HC"`, `"HC4"`, `"HC4m"` and `"HC5"`, the error now names the
+  supported types (#1251).
+
+* `find_predictors()` and `find_variables()` no longer return the matrix of the
+  *brms* autocorrelation terms `sar()`, `car()` and `fcor()`, for example `W`
+  in `y ~ x + sar(W)`. This matrix is an object in `data2`, not a variable in
+  the data. The grouping variable of `car()` is still returned.
+
+* If *performance* is not installed, `get_variance()` now gives an error that
+  asks you to install it. Before, it returned `NULL` without a message (#928).
+
+* `n_obs(disaggregate = TRUE)` now returns the total number of trials for
+  *brms* models with a `trials()` term in the response, for example
+  `y | trials(size) ~ x`. Before, it ignored `disaggregate` and returned the
+  number of data rows (#581).
+
+* `get_variance()` and `get_variance_distribution()` returned a wrong
+  distribution-specific variance for beta-binomial models with a probit or
+  cloglog link. The cause was the back-transformation of the null-model mean,
+  which always used the inverse logit. The mean now uses the inverse link of
+  the model.
+
+* `get_residuals()` for *gamlss* models now returns response residuals
+  (observed minus expected values) for `type = "response"`. Before, it
+  returned the normalized quantile residuals without a warning. The
+  `mean()` function of the family gives the expected values. Thus, the result
+  is also correct for families where `mu` is not the mean, for example
+  zero-inflated families. For families without a `mean()` function, the
+  residuals use `mu`, with a warning (#327).
+
+* For a list of data frames, `caption = ""` (or `title = ""`) now makes
+  `export_table()` remove the captions of all tables. This includes captions
+  stored as attributes. `subtitle = ""` and `footer = ""` do the same for
+  subtitles and footers. In a list of captions or footers, `""` removes the
+  caption or footer of that table. Before this fix, `export_table()` still
+  printed the attributes (#930).
+
+* For univariate non-linear *brms* models (`nl = TRUE`), `find_parameters()`
+  now returns the coefficients of the non-linear parameters of `mu` as
+  conditional parameters, and their group-level terms as random parameters.
+  Before, they were returned as auxiliary parameters. `find_auxiliary()` no
+  longer returns the names of these non-linear parameters.
+  `clean_parameters()` labels their coefficients like `summary()` from
+  *brms*, for example `ult_Intercept`. The `effects`, `component` and
+  `parameters` arguments of `get_parameters()` now select the coefficients of
+  non-linear parameters. `get_varcov()`,
+  `n_parameters(component = "conditional")` and
+  `find_parameters(component = "location")` now include these coefficients,
+  where they included none before. This also applies to non-linear parameters
+  that are nested with `nlf()` (#1076).
+
+* `get_parameters()` for *brms* models now returns `NULL` when no parameter
+  matches the selection of `effects`, `component` and `parameters`. Before,
+  depending on the selection, it returned the posterior draws of all
+  parameters, an empty data frame, or an error (#1076).
+
+* `get_modelmatrix()` for `clmm` models now uses the contrasts stored in the
+  model, so `get_variance()` works for `clmm` models fitted with, for example,
+  `contrasts = list(x = "contr.sum")`. For `clmm` models, a `data` argument is
+  now used. For `clmm` and `brmsfit` models, factor variables in `data` get the
+  levels of the model data, and the contrasts of the model are used. Thus, new
+  data with only some of the levels gives the correct columns. A
+  `contrasts.arg` list is now accepted for both model classes.
+
+* If variables used in the model are missing from the data in the
+  environment, but are columns of the model frame, `get_data()` now warns and
+  takes the data from the model frame. This applies, for example, to `lm`,
+  `glm`, `lmer`, `glmmTMB` and `gam` models. Variables are missing, for
+  example, if you overwrite the data object after the model fit. Before this fix,
+  `get_data()` silently dropped these variables. Then `get_predicted()`, and
+  `get_loglikelihood()` for `glm` models, failed with "object not found"
+  errors. Variables used only inside a transformation, like `a` in `log(a)`,
+  are not detected (#1210).
+
+* `get_modelmatrix()` for `lme` and `gls` models now uses the contrasts stored
+  in the model instead of treatment contrasts. You set these contrasts with
+  `contrasts = list(x = contr.sum)` in `lme()`, or with
+  `options(contrasts = ...)` when you fit the model. If you provide `data`, its
+  factor and character variables get the levels of the model data. Thus, new
+  data with only some of the levels gives the correct columns.
+
+* `get_modelmatrix()` for `lme` and `gls` models with new `data` now keeps the
+  basis of terms like `poly()` from the model data. Thus, the columns match the
+  fitted coefficients. If another package, like *MuMIn*, provides its own
+  `model.matrix()` method for `lme` objects, `get_modelmatrix()` now still uses
+  `data` and the model contrasts.
+
+* `format_table` now correctly formats labels consistently when parameter names
+  occurred multiple times.
+
+* `get_data()` for `coxph` models no longer drops variable and value labels when
+  `source = "mf"`.
+
+* `find_parameters()` for *brms* models no longer drops parameters whose names
+  start with the name of a distributional parameter, e.g. the coefficient
+  `b_condition2` in a model with a (custom) distributional parameter `c`.
+
+* `find_auxiliary()` no longer returns `"sigma"` for *brms* models that have no
+  residual standard deviation, but auxiliary parameters whose names merely
+  contain `"sigma"` (e.g. `"sigmadrift"` or `"sigmabias"` from custom families).
+
+* `clean_parameters()` no longer assigns auxiliary parameters whose names
+  contain `"sigma"` (like `"sigmabias"`) to the `"sigma"` component. These are
+  now returned as their own component, which also fixes the related grouping in
+  `parameters::model_parameters()`.
+
+* `get_variance()` returned wrong values for `lme` models with nested random
+  effects, for example `random = ~ 1 | Dog / Side`. It returned the standard
+  deviations of the random effects instead of their variances, and it gave them
+  the wrong group names. This also gave wrong results for `performance::icc()`
+  and `performance::r2()`. For groups with three or more correlated random
+  terms, the variances and covariances of the random effects were also wrong.
+
+* `find_formula()` now returns the correct random effects formula for
+  `nlme::lme()` and `MASS::glmmPQL()` models with a named list or a `pdMat`
+  object in the `random` argument. Examples are `random = list(g = ~1)` and
+  `random = pdDiag(~x)`. Before this fix, `find_random()` returned `NULL` for
+  these models, and `parameters::model_parameters()` failed. If the `random`
+  argument names an object that was defined inside a function, `find_formula()`
+  also no longer fails.
+
+* `get_predicted()` for `coxph` models with `predict = "survival"` now computes
+  confidence intervals on the cumulative-hazard scale and back-transforms them,
+  as `survival::survfit()` does by default. Before this fix, the intervals were
+  symmetric around the survival probability and were not always between 0
+  and 1.
+
+* `get_predicted()` for `coxph` models with `predict = "expectation"` or
+  `predict = "risk"` now returns standard errors and no longer warns that the
+  delta method could not be applied.
+
 # insight 1.5.4
 
 ## Bug fixes
