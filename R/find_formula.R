@@ -63,6 +63,13 @@
 #' - `correlation`, for models with correlation-component like `nlme::gls()`,
 #'   the formula that describes the correlation structure
 #'
+#' - `nonlinear`, for nonlinear mixed models like `lme4::nlmer()` or
+#'   `nlme::nlme()`, the nonlinear model as a one-sided formula, like
+#'   `~ SSlogis(Time, Asym, xmid, scal)`. For `nlme::nlme()` models,
+#'   `conditional` has the response and the covariates of the fixed-effect
+#'   parameter formulas, and `random` has one formula for each grouping level,
+#'   like `~ Asym | Plot`.
+#'
 #' - `scale`, for distributional models such as `mgcv::gaulss()` family fitted
 #'   with `mgcv::gam()`, the formula that describes the scale parameter
 #'
@@ -77,9 +84,12 @@
 #'
 #' For models from package **brms**, distributional parameters are also included.
 #'
-#' @note For models of class `lme` or `gls` the correlation-component is only
-#' returned, when it is explicitly defined as named argument (`form`), e.g.
-#' `corAR1(form = ~1 | Mare)`
+#' @note For models of class `lme`, `nlme`, `glmmPQL`, `gls` or `gnls`, the
+#' correlation-component is the formula of the fitted correlation structure,
+#' e.g. `~ t | Subject` for `corAR1(form = ~ t | Subject)`, with the
+#' environment of the model formula. For a structure without `form`, this is the
+#' grouping that the model used, like `~1 | Subject`. There is no
+#' correlation-component when that formula has no variable, e.g. `~1`.
 #'
 #' @examplesIf require("lme4", quietly = TRUE)
 #' data(mtcars)
@@ -760,32 +770,20 @@ find_formula.RM <- find_formula.MANOVA
 
 #' @export
 find_formula.gls <- function(x, verbose = TRUE, ...) {
-  ## TODO this is an intermediate fix to return the correlation variables from gls-objects
-  fcorr <- x$call$correlation
-  if (is.null(fcorr)) {
-    f_corr <- NULL
-  } else if (inherits(fcorr, "name")) {
-    f_corr <- attributes(eval(fcorr))$formula
-  } else {
-    f_corr <- parse(text = safe_deparse(fcorr))[[1]]
-  }
-  if (is.symbol(f_corr)) {
-    f_corr <- paste("~", safe_deparse(f_corr))
-  } else if (!inherits(f_corr, "formula")) {
-    f_corr <- f_corr$form
-  }
-
   l <- tryCatch(
-    list(
-      conditional = stats::formula(x),
-      correlation = stats::as.formula(f_corr)
-    ),
+    {
+      f_cond <- stats::formula(x)
+      list(
+        conditional = f_cond,
+        correlation = .lme_correlation_formula(x, env = environment(f_cond))
+      )
+    },
     error = function(x) {
       NULL
     }
   )
 
-  .find_formula_return(compact_list(l))
+  .find_formula_return(compact_list(l), verbose = verbose)
 }
 
 
@@ -1445,6 +1443,90 @@ find_formula.nlmerMod <- function(x, verbose = TRUE, ...) {
 
 
 #' @export
+find_formula.nlme <- function(x, verbose = TRUE, ...) {
+  # same layout as for nlmer models: the response with the covariates of the
+  # fixed-effect parameter formulas, the nonlinear model, and the random part
+  model_formula <- stats::formula(x)
+  # the new formulas keep the environment of the model formula, so that
+  # `get_data()` finds the data where the model was fitted
+  model_env <- environment(model_formula)
+  parameters <- names(x$plist)
+
+  # the fixed-effect terms are named "<parameter>.<term>", e.g. "Asym.Variety",
+  # or only "<parameter>" for parameter formulas like `xmid ~ 1`
+  fixed_terms <- names(x$fixDF$terms)
+  covariates <- unlist(
+    lapply(fixed_terms, function(i) {
+      # a parameter name with a dot, like "b.1", is not "<parameter>.<term>"
+      if (i %in% parameters) {
+        return(NULL)
+      }
+      prefix <- paste0(parameters, ".")
+      prefix <- prefix[startsWith(i, prefix)]
+      if (length(prefix)) {
+        substring(i, max(nchar(prefix)) + 1)
+      } else {
+        NULL
+      }
+    }),
+    use.names = FALSE
+  )
+  covariates <- unique(setdiff(covariates, "(Intercept)"))
+  if (!length(covariates)) {
+    covariates <- "1"
+  }
+  f.cond <- stats::as.formula(
+    paste(
+      safe_deparse(model_formula[[2]]),
+      "~",
+      paste(covariates, collapse = " + ")
+    ),
+    env = model_env
+  )
+  f.nonlin <- stats::as.formula(
+    paste("~", safe_deparse(model_formula[[3]])),
+    env = model_env
+  )
+
+  # one random formula per grouping level, the outer level first. Inner levels
+  # are named like in lme4, e.g. "Site:Wafer" for Site within Wafer.
+  groups <- names(x$groups)
+  re_struct <- x$modelStruct$reStruct
+  f.random <- lapply(seq_along(groups), function(i) {
+    random_parameters <- unique(unlist(
+      lapply(
+        stats::formula(re_struct[[groups[i]]], asList = TRUE),
+        function(f) all.vars(f[[2]])
+      ),
+      use.names = FALSE
+    ))
+    stats::as.formula(
+      paste(
+        "~",
+        paste(random_parameters, collapse = " + "),
+        "|",
+        paste(rev(groups[seq_len(i)]), collapse = ":")
+      ),
+      env = model_env
+    )
+  })
+  if (length(f.random) == 1L) {
+    f.random <- f.random[[1]]
+  }
+
+  f.corr <- .lme_correlation_formula(x, env = environment(f.cond))
+
+  f <- compact_list(list(
+    conditional = f.cond,
+    nonlinear = f.nonlin,
+    random = f.random,
+    correlation = f.corr
+  ))
+  .find_formula_return(f, verbose = verbose)
+}
+
+
+#' @export
 find_formula.hglm <- function(x, verbose = TRUE, ...) {
   mc <- get_call(x)
   f.cond <- mc$fixed
@@ -1561,22 +1643,34 @@ find_formula.glmmPQL <- function(x, verbose = TRUE, ...) {
   ) {
     fmr <- .nlme_random_formula(x)
   }
-  ## TODO this is an intermediate fix to return the correlation variables from lme-objects
-  fcorr <- x$call$correlation
-  if (is.null(fcorr)) {
-    fc <- NULL
-  } else if (inherits(fcorr, "name")) {
-    fc <- attributes(eval(fcorr))$formula
-  } else {
-    fc <- parse(text = safe_deparse(fcorr))[[1]]$form
-  }
-
   f <- compact_list(list(
     conditional = fm,
     random = fmr,
-    correlation = stats::as.formula(fc)
+    correlation = .lme_correlation_formula(x, env = environment(fm))
   ))
   .find_formula_return(f, verbose = verbose)
+}
+
+# the formula of the correlation structure of lme, glmmPQL, nlme and gls
+# objects, read from the fitted structure, so that it does not depend on where
+# the structure in the call can be found. A structure without `form` has the
+# grouping that nlme used (e.g. `~1 | Subject`), or `~1`, which has no
+# variable and gives no correlation part. `env` is the environment of the
+# model formula, else a structure without `form` keeps the frame of the
+# fitting function, which holds the data and model matrices.
+.lme_correlation_formula <- function(x, env = NULL) {
+  corr_struct <- x[["modelStruct"]][["corStruct"]]
+  if (is.null(corr_struct)) {
+    return(NULL)
+  }
+  f_corr <- tryCatch(stats::formula(corr_struct), error = function(e) NULL)
+  if (!inherits(f_corr, "formula") || !length(all.vars(f_corr))) {
+    return(NULL)
+  }
+  if (is.environment(env)) {
+    environment(f_corr) <- env
+  }
+  f_corr
 }
 
 # rebuild the random effects formula from the fitted random effects structure,

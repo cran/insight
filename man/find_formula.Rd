@@ -78,6 +78,12 @@ component of the model; for models from \emph{brms}, this component is named
 specification
 \item \code{correlation}, for models with correlation-component like \code{nlme::gls()},
 the formula that describes the correlation structure
+\item \code{nonlinear}, for nonlinear mixed models like \code{lme4::nlmer()} or
+\code{nlme::nlme()}, the nonlinear model as a one-sided formula, like
+\code{~ SSlogis(Time, Asym, xmid, scal)}. For \code{nlme::nlme()} models,
+\code{conditional} has the response and the covariates of the fixed-effect
+parameter formulas, and \code{random} has one formula for each grouping level,
+like \code{~ Asym | Plot}.
 \item \code{scale}, for distributional models such as \code{mgcv::gaulss()} family fitted
 with \code{mgcv::gam()}, the formula that describes the scale parameter
 \item \code{slopes}, for fixed-effects individual-slope models like \code{feisr::feis()},
@@ -98,9 +104,12 @@ inside \code{poly()} and that no data names are used (i.e. no \code{data$variabl
 rather \code{variable}).
 }
 \note{
-For models of class \code{lme} or \code{gls} the correlation-component is only
-returned, when it is explicitly defined as named argument (\code{form}), e.g.
-\code{corAR1(form = ~1 | Mare)}
+For models of class \code{lme}, \code{nlme}, \code{glmmPQL}, \code{gls} or \code{gnls}, the
+correlation-component is the formula of the fitted correlation structure,
+e.g. \code{~ t | Subject} for \code{corAR1(form = ~ t | Subject)}, with the
+environment of the model formula. For a structure without \code{form}, this is the
+grouping that the model used, like \code{~1 | Subject}. There is no
+correlation-component when that formula has no variable, e.g. \code{~1}.
 }
 \examples{
 \dontshow{if (require("lme4", quietly = TRUE)) withAutoprint(\{ # examplesIf}

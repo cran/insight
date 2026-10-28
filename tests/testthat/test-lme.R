@@ -910,3 +910,235 @@ test_that("find_formula, glmmPQL with random effects given as list, #965", {
   expect_identical(find_random(m_lst), list(random = "ID"))
   expect_identical(find_random(m_lst), find_random(m_frm))
 })
+
+
+test_that("get_modelmatrix and get_variance, glmmPQL", {
+  skip_if_not_installed("MASS")
+  skip_if_not_installed("performance")
+  data(bacteria, package = "MASS")
+
+  # the terms of a glmmPQL model have the working response "zz", which is not
+  # in the data
+  m <- MASS::glmmPQL(
+    y ~ trt + I(week > 2),
+    random = ~ 1 | ID,
+    family = binomial,
+    data = bacteria,
+    verbose = FALSE
+  )
+  mm <- model.matrix(~ trt + I(week > 2), data = bacteria)
+  expect_equal(get_modelmatrix(m), mm, ignore_attr = TRUE)
+
+  v <- get_variance(m)
+  expect_equal(
+    v$var.fixed,
+    var(as.vector(mm %*% nlme::fixef(m))),
+    tolerance = 1e-4
+  )
+  expect_equal(
+    v$var.intercept,
+    c(ID = as.numeric(nlme::VarCorr(m)[1, "Variance"])),
+    tolerance = 1e-4
+  )
+  expect_equal(v$var.distribution, pi^2 / 3, tolerance = 1e-4)
+
+  # nested random effects
+  set.seed(123)
+  d_pql_nested <- data.frame(
+    g1 = rep(1:10, each = 20),
+    g2 = rep(1:40, each = 5),
+    x = rnorm(200)
+  )
+  eta <- 0.5 * d_pql_nested$x + rnorm(10)[d_pql_nested$g1]
+  eta <- eta + rnorm(40, sd = 0.5)[d_pql_nested$g2]
+  d_pql_nested$y <- rbinom(200, 1, plogis(eta))
+  m_nested <- MASS::glmmPQL(
+    y ~ x,
+    random = ~ 1 | g1 / g2,
+    family = binomial,
+    data = d_pql_nested,
+    verbose = FALSE
+  )
+  vc <- nlme::VarCorr(m_nested)
+  v <- get_variance(m_nested)
+  expect_equal(
+    v$var.intercept,
+    c(g1 = as.numeric(vc[2, "Variance"]), g2 = as.numeric(vc[4, "Variance"])),
+    tolerance = 1e-4
+  )
+})
+
+
+test_that("null_model, lme and glmmPQL", {
+  skip_if_not_installed("MASS")
+  skip_if_not_installed("performance")
+
+  m <- nlme::lme(distance ~ age, random = ~ 1 | Subject, data = Orthodont)
+  m_null <- nlme::lme(distance ~ 1, random = ~ 1 | Subject, data = Orthodont)
+  nm <- null_model(m)
+  expect_s3_class(nm, "lme")
+  expect_equal(nlme::fixef(nm), nlme::fixef(m_null), tolerance = 1e-4)
+
+  # a Poisson model needs the null model for the distribution variance
+  set.seed(123)
+  d_pql_pois <- data.frame(g1 = rep(1:20, each = 10), x = rnorm(200))
+  d_pql_pois$cnt <- rpois(
+    200,
+    exp(0.5 + 0.3 * d_pql_pois$x + rnorm(20, sd = 0.4)[d_pql_pois$g1])
+  )
+  m <- MASS::glmmPQL(
+    cnt ~ x,
+    random = ~ 1 | g1,
+    family = poisson,
+    data = d_pql_pois,
+    verbose = FALSE
+  )
+  m_null <- MASS::glmmPQL(
+    cnt ~ 1,
+    random = ~ 1 | g1,
+    family = poisson,
+    data = d_pql_pois,
+    verbose = FALSE
+  )
+  nm <- null_model(m)
+  expect_s3_class(nm, "glmmPQL")
+  expect_equal(nlme::fixef(nm), nlme::fixef(m_null), tolerance = 1e-4)
+
+  v <- get_variance(m)
+  v_null <- get_variance(m, null_model = m_null)
+  expect_gt(v$var.distribution, 0)
+  expect_equal(v$var.distribution, v_null$var.distribution, tolerance = 1e-4)
+})
+
+
+# correlation part, read from the fitted correlation structure ----------------
+
+# `t` is an integer position for corAR1()
+lme_orthodont_t <- Orthodont
+lme_orthodont_t$t <- as.integer(lme_orthodont_t$age)
+
+test_that("find_formula, lme, correlation object reassigned after the fit", {
+  lme_corr_reassign <<- nlme::corAR1(form = ~ t | Subject)
+  withr::defer(rm(lme_corr_reassign, envir = globalenv()))
+  m <- nlme::lme(
+    distance ~ age,
+    random = ~ 1 | Subject,
+    data = lme_orthodont_t,
+    correlation = lme_corr_reassign
+  )
+  lme_corr_reassign <<- nlme::corAR1(form = ~ 1 | Sex)
+  # the expected formula is the `form` of the structure the fit used
+  expect_equal(find_formula(m)$correlation, ~ t | Subject, ignore_attr = TRUE)
+  expect_identical(find_variables(m)$correlation, c("t", "Subject"))
+})
+
+test_that("find_formula, lme, correlation object local to a function", {
+  fit_fresh <- function() {
+    lme_corr_local <- nlme::corAR1(form = ~ t | Subject)
+    nlme::lme(
+      distance ~ age,
+      random = ~ 1 | Subject,
+      data = lme_orthodont_t,
+      correlation = lme_corr_local
+    )
+  }
+  # `x` is also a variable name inside insight, and `fcorr` was one in the
+  # code that read the structure from the call
+  fit_x <- function() {
+    x <- nlme::corAR1(form = ~ t | Subject)
+    nlme::lme(
+      distance ~ age,
+      random = ~ 1 | Subject,
+      data = lme_orthodont_t,
+      correlation = x
+    )
+  }
+  fit_fcorr <- function() {
+    fcorr <- nlme::corAR1(form = ~ t | Subject)
+    nlme::lme(
+      distance ~ age,
+      random = ~ 1 | Subject,
+      data = lme_orthodont_t,
+      correlation = fcorr
+    )
+  }
+  expect_false(exists("lme_corr_local", envir = globalenv()))
+  for (m in list(fit_fresh(), fit_x(), fit_fcorr())) {
+    expect_no_error(find_formula(m))
+    # the expected formula is the `form` of the local structure
+    expect_equal(find_formula(m)$correlation, ~ t | Subject, ignore_attr = TRUE)
+  }
+
+  # a global object with the name of the local one is not used
+  lme_corr_local <<- nlme::corAR1(form = ~ 1 | Sex)
+  withr::defer(rm(lme_corr_local, envir = globalenv()))
+  m <- fit_fresh()
+  expect_no_error(find_formula(m))
+  expect_equal(find_formula(m)$correlation, ~ t | Subject, ignore_attr = TRUE)
+})
+
+test_that("find_formula, lme, correlation `form` given by position", {
+  m <- nlme::lme(
+    distance ~ age,
+    random = ~ 1 | Subject,
+    data = lme_orthodont_t,
+    correlation = nlme::corAR1(0.2, ~ t | Subject)
+  )
+  expect_equal(find_formula(m)$correlation, ~ t | Subject, ignore_attr = TRUE)
+})
+
+test_that("find_formula, lme, correlation structure without `form`", {
+  # nlme uses the grouping of the random effects
+  m <- nlme::lme(
+    distance ~ age,
+    random = ~ 1 | Subject,
+    data = lme_orthodont_t,
+    correlation = nlme::corAR1()
+  )
+  expect_equal(find_formula(m)$correlation, ~ 1 | Subject, ignore_attr = TRUE)
+  expect_identical(find_variables(m)$correlation, "Subject")
+  # the grouping is no fixed predictor, as for an explicit `form`
+  expect_identical(find_predictors(m), list(conditional = "age"))
+  f <- find_formula(m)
+  expect_identical(environment(f$correlation), environment(f$conditional))
+
+  m_nested <- nlme::lme(
+    distance ~ age,
+    random = ~ 1 | Sex / Subject,
+    data = lme_orthodont_t,
+    correlation = nlme::corAR1()
+  )
+  expect_equal(
+    find_formula(m_nested)$correlation,
+    ~ 1 | Sex / Subject,
+    ignore_attr = TRUE
+  )
+  expect_identical(find_variables(m_nested)$correlation, c("Sex", "Subject"))
+
+  # no correlation structure, no correlation part
+  m_none <- nlme::lme(
+    distance ~ age,
+    random = ~ 1 | Subject,
+    data = lme_orthodont_t
+  )
+  expect_named(find_formula(m_none), c("conditional", "random"))
+})
+
+
+test_that("find_predictors, get_datagrid, lme, correlation grouping", {
+  m <- nlme::lme(
+    distance ~ age,
+    random = ~ 1 | Subject,
+    data = Orthodont,
+    correlation = nlme::corAR1(form = ~ age | Subject)
+  )
+  expect_identical(
+    find_predictors(m),
+    list(conditional = "age", correlation = "age")
+  )
+  expect_identical(
+    find_predictors(m, effects = "all")$correlation,
+    c("age", "Subject")
+  )
+  expect_identical(nrow(get_datagrid(m)), 4L)
+})

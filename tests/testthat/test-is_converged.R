@@ -13,10 +13,11 @@ model <- suppressMessages(suppressWarnings(lme4::glmer(
 )))
 
 test_that("is_converged", {
-  expect_true(is_converged(model))
+  skip_if_not_installed("lme4", minimum_version = "2.1.0")
+  expect_false(is_converged(model))
   expect_equal(
     is_converged(model),
-    structure(TRUE, gradient = NA_real_),
+    structure(FALSE, gradient = 0.001793402),
     tolerance = 1e-3
   )
 })
@@ -34,7 +35,7 @@ model_singular <- suppressWarnings(lme4::lmer(y ~ 1 + (1 | f), data = d))
 test_that("is_converged handles singular models", {
   # Should not error
   result <- is_converged(model_singular)
-  # Result should be either TRUE (if optimizer converged) or NA (if derivs unavailable)
+  # Result should be TRUE (if the optimizer converged) or FALSE (if it did not)
   expect_true(is.logical(result) || is.na(result))
   # If it's TRUE or NA, gradient attribute should be NA
   if (is.na(result) || isTRUE(result)) {
