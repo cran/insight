@@ -1,3 +1,19 @@
+# insight 1.7.0
+
+## Changes
+
+* `get_predicted()` with `ci_method = "satterthwaite"` or
+  `ci_method = "kenward-roger"` is faster for `lmerMod` models. The steps that
+  are the same for every row of the data are now computed once. The results
+  do not change.
+
+## Bug fixes
+
+* Tweak test tolerance to fix CRAN check errors.
+
+* Fixed issue, where `get_df(type = "model")` and `n_parameters()` did not
+  include absorbed parameters for models of class `lm_robust`.
+
 # insight 1.6.1
 
 ## New supported models

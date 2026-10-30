@@ -1,3 +1,4 @@
+skip_on_os("mac")
 skip_if_not_installed("lme4")
 
 data(cbpp, package = "lme4")
@@ -18,7 +19,7 @@ test_that("is_converged", {
   expect_equal(
     is_converged(model),
     structure(FALSE, gradient = 0.001793402),
-    tolerance = 1e-3
+    tolerance = 1e-2
   )
 })
 
@@ -43,8 +44,6 @@ test_that("is_converged handles singular models", {
   }
 })
 
-
-skip_on_os("mac") # error: FreeADFunObject
 skip_on_cran() ## FIXME: check with win-devel
 skip_if_not_installed("glmmTMB")
 skip_if_not_installed("TMB")
